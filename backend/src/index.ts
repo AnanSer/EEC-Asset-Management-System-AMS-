@@ -28,14 +28,14 @@ app.get('/health', (_req, res) => {
 });
 
 // ─── Future Routes (Phase 2+) ─────────────────────────────────────────────────
-// app.use('/api/v1/assets', assetRoutes);
-// app.use('/api/v1/departments', departmentRoutes);
-// app.use('/api/v1/employees', employeeRoutes);
-// app.use('/api/v1/assignments', assignmentRoutes);
-// app.use('/api/v1/maintenance', maintenanceRoutes);
-// app.use('/api/v1/testing', testingRoutes);
-// app.use('/api/v1/reports', reportRoutes);
-// app.use('/api/v1/notifications', notificationRoutes);
+// app.use('/api/assets', assetRoutes);
+// app.use('/api/departments', departmentRoutes);
+// app.use('/api/employees', employeeRoutes);
+// app.use('/api/assignments', assignmentRoutes);
+// app.use('/api/maintenance', maintenanceRoutes);
+// app.use('/api/testing', testingRoutes);
+// app.use('/api/reports', reportRoutes);
+// app.use('/api/notifications', notificationRoutes);
 
 // ─── Start Server ─────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
