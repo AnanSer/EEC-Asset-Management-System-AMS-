@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60" viewBox="0 0 200 60">
+  <!-- Background -->
+  <rect width="200" height="60" rx="8" fill="#083D4A"/>
+  <!-- Hexagon mark -->
+  <polygon points="30,6 48,16 48,36 30,46 12,36 12,16" fill="#00A7D6" opacity="0.25"/>
+  <polygon points="30,11 43,18.5 43,33.5 30,41 17,33.5 17,18.5" fill="#00A7D6" opacity="0.4"/>
+  <!-- E letterform -->
+  <rect x="22" y="21" width="13" height="3" rx="1" fill="white"/>
+  <rect x="22" y="27" width="10" height="3" rx="1" fill="white"/>
+  <rect x="22" y="33" width="13" height="3" rx="1" fill="white"/>
+  <!-- Accent dot -->
+  <circle cx="43" cy="21" r="3" fill="#C96F59"/>
+  <!-- Text: Ethiopian Engineering -->
+  <text x="58" y="24" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="700" fill="white">Ethiopian Engineering</text>
+  <text x="58" y="40" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="500" fill="#00A7D6" letter-spacing="3">CORPORATION</text>
+  <!-- Sub text -->
+  <text x="58" y="52" font-family="Inter, Arial, sans-serif" font-size="7" font-weight="400" fill="rgba(255,255,255,0.5)" letter-spacing="2">ASSET MANAGEMENT SYSTEM</text>
+</svg>

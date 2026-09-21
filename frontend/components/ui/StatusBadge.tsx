@@ -1,0 +1,42 @@
+import clsx from 'clsx';
+
+type StatusVariant =
+  | 'active'
+  | 'inactive'
+  | 'pending'
+  | 'assigned'
+  | 'maintenance'
+  | 'testing'
+  | 'retired'
+  | 'available';
+
+interface StatusBadgeProps {
+  status: StatusVariant;
+  label?: string;
+}
+
+const variantMap: Record<StatusVariant, { classes: string; dot: string; defaultLabel: string }> = {
+  active:      { classes: 'bg-emerald-50 text-emerald-700 ring-emerald-200',   dot: 'bg-emerald-500', defaultLabel: 'Active'      },
+  inactive:    { classes: 'bg-slate-100  text-slate-600   ring-slate-200',     dot: 'bg-slate-400',   defaultLabel: 'Inactive'    },
+  pending:     { classes: 'bg-amber-50   text-amber-700   ring-amber-200',     dot: 'bg-amber-500',   defaultLabel: 'Pending'     },
+  assigned:    { classes: 'bg-blue-50    text-blue-700    ring-blue-200',      dot: 'bg-blue-500',    defaultLabel: 'Assigned'    },
+  maintenance: { classes: 'bg-orange-50  text-orange-700  ring-orange-200',    dot: 'bg-orange-500',  defaultLabel: 'Maintenance' },
+  testing:     { classes: 'bg-purple-50  text-purple-700  ring-purple-200',    dot: 'bg-purple-500',  defaultLabel: 'Testing'     },
+  retired:     { classes: 'bg-red-50     text-red-700     ring-red-200',       dot: 'bg-red-500',     defaultLabel: 'Retired'     },
+  available:   { classes: 'bg-teal-50    text-teal-700    ring-teal-200',      dot: 'bg-teal-500',    defaultLabel: 'Available'   },
+};
+
+export default function StatusBadge({ status, label }: StatusBadgeProps) {
+  const { classes, dot, defaultLabel } = variantMap[status];
+  return (
+    <span
+      className={clsx(
+        'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ring-1 ring-inset',
+        classes
+      )}
+    >
+      <span className={clsx('w-1.5 h-1.5 rounded-full flex-shrink-0', dot)} />
+      {label ?? defaultLabel}
+    </span>
+  );
+}

@@ -1,0 +1,20 @@
+// EEC EAMS – Prisma Schema (Phase 1)
+// Database models will be added in Phase 2.
+// Currently configured for PostgreSQL connection only.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Phase 2+ Models will be added here ──────────────────────────────────────
+// model Asset { ... }
+// model Employee { ... }
+// model Department { ... }
+// model Assignment { ... }
+// model MaintenanceRecord { ... }
+// model TestingRecord { ... }
