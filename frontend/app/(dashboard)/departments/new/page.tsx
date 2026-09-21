@@ -39,8 +39,9 @@ export default function NewDepartmentPage() {
         title="Create Department"
         description="Register a new organizational sector, directorate, or facility for Ethiopian Engineering Corporation."
         breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
           { label: 'Departments', href: '/departments' },
-          { label: 'New Department' },
+          { label: 'New' },
         ]}
       />
 

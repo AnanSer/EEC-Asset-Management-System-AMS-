@@ -12,14 +12,13 @@ import {
   Power,
   FileText,
   UserCheck,
-  AlertTriangle,
-  RotateCcw,
 } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import StatusBadge from '@/components/ui/StatusBadge';
 import StatCard from '@/components/ui/StatCard';
 import { CardSkeleton } from '@/components/ui/LoadingSkeleton';
 import EmptyState from '@/components/ui/EmptyState';
+import ConfirmationModal from '@/components/ui/ConfirmationModal';
 import { useToast } from '@/components/ui/Toast';
 import departmentService from '@/services/department.service';
 import { Department } from '@/constants/departments';
@@ -85,6 +84,7 @@ export default function DepartmentDetailsPage() {
         <PageHeader
           title="Loading Department..."
           breadcrumbs={[
+            { label: 'Dashboard', href: '/dashboard' },
             { label: 'Departments', href: '/departments' },
             { label: 'Details' },
           ]}
@@ -122,6 +122,7 @@ export default function DepartmentDetailsPage() {
         title={department.name}
         description={`Department Code: ${department.code}`}
         breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
           { label: 'Departments', href: '/departments' },
           { label: department.name },
         ]}
@@ -290,59 +291,22 @@ export default function DepartmentDetailsPage() {
       </div>
 
       {/* Confirmation Modal for Activate/Deactivate */}
-      {showStatusModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 p-6 space-y-4 animate-in zoom-in-95 duration-150">
-            <div className="flex items-center gap-3">
-              <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-                  department.isActive ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'
-                }`}
-              >
-                {department.isActive ? <AlertTriangle className="w-5 h-5" /> : <RotateCcw className="w-5 h-5" />}
-              </div>
-              <div>
-                <h4 className="text-base font-semibold text-eec-text">
-                  {department.isActive ? 'Deactivate Department' : 'Activate Department'}
-                </h4>
-                <p className="text-xs text-slate-500">
-                  {department.name} ({department.code})
-                </p>
-              </div>
-            </div>
-
-            <p className="text-sm text-slate-600 leading-relaxed">
-              {department.isActive
-                ? 'Deactivating this department will flag it as inactive. Existing employee and asset records are preserved, but new allocations will be restricted.'
-                : 'Activating this department will restore it to full operational status for staff and asset assignments.'}
-            </p>
-
-            <div className="flex items-center justify-end gap-2.5 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowStatusModal(false)}
-                disabled={statusLoading}
-                className="px-4 py-2 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleToggleStatus}
-                disabled={statusLoading}
-                className={`px-4 py-2 rounded-lg text-xs font-semibold text-white shadow-xs transition-colors ${
-                  department.isActive ? 'bg-amber-600 hover:bg-amber-700' : 'bg-emerald-600 hover:bg-emerald-700'
-                }`}
-              >
-                {statusLoading
-                  ? 'Updating...'
-                  : department.isActive
-                  ? 'Yes, Deactivate'
-                  : 'Yes, Activate'}
-              </button>
-            </div>
-          </div>
-        </div>
+      {department && (
+        <ConfirmationModal
+          isOpen={showStatusModal}
+          onClose={() => setShowStatusModal(false)}
+          onConfirm={handleToggleStatus}
+          title={department.isActive ? 'Deactivate Department?' : 'Activate Department?'}
+          message={
+            department.isActive
+              ? 'This department will become inactive. Existing employees and assets will remain linked to this department.'
+              : 'This department will become active. Existing employees and assets will remain linked to this department.'
+          }
+          confirmLabel={department.isActive ? 'Deactivate' : 'Activate'}
+          cancelLabel="Cancel"
+          variant={department.isActive ? 'warning' : 'success'}
+          isLoading={statusLoading}
+        />
       )}
     </div>
   );

@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import {
   Building2,
   Plus,
@@ -14,20 +13,18 @@ import {
   MapPin,
   ChevronLeft,
   ChevronRight,
-  AlertTriangle,
-  RotateCcw,
 } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import SearchInput from '@/components/ui/SearchInput';
 import StatusBadge from '@/components/ui/StatusBadge';
 import EmptyState from '@/components/ui/EmptyState';
-import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
+import LoadingSkeleton, { TableSkeleton } from '@/components/ui/LoadingSkeleton';
+import ConfirmationModal from '@/components/ui/ConfirmationModal';
 import { useToast } from '@/components/ui/Toast';
 import departmentService from '@/services/department.service';
 import { Department, PaginationMeta } from '@/constants/departments';
 
 export default function DepartmentsPage() {
-  const router = useRouter();
   const toast = useToast();
 
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -119,12 +116,37 @@ export default function DepartmentsPage() {
     }
   };
 
+  if (loading && departments.length === 0 && !search && statusFilter === 'all') {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="Departments"
+          description="Manage Ethiopian Engineering Corporation organizational sectors, directorates, and asset allocations."
+          breadcrumbs={[
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: 'Departments' },
+          ]}
+          action={{
+            label: 'Add Department',
+            href: '/departments/new',
+            icon: Plus,
+          }}
+        />
+        <LoadingSkeleton />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Top Header */}
       <PageHeader
         title="Departments"
         description="Manage Ethiopian Engineering Corporation organizational sectors, directorates, and asset allocations."
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Departments' },
+        ]}
         action={{
           label: 'Add Department',
           href: '/departments/new',
@@ -169,27 +191,16 @@ export default function DepartmentsPage() {
           <div className="p-8">
             <EmptyState
               icon={Building2}
-              title="No Departments Found"
-              description={
-                search || statusFilter !== 'all'
-                  ? 'No departments match your current filter or search criteria.'
-                  : 'Get started by creating your first organizational department.'
-              }
-              action={
-                search || statusFilter !== 'all'
-                  ? {
-                      label: 'Reset Filters',
-                      onClick: () => {
-                        setSearch('');
-                        setStatusFilter('all');
-                        setPage(1);
-                      },
-                    }
-                  : {
-                      label: 'Create Department',
-                      onClick: () => router.push('/departments/new'),
-                    }
-              }
+              title="No departments found."
+              description="No departments match your current search or filter criteria."
+              action={{
+                label: 'Clear Filters',
+                onClick: () => {
+                  setSearch('');
+                  setStatusFilter('all');
+                  setPage(1);
+                },
+              }}
             />
           </div>
         ) : (
@@ -360,66 +371,21 @@ export default function DepartmentsPage() {
       </div>
 
       {/* Confirmation Modal for Activate/Deactivate */}
-      {statusModal.open && statusModal.department && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 p-6 space-y-4 animate-in zoom-in-95 duration-150">
-            <div className="flex items-center gap-3">
-              <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-                  statusModal.department.isActive ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'
-                }`}
-              >
-                {statusModal.department.isActive ? (
-                  <AlertTriangle className="w-5 h-5" />
-                ) : (
-                  <RotateCcw className="w-5 h-5" />
-                )}
-              </div>
-              <div>
-                <h4 className="text-base font-semibold text-eec-text">
-                  {statusModal.department.isActive ? 'Deactivate Department' : 'Activate Department'}
-                </h4>
-                <p className="text-xs text-slate-500">
-                  {statusModal.department.name} ({statusModal.department.code})
-                </p>
-              </div>
-            </div>
-
-            <p className="text-sm text-slate-600 leading-relaxed">
-              {statusModal.department.isActive
-                ? 'Deactivating this department will flag it as inactive. Existing employee and asset assignments remain recorded, but new allocations will be restricted.'
-                : 'Activating this department will restore it to full operational status for staff and asset assignments.'}
-            </p>
-
-            <div className="flex items-center justify-end gap-2.5 pt-2">
-              <button
-                type="button"
-                onClick={() => setStatusModal({ open: false, department: null, isUpdating: false })}
-                disabled={statusModal.isUpdating}
-                className="px-4 py-2 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={confirmToggleStatus}
-                disabled={statusModal.isUpdating}
-                className={`px-4 py-2 rounded-lg text-xs font-semibold text-white shadow-xs transition-colors ${
-                  statusModal.department.isActive
-                    ? 'bg-amber-600 hover:bg-amber-700'
-                    : 'bg-emerald-600 hover:bg-emerald-700'
-                }`}
-              >
-                {statusModal.isUpdating
-                  ? 'Updating...'
-                  : statusModal.department.isActive
-                  ? 'Yes, Deactivate'
-                  : 'Yes, Activate'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmationModal
+        isOpen={statusModal.open && Boolean(statusModal.department)}
+        onClose={() => setStatusModal({ open: false, department: null, isUpdating: false })}
+        onConfirm={confirmToggleStatus}
+        title={statusModal.department?.isActive ? 'Deactivate Department?' : 'Activate Department?'}
+        message={
+          statusModal.department?.isActive
+            ? 'This department will become inactive. Existing employees and assets will remain linked to this department.'
+            : 'This department will become active. Existing employees and assets will remain linked to this department.'
+        }
+        confirmLabel={statusModal.department?.isActive ? 'Deactivate' : 'Activate'}
+        cancelLabel="Cancel"
+        variant={statusModal.department?.isActive ? 'warning' : 'success'}
+        isLoading={statusModal.isUpdating}
+      />
     </div>
   );
 }

@@ -71,6 +71,7 @@ export default function EditDepartmentPage() {
         <PageHeader
           title="Loading Department..."
           breadcrumbs={[
+            { label: 'Dashboard', href: '/dashboard' },
             { label: 'Departments', href: '/departments' },
             { label: 'Edit' },
           ]}
@@ -103,8 +104,8 @@ export default function EditDepartmentPage() {
         title={`Edit ${department.name}`}
         description={`Update details, office location, or code for ${department.code}`}
         breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
           { label: 'Departments', href: '/departments' },
-          { label: department.name, href: `/departments/${department.id}` },
           { label: 'Edit' },
         ]}
       />

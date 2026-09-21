@@ -1,11 +1,8 @@
 import React from 'react';
 import Link from 'next/link';
-import { ChevronRight } from 'lucide-react';
+import Breadcrumb, { BreadcrumbItem } from './Breadcrumb';
 
-export interface BreadcrumbItem {
-  label: string;
-  href?: string;
-}
+export type { BreadcrumbItem };
 
 export interface PageHeaderAction {
   label: string;
@@ -35,28 +32,7 @@ export default function PageHeader({
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
       <div>
         {breadcrumbs && breadcrumbs.length > 0 && (
-          <nav className="flex items-center gap-1.5 text-xs text-slate-500 mb-1.5">
-            {breadcrumbs.map((b, idx) => {
-              const isLast = idx === breadcrumbs.length - 1;
-              return (
-                <React.Fragment key={idx}>
-                  {idx > 0 && <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />}
-                  {b.href && !isLast ? (
-                    <Link
-                      href={b.href}
-                      className="hover:text-eec-primary hover:underline transition-colors"
-                    >
-                      {b.label}
-                    </Link>
-                  ) : (
-                    <span className={isLast ? 'font-medium text-slate-700' : ''}>
-                      {b.label}
-                    </span>
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </nav>
+          <Breadcrumb items={breadcrumbs} />
         )}
         <h1 className="text-2xl font-bold text-eec-primary tracking-tight">{title}</h1>
         {description && <p className="mt-1 text-sm text-slate-500">{description}</p>}
