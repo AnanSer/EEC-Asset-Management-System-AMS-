@@ -27,9 +27,13 @@ app.get('/health', (_req, res) => {
   });
 });
 
-// ─── Future Routes (Phase 2+) ─────────────────────────────────────────────────
+import departmentRoutes from './modules/departments/department.routes';
+
+// ─── Routes ──────────────────────────────────────────────────────────────────
+app.use('/api/departments', departmentRoutes);
+
+// ─── Future Routes ────────────────────────────────────────────────────────────
 // app.use('/api/assets', assetRoutes);
-// app.use('/api/departments', departmentRoutes);
 // app.use('/api/employees', employeeRoutes);
 // app.use('/api/assignments', assignmentRoutes);
 // app.use('/api/maintenance', maintenanceRoutes);

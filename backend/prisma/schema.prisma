@@ -96,6 +96,7 @@ model Department {
   building         String?
   floor            String?
   headOfDepartment String?
+  isActive         Boolean           @default(true)
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 
@@ -103,6 +104,7 @@ model Department {
   assets           Asset[]
 
   @@index([code])
+  @@index([isActive])
 }
 
 model User {

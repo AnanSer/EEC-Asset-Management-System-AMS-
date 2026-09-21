@@ -23,15 +23,33 @@ export function StatCardSkeleton() {
   );
 }
 
-export function TableRowSkeleton({ cols = 5 }: { cols?: number }) {
+export function TableRowSkeleton({ cols = 5, count = 1 }: { cols?: number; count?: number }) {
   return (
-    <tr>
-      {Array.from({ length: cols }).map((_, i) => (
-        <td key={i} className="px-4 py-3">
-          <Bone className="h-4 w-full max-w-[120px]" />
-        </td>
+    <>
+      {Array.from({ length: count }).map((_, rIdx) => (
+        <tr key={rIdx}>
+          {Array.from({ length: cols }).map((_, i) => (
+            <td key={i} className="px-4 py-3">
+              <Bone className="h-4 w-full max-w-[120px]" />
+            </td>
+          ))}
+        </tr>
       ))}
-    </tr>
+    </>
+  );
+}
+
+export function TableSkeleton({ rows = 5, cols = 6 }: { rows?: number; cols?: number }) {
+  return (
+    <div className="p-4 space-y-3">
+      {Array.from({ length: rows }).map((_, i) => (
+        <div key={i} className="flex items-center gap-4 py-2">
+          {Array.from({ length: cols }).map((_, j) => (
+            <Bone key={j} className="h-4 flex-1" />
+          ))}
+        </div>
+      ))}
+    </div>
   );
 }
 

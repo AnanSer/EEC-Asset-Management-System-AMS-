@@ -8,14 +8,16 @@ type StatusVariant =
   | 'maintenance'
   | 'testing'
   | 'retired'
-  | 'available';
+  | 'available'
+  | 'ACTIVE'
+  | 'INACTIVE';
 
 interface StatusBadgeProps {
   status: StatusVariant;
   label?: string;
 }
 
-const variantMap: Record<StatusVariant, { classes: string; dot: string; defaultLabel: string }> = {
+const baseVariantMap: Record<string, { classes: string; dot: string; defaultLabel: string }> = {
   active:      { classes: 'bg-emerald-50 text-emerald-700 ring-emerald-200',   dot: 'bg-emerald-500', defaultLabel: 'Active'      },
   inactive:    { classes: 'bg-slate-100  text-slate-600   ring-slate-200',     dot: 'bg-slate-400',   defaultLabel: 'Inactive'    },
   pending:     { classes: 'bg-amber-50   text-amber-700   ring-amber-200',     dot: 'bg-amber-500',   defaultLabel: 'Pending'     },
@@ -27,7 +29,9 @@ const variantMap: Record<StatusVariant, { classes: string; dot: string; defaultL
 };
 
 export default function StatusBadge({ status, label }: StatusBadgeProps) {
-  const { classes, dot, defaultLabel } = variantMap[status];
+  const key = (status || '').toLowerCase();
+  const config = baseVariantMap[key] ?? baseVariantMap.active;
+  const { classes, dot, defaultLabel } = config;
   return (
     <span
       className={clsx(

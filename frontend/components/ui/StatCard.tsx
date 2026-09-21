@@ -1,3 +1,4 @@
+import React from 'react';
 import { type LucideIcon } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -5,12 +6,14 @@ interface StatCardProps {
   title: string;
   value: string | number;
   icon: LucideIcon;
+  subtitle?: string;
   trend?: {
     value: number;
     label: string;
     direction: 'up' | 'down' | 'neutral';
   };
   accent?: 'primary' | 'accent' | 'active' | 'success' | 'warning';
+  color?: 'primary' | 'accent' | 'active' | 'success' | 'warning';
 }
 
 const accentMap = {
@@ -31,10 +34,13 @@ export default function StatCard({
   title,
   value,
   icon: Icon,
+  subtitle,
   trend,
-  accent = 'accent',
+  accent,
+  color,
 }: StatCardProps) {
-  const colors = accentMap[accent];
+  const chosenAccent = accent || color || 'accent';
+  const colors = accentMap[chosenAccent] || accentMap.accent;
 
   return (
     <div
@@ -49,6 +55,9 @@ export default function StatCard({
             {title}
           </p>
           <p className="mt-2 text-3xl font-bold text-eec-text">{value}</p>
+          {subtitle && !trend && (
+            <p className="mt-1 text-xs text-slate-400">{subtitle}</p>
+          )}
           {trend && (
             <div className="mt-2 flex items-center gap-1.5">
               <span

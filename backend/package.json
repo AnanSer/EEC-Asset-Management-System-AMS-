@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon --exec ts-node src/index.ts",
+    "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
     "prisma:generate": "prisma generate",
@@ -27,7 +27,8 @@
     "express": "^5.2.1",
     "helmet": "^8.3.0",
     "pg": "^8.23.0",
-    "prisma": "^7.10.0"
+    "prisma": "^7.10.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
