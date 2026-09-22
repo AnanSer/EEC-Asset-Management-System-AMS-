@@ -27,6 +27,7 @@ import {
   IssueCategory,
 } from '@/constants/maintenance';
 import TestingResultCard from './TestingResultCard';
+import MaintenanceTimeline from './MaintenanceTimeline';
 
 interface MaintenanceDetailsProps {
   ticket: MaintenanceTicket;
@@ -200,6 +201,9 @@ export default function MaintenanceDetails({
               {ticket.description}
             </p>
           </div>
+
+          {/* Maintenance Timeline Card */}
+          <MaintenanceTimeline ticket={ticket} />
 
           {/* Resolution Notes Card (if present) */}
           {ticket.resolutionNotes && (
