@@ -73,6 +73,15 @@ export interface Asset {
     assignments?: number;
     maintenanceTickets?: number;
   };
+  currentAssignment?: {
+    id: string;
+    employeeId?: string;
+    employeeBadgeId?: string;
+    employeeName: string;
+    departmentName?: string | null;
+    assignedDate: string;
+    remarks?: string | null;
+  } | null;
 }
 
 export interface CreateAssetInput {

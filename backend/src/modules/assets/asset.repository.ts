@@ -13,6 +13,28 @@ const assetInclude = {
       floor: true,
     },
   },
+  assignments: {
+    where: { isCurrent: true },
+    include: {
+      employee: {
+        select: {
+          id: true,
+          employeeId: true,
+          firstName: true,
+          lastName: true,
+          jobTitle: true,
+          department: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+            },
+          },
+        },
+      },
+    },
+    take: 1,
+  },
   _count: {
     select: {
       assignments: true,

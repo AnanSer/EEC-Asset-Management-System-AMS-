@@ -17,19 +17,21 @@ export default function AssetDetailPage() {
   const [asset, setAsset] = useState<Asset | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const res = await assetService.getById(id);
-        if (res.success) setAsset(res.data);
-      } catch {
-        toast.error('Asset not found');
-      } finally {
-        setLoading(false);
-      }
+  const loadAsset = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await assetService.getById(id);
+      if (res.success) setAsset(res.data);
+    } catch {
+      toast.error('Asset not found');
+    } finally {
+      setLoading(false);
     }
-    load();
-  }, [id]);
+  }, [id, toast]);
+
+  useEffect(() => {
+    loadAsset();
+  }, [loadAsset]);
 
   if (loading) {
     return (
@@ -74,7 +76,7 @@ export default function AssetDetailPage() {
         ]}
       />
 
-      <AssetDetails asset={asset} />
+      <AssetDetails asset={asset} onRefresh={loadAsset} />
     </div>
   );
 }

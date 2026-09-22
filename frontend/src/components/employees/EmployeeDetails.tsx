@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   User,
@@ -17,9 +17,15 @@ import {
   Edit2,
   Power,
   Calendar,
+  Package,
+  Plus,
 } from 'lucide-react';
 import StatusBadge from '@/components/ui/StatusBadge';
+import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { Employee } from '@/constants/employees';
+import assignmentService from '@/services/assignment.service';
+import { AssetAssignment } from '@/constants/assignments';
+import { ASSET_CATEGORY_LABELS, ASSET_STATUS_LABELS } from '@/constants/assets';
 
 interface EmployeeDetailsProps {
   employee: Employee;
@@ -32,6 +38,31 @@ export default function EmployeeDetails({
   onToggleStatus,
   statusLoading = false,
 }: EmployeeDetailsProps) {
+  const [assignedAssets, setAssignedAssets] = useState<AssetAssignment[]>([]);
+  const [loadingAssets, setLoadingAssets] = useState(true);
+
+  useEffect(() => {
+    async function loadAssignedAssets() {
+      try {
+        setLoadingAssets(true);
+        const res = await assignmentService.getAll({
+          employeeId: employee.id,
+          isCurrent: 'true',
+          limit: 100,
+        });
+        if (res.success) {
+          setAssignedAssets(res.data);
+        }
+      } catch {
+        // fail gracefully
+      } finally {
+        setLoadingAssets(false);
+      }
+    }
+
+    loadAssignedAssets();
+  }, [employee.id]);
+
   const formatRoleLabel = (role: string) => {
     return role.replace(/_/g, ' ');
   };
@@ -291,6 +322,111 @@ export default function EmployeeDetails({
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Assigned Assets Section */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <Package className="w-4 h-4 text-eec-primary" />
+            <h3 className="text-sm font-bold text-eec-text uppercase tracking-wider">
+              Assigned Assets ({assignedAssets.length})
+            </h3>
+          </div>
+          {employee.isActive && (
+            <Link
+              href={`/assignments/new?employeeId=${employee.id}`}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-eec-primary text-white text-xs font-semibold hover:bg-eec-primary/90 transition shadow-xs"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Assign Equipment
+            </Link>
+          )}
+        </div>
+
+        {loadingAssets ? (
+          <div className="p-6">
+            <TableSkeleton rows={3} />
+          </div>
+        ) : assignedAssets.length === 0 ? (
+          <div className="p-8 text-center text-slate-500">
+            <Box className="w-8 h-8 mx-auto text-slate-300 mb-2" />
+            <p className="font-semibold text-slate-700 text-sm">No Assets Currently Assigned</p>
+            <p className="text-xs text-slate-400 mt-0.5">
+              This staff member has no active equipment custody records.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-slate-50/80 text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                <tr>
+                  <th className="px-6 py-3">Asset Code</th>
+                  <th className="px-6 py-3">Asset Name</th>
+                  <th className="px-6 py-3">Category</th>
+                  <th className="px-6 py-3">Status</th>
+                  <th className="px-6 py-3">Assigned Date</th>
+                  <th className="px-6 py-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {assignedAssets.map((record) => {
+                  const asset = record.asset;
+                  return (
+                    <tr key={record.id} className="hover:bg-slate-50/70 transition-colors">
+                      <td className="px-6 py-3.5">
+                        <Link
+                          href={`/assets/${record.assetId}`}
+                          className="font-mono text-xs font-semibold text-eec-primary hover:underline"
+                        >
+                          {asset?.assetCode || '—'}
+                        </Link>
+                      </td>
+                      <td className="px-6 py-3.5 font-medium text-eec-text">
+                        <Link
+                          href={`/assets/${record.assetId}`}
+                          className="hover:text-eec-primary transition"
+                        >
+                          {asset?.name || 'Unknown'}
+                        </Link>
+                      </td>
+                      <td className="px-6 py-3.5 text-xs text-slate-600">
+                        {asset?.category
+                          ? ASSET_CATEGORY_LABELS[asset.category as keyof typeof ASSET_CATEGORY_LABELS] ?? asset.category
+                          : '—'}
+                      </td>
+                      <td className="px-6 py-3.5">
+                        <StatusBadge
+                          status={(asset?.status || 'ASSIGNED').toLowerCase()}
+                          label={
+                            asset?.status
+                              ? ASSET_STATUS_LABELS[asset.status as keyof typeof ASSET_STATUS_LABELS] ?? asset.status
+                              : 'Assigned'
+                          }
+                        />
+                      </td>
+                      <td className="px-6 py-3.5 text-xs text-slate-600 whitespace-nowrap">
+                        {new Date(record.assignedDate).toLocaleDateString('en-GB', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </td>
+                      <td className="px-6 py-3.5 text-right">
+                        <Link
+                          href={`/assets/${record.assetId}`}
+                          className="text-xs text-eec-primary hover:underline font-semibold"
+                        >
+                          View Details &rarr;
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

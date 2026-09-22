@@ -16,12 +16,14 @@ import {
 import PageHeader from '@/components/ui/PageHeader';
 import StatusBadge from '@/components/ui/StatusBadge';
 import StatCard from '@/components/ui/StatCard';
-import { CardSkeleton } from '@/components/ui/LoadingSkeleton';
+import { CardSkeleton, TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import EmptyState from '@/components/ui/EmptyState';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
 import { useToast } from '@/components/ui/Toast';
 import departmentService from '@/services/department.service';
+import assetService from '@/services/asset.service';
 import { Department } from '@/constants/departments';
+import { Asset, ASSET_STATUS_LABELS, ASSET_CONDITION_LABELS } from '@/constants/assets';
 
 export default function DepartmentDetailsPage() {
   const params = useParams();
@@ -31,7 +33,9 @@ export default function DepartmentDetailsPage() {
   const id = Array.isArray(params?.id) ? params.id[0] : (params?.id as string);
 
   const [department, setDepartment] = useState<Department | null>(null);
+  const [deptAssets, setDeptAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingAssets, setLoadingAssets] = useState(true);
   const [statusLoading, setStatusLoading] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
 
@@ -39,9 +43,17 @@ export default function DepartmentDetailsPage() {
     if (!id) return;
     try {
       setLoading(true);
-      const res = await departmentService.getById(id);
-      if (res.success) {
-        setDepartment(res.data);
+      setLoadingAssets(true);
+      const [deptRes, assetsRes] = await Promise.all([
+        departmentService.getById(id),
+        assetService.getAll({ departmentId: id, limit: 100 }),
+      ]);
+
+      if (deptRes.success) {
+        setDepartment(deptRes.data);
+      }
+      if (assetsRes.success) {
+        setDeptAssets(assetsRes.data);
       }
     } catch (err: unknown) {
       const errorMsg =
@@ -50,6 +62,7 @@ export default function DepartmentDetailsPage() {
       toast.error(errorMsg);
     } finally {
       setLoading(false);
+      setLoadingAssets(false);
     }
   }, [id, toast]);
 
@@ -288,6 +301,106 @@ export default function DepartmentDetailsPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Department Assets Section */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <h3 className="text-sm font-bold text-eec-text uppercase tracking-wider flex items-center gap-2">
+              <Box className="w-4 h-4 text-eec-primary" />
+              Department Assets ({deptAssets.length})
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Assigned to personnel:{' '}
+              <strong className="text-eec-primary">
+                {deptAssets.filter((a) => a.status === 'ASSIGNED').length}
+              </strong>{' '}
+              of {deptAssets.length} total allocated items
+            </p>
+          </div>
+        </div>
+
+        {loadingAssets ? (
+          <div className="p-6">
+            <TableSkeleton rows={3} />
+          </div>
+        ) : deptAssets.length === 0 ? (
+          <div className="p-8 text-center text-slate-500">
+            <Box className="w-8 h-8 mx-auto text-slate-300 mb-2" />
+            <p className="font-semibold text-slate-700 text-sm">No Assets Linked to Department</p>
+            <p className="text-xs text-slate-400 mt-0.5">
+              There are currently no assets allocated to staff in this department.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-slate-50/80 text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                <tr>
+                  <th className="px-6 py-3">Asset Code</th>
+                  <th className="px-6 py-3">Asset Name</th>
+                  <th className="px-6 py-3">Assigned To</th>
+                  <th className="px-6 py-3">Status</th>
+                  <th className="px-6 py-3">Condition</th>
+                  <th className="px-6 py-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {deptAssets.map((asset) => {
+                  const currentHolder = asset.currentAssignment?.employeeName;
+                  return (
+                    <tr key={asset.id} className="hover:bg-slate-50/70 transition-colors">
+                      <td className="px-6 py-3.5">
+                        <Link
+                          href={`/assets/${asset.id}`}
+                          className="font-mono text-xs font-semibold text-eec-primary hover:underline"
+                        >
+                          {asset.assetCode}
+                        </Link>
+                      </td>
+                      <td className="px-6 py-3.5 font-medium text-eec-text">
+                        <Link
+                          href={`/assets/${asset.id}`}
+                          className="hover:text-eec-primary transition"
+                        >
+                          {asset.name}
+                        </Link>
+                      </td>
+                      <td className="px-6 py-3.5 text-xs text-slate-700">
+                        {currentHolder ? (
+                          <span className="font-semibold text-slate-800">{currentHolder}</span>
+                        ) : (
+                          <span className="text-slate-400 italic">Available / In Pool</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-3.5">
+                        <StatusBadge
+                          status={asset.status.toLowerCase()}
+                          label={ASSET_STATUS_LABELS[asset.status] ?? asset.status}
+                        />
+                      </td>
+                      <td className="px-6 py-3.5">
+                        <StatusBadge
+                          status={asset.condition.toLowerCase()}
+                          label={ASSET_CONDITION_LABELS[asset.condition] ?? asset.condition}
+                        />
+                      </td>
+                      <td className="px-6 py-3.5 text-right">
+                        <Link
+                          href={`/assets/${asset.id}`}
+                          className="text-xs text-eec-primary hover:underline font-semibold"
+                        >
+                          View Details &rarr;
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Confirmation Modal for Activate/Deactivate */}

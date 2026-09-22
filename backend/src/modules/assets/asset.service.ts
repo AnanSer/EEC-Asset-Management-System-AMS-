@@ -36,6 +36,17 @@ export class AssetService {
       purchasePrice: asset.purchasePrice ? Number(asset.purchasePrice) : null,
       warrantyExpiry: asset.warrantyExpiry,
       notes: asset.notes,
+      currentAssignment: asset.assignments?.[0]
+        ? {
+            id: asset.assignments[0].id,
+            employeeId: asset.assignments[0].employee?.id,
+            employeeBadgeId: asset.assignments[0].employee?.employeeId,
+            employeeName: `${asset.assignments[0].employee?.firstName} ${asset.assignments[0].employee?.lastName}`.trim(),
+            departmentName: asset.assignments[0].employee?.department?.name || null,
+            assignedDate: asset.assignments[0].assignedDate,
+            remarks: asset.assignments[0].notes,
+          }
+        : null,
       createdAt: asset.createdAt,
       updatedAt: asset.updatedAt,
       _count: asset._count,
