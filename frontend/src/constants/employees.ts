@@ -25,7 +25,7 @@ export interface Employee {
   department?: EmployeeDepartment;
   officeLocation?: string | null;
   role: Role | string;
-  accountStatus: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'PENDING_VERIFICATION' | 'PENDING';
+  accountStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPENDED';
   isActive: boolean;
   isEmailVerified: boolean;
   createdAt: string;

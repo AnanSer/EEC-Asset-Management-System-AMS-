@@ -27,10 +27,7 @@ export class EmployeeRepository {
     }
 
     if (typeof isActive === 'boolean') {
-      where.user = {
-        ...where.user,
-        status: isActive ? AccountStatus.ACTIVE : { not: AccountStatus.ACTIVE },
-      };
+      where.isActive = isActive;
     }
 
     if (search && search.trim() !== '') {
@@ -133,7 +130,7 @@ export class EmployeeRepository {
         data: {
           email: data.email,
           role: data.role as UserRole,
-          status: AccountStatus.PENDING_VERIFICATION,
+          status: AccountStatus.PENDING,
           isEmailVerified: false,
           passwordHash: '$2b$10$placeholder.for.future.auth.module',
         },
@@ -150,6 +147,7 @@ export class EmployeeRepository {
           jobTitle: data.position,
           departmentId: data.departmentId,
           officeLocation: data.officeLocation,
+          isActive: true,
         },
         include: {
           user: {
@@ -233,15 +231,29 @@ export class EmployeeRepository {
     });
   }
 
-  async updateStatus(id: string, userId: string, isActive: boolean) {
-    const newStatus = isActive ? AccountStatus.ACTIVE : AccountStatus.INACTIVE;
-
-    await prisma.user.update({
-      where: { id: userId },
-      data: { status: newStatus },
+  async updateStatus(id: string, isActive: boolean) {
+    return prisma.employeeProfile.update({
+      where: { id },
+      data: { isActive },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            role: true,
+            status: true,
+            isEmailVerified: true,
+            createdAt: true,
+          },
+        },
+        department: true,
+        _count: {
+          select: {
+            assetAssignments: true,
+          },
+        },
+      },
     });
-
-    return this.findById(id);
   }
 }
 

@@ -20,10 +20,7 @@ class EmployeeRepository {
             };
         }
         if (typeof isActive === 'boolean') {
-            where.user = {
-                ...where.user,
-                status: isActive ? client_1.AccountStatus.ACTIVE : { not: client_1.AccountStatus.ACTIVE },
-            };
+            where.isActive = isActive;
         }
         if (search && search.trim() !== '') {
             const term = search.trim();
@@ -118,7 +115,7 @@ class EmployeeRepository {
                 data: {
                     email: data.email,
                     role: data.role,
-                    status: client_1.AccountStatus.PENDING_VERIFICATION,
+                    status: client_1.AccountStatus.PENDING,
                     isEmailVerified: false,
                     passwordHash: '$2b$10$placeholder.for.future.auth.module',
                 },
@@ -134,6 +131,7 @@ class EmployeeRepository {
                     jobTitle: data.position,
                     departmentId: data.departmentId,
                     officeLocation: data.officeLocation,
+                    isActive: true,
                 },
                 include: {
                     user: {
@@ -210,13 +208,29 @@ class EmployeeRepository {
             return updated;
         });
     }
-    async updateStatus(id, userId, isActive) {
-        const newStatus = isActive ? client_1.AccountStatus.ACTIVE : client_1.AccountStatus.INACTIVE;
-        await prisma_1.default.user.update({
-            where: { id: userId },
-            data: { status: newStatus },
+    async updateStatus(id, isActive) {
+        return prisma_1.default.employeeProfile.update({
+            where: { id },
+            data: { isActive },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        email: true,
+                        role: true,
+                        status: true,
+                        isEmailVerified: true,
+                        createdAt: true,
+                    },
+                },
+                department: true,
+                _count: {
+                    select: {
+                        assetAssignments: true,
+                    },
+                },
+            },
         });
-        return this.findById(id);
     }
 }
 exports.EmployeeRepository = EmployeeRepository;

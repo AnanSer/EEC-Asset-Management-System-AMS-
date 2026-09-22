@@ -151,7 +151,7 @@ async function main() {
     {
       email: 'admin@eec.gov.et',
       password: 'Admin@EEC2026!',
-      role: UserRole.SUPER_ADMIN,
+      role: UserRole.ADMIN,
       profile: {
         employeeId: 'EEC-EMP-001',
         firstName: 'Tadesse',
@@ -193,7 +193,7 @@ async function main() {
     {
       email: 'selamawit.girma@eec.gov.et',
       password: 'Employee@EEC2026!',
-      role: UserRole.MANAGER,
+      role: UserRole.DEPARTMENT_MANAGER,
       profile: {
         employeeId: 'EEC-EMP-004',
         firstName: 'Selamawit',
@@ -207,7 +207,7 @@ async function main() {
     {
       email: 'ermias.assefa@eec.gov.et',
       password: 'Employee@EEC2026!',
-      role: UserRole.EMPLOYEE,
+      role: UserRole.IT_TECHNICIAN,
       profile: {
         employeeId: 'EEC-EMP-005',
         firstName: 'Ermias',
@@ -243,7 +243,7 @@ async function main() {
         email: item.email,
         passwordHash: hashPassword(item.password),
         role: item.role,
-        status: AccountStatus.ACTIVE,
+        status: AccountStatus.APPROVED,
         isEmailVerified: true,
       },
     });
@@ -259,6 +259,7 @@ async function main() {
         jobTitle: item.profile.jobTitle,
         departmentId: createdDepartments[item.profile.departmentCode].id,
         officeLocation: item.profile.officeLocation,
+        isActive: true,
       },
     });
     createdProfiles[item.profile.employeeId] = profile;

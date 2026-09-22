@@ -58,7 +58,6 @@ export default function EmployeeDetailsPage() {
             ? {
                 ...prev,
                 isActive: newStatus,
-                accountStatus: newStatus ? 'ACTIVE' : 'INACTIVE',
               }
             : null
         );

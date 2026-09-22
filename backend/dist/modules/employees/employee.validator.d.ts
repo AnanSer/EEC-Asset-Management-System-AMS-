@@ -1,10 +1,9 @@
 import { z } from 'zod';
 export declare const userRoleEnum: z.ZodEnum<{
     ADMIN: "ADMIN";
+    DEPARTMENT_MANAGER: "DEPARTMENT_MANAGER";
     EMPLOYEE: "EMPLOYEE";
-    MANAGER: "MANAGER";
-    SUPER_ADMIN: "SUPER_ADMIN";
-    VIEWER: "VIEWER";
+    IT_TECHNICIAN: "IT_TECHNICIAN";
 }>;
 export declare const createEmployeeSchema: z.ZodObject<{
     fullName: z.ZodString;
@@ -15,10 +14,9 @@ export declare const createEmployeeSchema: z.ZodObject<{
     departmentId: z.ZodString;
     role: z.ZodDefault<z.ZodEnum<{
         ADMIN: "ADMIN";
+        DEPARTMENT_MANAGER: "DEPARTMENT_MANAGER";
         EMPLOYEE: "EMPLOYEE";
-        MANAGER: "MANAGER";
-        SUPER_ADMIN: "SUPER_ADMIN";
-        VIEWER: "VIEWER";
+        IT_TECHNICIAN: "IT_TECHNICIAN";
     }>>;
     officeLocation: z.ZodNullable<z.ZodOptional<z.ZodString>>;
 }, z.core.$strip>;
@@ -31,10 +29,9 @@ export declare const updateEmployeeSchema: z.ZodObject<{
     departmentId: z.ZodOptional<z.ZodString>;
     role: z.ZodOptional<z.ZodEnum<{
         ADMIN: "ADMIN";
+        DEPARTMENT_MANAGER: "DEPARTMENT_MANAGER";
         EMPLOYEE: "EMPLOYEE";
-        MANAGER: "MANAGER";
-        SUPER_ADMIN: "SUPER_ADMIN";
-        VIEWER: "VIEWER";
+        IT_TECHNICIAN: "IT_TECHNICIAN";
     }>>;
     officeLocation: z.ZodNullable<z.ZodOptional<z.ZodString>>;
 }, z.core.$strip>;

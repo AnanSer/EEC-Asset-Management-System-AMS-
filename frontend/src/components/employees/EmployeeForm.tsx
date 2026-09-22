@@ -34,7 +34,7 @@ export const employeeFormSchema = z.object({
     .min(2, 'Position title must be at least 2 characters')
     .max(100, 'Position title cannot exceed 100 characters'),
   departmentId: z.string().min(1, 'Please select an organizational department'),
-  role: z.enum(['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EMPLOYEE', 'VIEWER']),
+  role: z.enum(['ADMIN', 'IT_TECHNICIAN', 'DEPARTMENT_MANAGER', 'EMPLOYEE']),
   officeLocation: z.string().trim().max(100).optional().nullable(),
 });
 
@@ -311,11 +311,10 @@ export default function EmployeeForm({
                 {...register('role')}
                 className="w-full pl-9 pr-3.5 py-2.5 rounded-lg border border-slate-300 focus:border-eec-accent text-sm bg-white focus:outline-none focus:ring-2 focus:ring-eec-accent/40"
               >
-                <option value="EMPLOYEE">Employee (Standard User)</option>
-                <option value="MANAGER">Manager (Department Approver)</option>
+                <option value="EMPLOYEE">Employee</option>
+                <option value="DEPARTMENT_MANAGER">Department Manager</option>
+                <option value="IT_TECHNICIAN">IT Technician</option>
                 <option value="ADMIN">Administrator</option>
-                <option value="SUPER_ADMIN">Super Administrator</option>
-                <option value="VIEWER">Viewer (Read-only)</option>
               </select>
             </div>
             {errors.role && (

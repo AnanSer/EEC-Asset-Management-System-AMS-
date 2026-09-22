@@ -24,14 +24,13 @@ export default function EmployeeTable({
 }: EmployeeTableProps) {
   const getRoleBadgeClasses = (role: string) => {
     switch (role) {
-      case 'SUPER_ADMIN':
-        return 'bg-purple-50 text-purple-700 ring-purple-200';
       case 'ADMIN':
+        return 'bg-purple-50 text-purple-700 ring-purple-200';
+      case 'IT_TECHNICIAN':
         return 'bg-blue-50 text-blue-700 ring-blue-200';
-      case 'MANAGER':
+      case 'DEPARTMENT_MANAGER':
         return 'bg-teal-50 text-teal-700 ring-teal-200';
-      case 'VIEWER':
-        return 'bg-amber-50 text-amber-700 ring-amber-200';
+      case 'EMPLOYEE':
       default:
         return 'bg-slate-100 text-slate-700 ring-slate-200';
     }
@@ -39,20 +38,21 @@ export default function EmployeeTable({
 
   const getAccountStatusVariant = (status: string) => {
     switch (status) {
-      case 'ACTIVE':
-        return 'active';
-      case 'PENDING_VERIFICATION':
+      case 'APPROVED':
+        return 'approved';
       case 'PENDING':
         return 'pending';
+      case 'REJECTED':
+        return 'rejected';
       case 'SUSPENDED':
-        return 'retired';
+        return 'suspended';
       default:
-        return 'inactive';
+        return 'pending';
     }
   };
 
   const formatAccountStatusLabel = (status: string) => {
-    if (status === 'PENDING_VERIFICATION') return 'Pending';
+    if (!status) return 'Pending';
     return status.charAt(0) + status.slice(1).toLowerCase();
   };
 
@@ -133,7 +133,7 @@ export default function EmployeeTable({
                     emp.role
                   )}`}
                 >
-                  {emp.role.replace('_', ' ')}
+                  {emp.role.replace(/_/g, ' ')}
                 </span>
               </td>
 

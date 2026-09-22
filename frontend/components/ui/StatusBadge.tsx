@@ -4,13 +4,17 @@ type StatusVariant =
   | 'active'
   | 'inactive'
   | 'pending'
+  | 'approved'
+  | 'rejected'
+  | 'suspended'
   | 'assigned'
   | 'maintenance'
   | 'testing'
   | 'retired'
   | 'available'
   | 'ACTIVE'
-  | 'INACTIVE';
+  | 'INACTIVE'
+  | string;
 
 interface StatusBadgeProps {
   status: StatusVariant;
@@ -19,8 +23,11 @@ interface StatusBadgeProps {
 
 const baseVariantMap: Record<string, { classes: string; dot: string; defaultLabel: string }> = {
   active:      { classes: 'bg-emerald-50 text-emerald-700 ring-emerald-200',   dot: 'bg-emerald-500', defaultLabel: 'Active'      },
+  approved:    { classes: 'bg-emerald-50 text-emerald-700 ring-emerald-200',   dot: 'bg-emerald-500', defaultLabel: 'Approved'    },
   inactive:    { classes: 'bg-slate-100  text-slate-600   ring-slate-200',     dot: 'bg-slate-400',   defaultLabel: 'Inactive'    },
   pending:     { classes: 'bg-amber-50   text-amber-700   ring-amber-200',     dot: 'bg-amber-500',   defaultLabel: 'Pending'     },
+  rejected:    { classes: 'bg-rose-50    text-rose-700    ring-rose-200',      dot: 'bg-rose-500',    defaultLabel: 'Rejected'    },
+  suspended:   { classes: 'bg-red-50     text-red-700     ring-red-200',       dot: 'bg-red-500',     defaultLabel: 'Suspended'   },
   assigned:    { classes: 'bg-blue-50    text-blue-700    ring-blue-200',      dot: 'bg-blue-500',    defaultLabel: 'Assigned'    },
   maintenance: { classes: 'bg-orange-50  text-orange-700  ring-orange-200',    dot: 'bg-orange-500',  defaultLabel: 'Maintenance' },
   testing:     { classes: 'bg-purple-50  text-purple-700  ring-purple-200',    dot: 'bg-purple-500',  defaultLabel: 'Testing'     },

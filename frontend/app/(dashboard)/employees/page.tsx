@@ -125,7 +125,7 @@ export default function EmployeesPage() {
       if (res.success) {
         toast.success(`Employee '${emp.fullName}' ${newStatus ? 'activated' : 'deactivated'} successfully`);
         setEmployees((prev) =>
-          prev.map((e) => (e.id === emp.id ? { ...e, isActive: newStatus, accountStatus: newStatus ? 'ACTIVE' : 'INACTIVE' } : e))
+          prev.map((e) => (e.id === emp.id ? { ...e, isActive: newStatus } : e))
         );
         setStatusModal({ open: false, employee: null, isUpdating: false });
       }
@@ -224,11 +224,10 @@ export default function EmployeesPage() {
             className="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-medium text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-eec-accent/40"
           >
             <option value="all">All Roles</option>
-            <option value="EMPLOYEE">Employee</option>
-            <option value="MANAGER">Manager</option>
             <option value="ADMIN">Admin</option>
-            <option value="SUPER_ADMIN">Super Admin</option>
-            <option value="VIEWER">Viewer</option>
+            <option value="IT_TECHNICIAN">IT Technician</option>
+            <option value="DEPARTMENT_MANAGER">Department Manager</option>
+            <option value="EMPLOYEE">Employee</option>
           </select>
 
           {/* Status Tabs */}

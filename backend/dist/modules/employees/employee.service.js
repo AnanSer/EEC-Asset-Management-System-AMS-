@@ -37,7 +37,7 @@ class EmployeeService {
             officeLocation: profile.officeLocation || profile.department?.officeLocation || null,
             role: profile.user?.role,
             accountStatus: profile.user?.status,
-            isActive: profile.user?.status === 'ACTIVE',
+            isActive: Boolean(profile.isActive),
             isEmailVerified: Boolean(profile.user?.isEmailVerified),
             createdAt: profile.createdAt,
             updatedAt: profile.updatedAt,
@@ -138,7 +138,7 @@ class EmployeeService {
         if (!current) {
             throw new AppError(`Employee with ID '${id}' not found`, 404);
         }
-        const updated = await this.repo.updateStatus(id, current.userId, isActive);
+        const updated = await this.repo.updateStatus(id, isActive);
         return this.formatEmployee(updated);
     }
 }

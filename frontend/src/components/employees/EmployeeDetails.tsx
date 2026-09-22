@@ -37,21 +37,22 @@ export default function EmployeeDetails({
   };
 
   const formatAccountStatusLabel = (status: string) => {
-    if (status === 'PENDING_VERIFICATION') return 'Pending Verification';
+    if (!status) return 'Pending';
     return status.charAt(0) + status.slice(1).toLowerCase();
   };
 
   const getAccountStatusVariant = (status: string) => {
     switch (status) {
-      case 'ACTIVE':
-        return 'active';
-      case 'PENDING_VERIFICATION':
+      case 'APPROVED':
+        return 'approved';
       case 'PENDING':
         return 'pending';
+      case 'REJECTED':
+        return 'rejected';
       case 'SUSPENDED':
-        return 'retired';
+        return 'suspended';
       default:
-        return 'inactive';
+        return 'pending';
     }
   };
 
@@ -74,6 +75,10 @@ export default function EmployeeDetails({
                 {employee.employeeId}
               </span>
               <StatusBadge status={employee.isActive ? 'active' : 'inactive'} />
+              <StatusBadge
+                status={getAccountStatusVariant(employee.accountStatus)}
+                label={`Account: ${formatAccountStatusLabel(employee.accountStatus)}`}
+              />
             </div>
             <p className="text-sm text-slate-500 mt-1 flex items-center gap-2">
               <Briefcase className="w-4 h-4 text-slate-400" />
@@ -249,6 +254,10 @@ export default function EmployeeDetails({
               <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 ring-1 ring-inset ring-slate-200">
                 {formatRoleLabel(employee.role)}
               </span>
+            </div>
+            <div>
+              <span className="text-slate-400 block mb-1">Active Status</span>
+              <StatusBadge status={employee.isActive ? 'active' : 'inactive'} />
             </div>
             <div>
               <span className="text-slate-400 block mb-1">Account Status</span>

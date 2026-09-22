@@ -39,6 +39,7 @@ export declare class EmployeeRepository {
             jobTitle: string;
             departmentId: string;
             officeLocation: string | null;
+            isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
         })[];
@@ -80,6 +81,7 @@ export declare class EmployeeRepository {
         jobTitle: string;
         departmentId: string;
         officeLocation: string | null;
+        isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
     }) | null>;
@@ -93,6 +95,7 @@ export declare class EmployeeRepository {
         jobTitle: string;
         departmentId: string;
         officeLocation: string | null;
+        isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
     } | null>;
@@ -143,6 +146,7 @@ export declare class EmployeeRepository {
         jobTitle: string;
         departmentId: string;
         officeLocation: string | null;
+        isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
     }>;
@@ -182,10 +186,11 @@ export declare class EmployeeRepository {
         jobTitle: string;
         departmentId: string;
         officeLocation: string | null;
+        isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
     }>;
-    updateStatus(id: string, userId: string, isActive: boolean): Promise<({
+    updateStatus(id: string, isActive: boolean): Promise<{
         _count: {
             assetAssignments: number;
         };
@@ -221,9 +226,10 @@ export declare class EmployeeRepository {
         jobTitle: string;
         departmentId: string;
         officeLocation: string | null;
+        isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-    }) | null>;
+    }>;
 }
 export declare const employeeRepository: EmployeeRepository;
 //# sourceMappingURL=employee.repository.d.ts.map
