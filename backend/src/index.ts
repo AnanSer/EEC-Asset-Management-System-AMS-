@@ -1,5 +1,5 @@
 // EEC EAMS – Express Entry Point
-// Phase 9A: Better Auth handler mounted before body-parsing middleware.
+// Phase 9A & 9A.1: Better Auth & Authentication Middleware
 
 import express from 'express';
 import cors from 'cors';
@@ -7,19 +7,23 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { toNodeHandler } from 'better-auth/node';
 import { auth } from './lib/auth';
+import { requireAuth } from './middleware/auth.middleware';
+
+import departmentRoutes from './modules/departments/department.routes';
+import employeeRoutes from './modules/employees/employee.routes';
+import assetRoutes from './modules/assets/asset.routes';
+import assignmentRoutes from './modules/asset-assignments/assignment.routes';
+import maintenanceRoutes from './modules/maintenance/maintenance.routes';
+import testingRoutes from './modules/testing/testing.routes';
+import searchRoutes from './modules/search/search.routes';
+import reportRoutes from './modules/reports/report.routes';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// ─── Better Auth Handler ─────────────────────────────────────────────────────
-// IMPORTANT: Must be mounted BEFORE express.json() / body-parsing middleware.
-// Better Auth reads the raw request body internally.
-// Express v5 wildcard syntax: /*splat
-app.all('/api/auth/*splat', toNodeHandler(auth));
-
-// ─── Middleware ───────────────────────────────────────────────────────────────
+// ─── Security & CORS Middleware ──────────────────────────────────────────────
 app.use(helmet({
   // Relax CSP for API-only backend
   contentSecurityPolicy: false,
@@ -30,6 +34,28 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
 }));
+
+// ─── Protected Verification Auth Endpoint (Phase 9A.1) ───────────────────────
+// Mounted before Better Auth wildcard handler so /api/auth/me is handled
+app.get('/api/auth/me', requireAuth, (req, res) => {
+  return res.status(200).json({
+    success: true,
+    data: {
+      userId: req.auth!.user.id,
+      email: req.auth!.user.email,
+      user: req.auth!.user,
+      session: req.auth!.session,
+    },
+  });
+});
+
+// ─── Better Auth Handler ─────────────────────────────────────────────────────
+// IMPORTANT: Must be mounted BEFORE express.json() so Better Auth gets raw body stream.
+// Express v5 wildcard syntax: /*splat
+app.all('/api/auth/*splat', toNodeHandler(auth));
+
+// ─── Body Parsing Middleware ─────────────────────────────────────────────────
+// Mounted after Better Auth handlers so it doesn't consume Better Auth's raw stream.
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -43,17 +69,7 @@ app.get('/health', (_req, res) => {
   });
 });
 
-import departmentRoutes from './modules/departments/department.routes';
-import employeeRoutes from './modules/employees/employee.routes';
-import assetRoutes from './modules/assets/asset.routes';
-import assignmentRoutes from './modules/asset-assignments/assignment.routes';
-import maintenanceRoutes from './modules/maintenance/maintenance.routes';
-import testingRoutes from './modules/testing/testing.routes';
-
-import searchRoutes from './modules/search/search.routes';
-import reportRoutes from './modules/reports/report.routes';
-
-// ─── Routes ──────────────────────────────────────────────────────────────────
+// ─── Business Routes ─────────────────────────────────────────────────────────
 app.use('/api/departments', departmentRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/assets', assetRoutes);
@@ -63,11 +79,10 @@ app.use('/api/testing', testingRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/reports', reportRoutes);
 
-// ─── Start Server ─────────────────────────────────────────────────────────────
+// ─── Start Server ────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`🚀 EEC EAMS API running on port ${PORT}`);
   console.log(`🔐 Better Auth ready at http://localhost:${PORT}/api/auth`);
 });
 
 export default app;
-
