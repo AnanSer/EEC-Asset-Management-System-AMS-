@@ -1,19 +1,35 @@
-// EEC EAMS – Express Entry Point (Phase 1 Skeleton)
-// No API logic yet – structure only
+// EEC EAMS – Express Entry Point
+// Phase 9A: Better Auth handler mounted before body-parsing middleware.
 
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
+import { toNodeHandler } from 'better-auth/node';
+import { auth } from './lib/auth';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// ─── Better Auth Handler ─────────────────────────────────────────────────────
+// IMPORTANT: Must be mounted BEFORE express.json() / body-parsing middleware.
+// Better Auth reads the raw request body internally.
+// Express v5 wildcard syntax: /*splat
+app.all('/api/auth/*splat', toNodeHandler(auth));
+
 // ─── Middleware ───────────────────────────────────────────────────────────────
-app.use(helmet());
-app.use(cors());
+app.use(helmet({
+  // Relax CSP for API-only backend
+  contentSecurityPolicy: false,
+}));
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -46,11 +62,12 @@ app.use('/api/maintenance', maintenanceRoutes);
 app.use('/api/testing', testingRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/reports', reportRoutes);
-// app.use('/api/notifications', notificationRoutes);
 
 // ─── Start Server ─────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`🚀 EEC EAMS API running on port ${PORT}`);
+  console.log(`🔐 Better Auth ready at http://localhost:${PORT}/api/auth`);
 });
 
 export default app;
+
