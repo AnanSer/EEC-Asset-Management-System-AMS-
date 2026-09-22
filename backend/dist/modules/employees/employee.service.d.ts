@@ -1,0 +1,134 @@
+import { EmployeeRepository } from './employee.repository';
+import { CreateEmployeeDTO, UpdateEmployeeDTO, EmployeeQueryDTO } from './employee.validator';
+export declare class AppError extends Error {
+    statusCode: number;
+    errors?: any;
+    constructor(message: string, statusCode?: number, errors?: any);
+}
+export declare class EmployeeService {
+    private repo;
+    constructor(repo?: EmployeeRepository);
+    private formatEmployee;
+    getEmployees(query: EmployeeQueryDTO): Promise<{
+        employees: ({
+            id: any;
+            userId: any;
+            employeeId: any;
+            firstName: any;
+            lastName: any;
+            fullName: string;
+            email: any;
+            phone: any;
+            position: any;
+            jobTitle: any;
+            departmentId: any;
+            department: any;
+            officeLocation: any;
+            role: any;
+            accountStatus: any;
+            isActive: boolean;
+            isEmailVerified: boolean;
+            createdAt: any;
+            updatedAt: any;
+            _count: any;
+        } | null)[];
+        meta: {
+            total: number;
+            page: number;
+            limit: number;
+            totalPages: number;
+            hasNextPage: boolean;
+            hasPrevPage: boolean;
+        };
+    }>;
+    getEmployeeById(id: string): Promise<{
+        id: any;
+        userId: any;
+        employeeId: any;
+        firstName: any;
+        lastName: any;
+        fullName: string;
+        email: any;
+        phone: any;
+        position: any;
+        jobTitle: any;
+        departmentId: any;
+        department: any;
+        officeLocation: any;
+        role: any;
+        accountStatus: any;
+        isActive: boolean;
+        isEmailVerified: boolean;
+        createdAt: any;
+        updatedAt: any;
+        _count: any;
+    } | null>;
+    createEmployee(data: CreateEmployeeDTO): Promise<{
+        id: any;
+        userId: any;
+        employeeId: any;
+        firstName: any;
+        lastName: any;
+        fullName: string;
+        email: any;
+        phone: any;
+        position: any;
+        jobTitle: any;
+        departmentId: any;
+        department: any;
+        officeLocation: any;
+        role: any;
+        accountStatus: any;
+        isActive: boolean;
+        isEmailVerified: boolean;
+        createdAt: any;
+        updatedAt: any;
+        _count: any;
+    } | null>;
+    updateEmployee(id: string, data: UpdateEmployeeDTO): Promise<{
+        id: any;
+        userId: any;
+        employeeId: any;
+        firstName: any;
+        lastName: any;
+        fullName: string;
+        email: any;
+        phone: any;
+        position: any;
+        jobTitle: any;
+        departmentId: any;
+        department: any;
+        officeLocation: any;
+        role: any;
+        accountStatus: any;
+        isActive: boolean;
+        isEmailVerified: boolean;
+        createdAt: any;
+        updatedAt: any;
+        _count: any;
+    } | null>;
+    updateStatus(id: string, isActive: boolean): Promise<{
+        id: any;
+        userId: any;
+        employeeId: any;
+        firstName: any;
+        lastName: any;
+        fullName: string;
+        email: any;
+        phone: any;
+        position: any;
+        jobTitle: any;
+        departmentId: any;
+        department: any;
+        officeLocation: any;
+        role: any;
+        accountStatus: any;
+        isActive: boolean;
+        isEmailVerified: boolean;
+        createdAt: any;
+        updatedAt: any;
+        _count: any;
+    } | null>;
+}
+export declare const employeeService: EmployeeService;
+//# sourceMappingURL=employee.service.d.ts.map

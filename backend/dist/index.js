@@ -27,11 +27,13 @@ app.get('/health', (_req, res) => {
     });
 });
 const department_routes_1 = __importDefault(require("./modules/departments/department.routes"));
+const employee_routes_1 = __importDefault(require("./modules/employees/employee.routes"));
 // ─── Routes ──────────────────────────────────────────────────────────────────
 app.use('/api/departments', department_routes_1.default);
+app.use('/api/employees', employee_routes_1.default);
 // ─── Future Routes ────────────────────────────────────────────────────────────
 // app.use('/api/assets', assetRoutes);
-// app.use('/api/employees', employeeRoutes);
+// app.use('/api/assignments', assignmentRoutes);
 // app.use('/api/assignments', assignmentRoutes);
 // app.use('/api/maintenance', maintenanceRoutes);
 // app.use('/api/testing', testingRoutes);
