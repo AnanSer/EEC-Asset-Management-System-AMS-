@@ -12,6 +12,9 @@ import {
   Power,
   FileText,
   UserCheck,
+  ClipboardList,
+  CheckCircle2,
+  Wrench,
 } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import StatusBadge from '@/components/ui/StatusBadge';
@@ -300,6 +303,44 @@ export default function DepartmentDetailsPage() {
               </span>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Department Asset Summary Cards */}
+      <div className="space-y-3">
+        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+          <Box className="w-4 h-4 text-eec-primary" />
+          Department Asset Summary
+        </h3>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard
+            title="Total Assets"
+            value={deptAssets.length}
+            subtitle="Allocated to department"
+            icon={Box}
+            color="primary"
+          />
+          <StatCard
+            title="Assigned Assets"
+            value={deptAssets.filter((a) => a.status === 'ASSIGNED').length}
+            subtitle="In personnel custody"
+            icon={ClipboardList}
+            color="accent"
+          />
+          <StatCard
+            title="Available Assets"
+            value={deptAssets.filter((a) => a.status === 'AVAILABLE').length}
+            subtitle="Ready for allocation"
+            icon={CheckCircle2}
+            color="success"
+          />
+          <StatCard
+            title="Under Maintenance"
+            value={deptAssets.filter((a) => a.status === 'MAINTENANCE').length}
+            subtitle="Undergoing service/repair"
+            icon={Wrench}
+            color="warning"
+          />
         </div>
       </div>
 

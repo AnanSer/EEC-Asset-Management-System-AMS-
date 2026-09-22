@@ -71,7 +71,9 @@ export class EmployeeRepository {
           },
           _count: {
             select: {
-              assetAssignments: true,
+              assetAssignments: {
+                where: { isCurrent: true },
+              },
             },
           },
         },
@@ -99,7 +101,9 @@ export class EmployeeRepository {
         department: true,
         _count: {
           select: {
-            assetAssignments: true,
+            assetAssignments: {
+              where: { isCurrent: true },
+            },
           },
         },
       },

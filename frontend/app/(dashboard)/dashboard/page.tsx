@@ -121,56 +121,74 @@ export default function DashboardPage() {
 
       {/* ── Middle Row ─────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* Recently Assigned Assets */}
+        {/* Recent Asset Assignments */}
         <div className="lg:col-span-2">
           <SectionCard
-            title="Recently Assigned Assets"
+            title="Recent Asset Assignments"
             icon={Clock}
             action={
               <Link
                 href="/assignments"
-                className="text-xs text-eec-primary hover:underline font-medium inline-flex items-center gap-1"
+                className="text-xs text-eec-primary hover:underline font-semibold inline-flex items-center gap-1"
               >
                 View all <ArrowRight className="w-3 h-3" />
               </Link>
             }
           >
             {stats && stats.recentAssignments.length > 0 ? (
-              <ul className="space-y-3">
-                {stats.recentAssignments.map((item) => (
-                  <li key={item.id} className="flex items-start gap-3 group">
-                    <div className="mt-0.5 w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0 group-hover:bg-eec-accent/10 transition-colors">
-                      <ClipboardList className="w-3.5 h-3.5 text-slate-500 group-hover:text-eec-accent transition-colors" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-eec-text leading-snug truncate">
-                        <Link
-                          href={`/assets/${item.assetId}`}
-                          className="font-semibold hover:text-eec-primary transition"
-                        >
-                          {item.asset?.assetCode}
-                        </Link>{' '}
-                        ({item.asset?.name}) assigned to{' '}
-                        <strong className="text-slate-700">
-                          {item.employee?.fullName || 'Staff Member'}
-                        </strong>
-                      </p>
-                      <p className="text-xs text-slate-400 mt-0.5">
-                        {new Date(item.assignedDate).toLocaleDateString('en-GB', {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric',
-                        })}{' '}
-                        · {item.employee?.department?.name || 'Unassigned Directorate'}
-                      </p>
-                    </div>
-                    <StatusBadge
-                      status={item.isCurrent ? 'assigned' : 'available'}
-                      label={item.isCurrent ? 'Active Custody' : 'Returned'}
-                    />
-                  </li>
-                ))}
-              </ul>
+              <div className="overflow-x-auto -mx-4 -mb-4 sm:mx-0 sm:mb-0">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-100 bg-slate-50/75 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                      <th className="py-2.5 px-3">Asset</th>
+                      <th className="py-2.5 px-3">Employee</th>
+                      <th className="py-2.5 px-3">Department</th>
+                      <th className="py-2.5 px-3 text-right">Assigned Date</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {stats.recentAssignments.slice(0, 5).map((item) => (
+                      <tr key={item.id} className="hover:bg-slate-50/70 transition-colors">
+                        <td className="py-2.5 px-3">
+                          <Link
+                            href={`/assets/${item.assetId}`}
+                            className="font-semibold text-eec-primary hover:underline block truncate max-w-[170px]"
+                          >
+                            {item.asset?.assetCode}
+                          </Link>
+                          <span className="text-[11px] text-slate-400 block truncate max-w-[170px]">
+                            {item.asset?.name}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3 font-medium text-slate-800">
+                          {item.employee ? (
+                            <Link
+                              href={`/employees/${item.employeeId}`}
+                              className="hover:text-eec-primary hover:underline block truncate max-w-[150px]"
+                            >
+                              {item.employee.fullName}
+                            </Link>
+                          ) : (
+                            <span className="text-slate-400 italic">Unassigned</span>
+                          )}
+                        </td>
+                        <td className="py-2.5 px-3 text-slate-600">
+                          <span className="truncate block max-w-[150px]">
+                            {item.employee?.department?.name || 'Unassigned Directorate'}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3 text-right text-slate-500 font-mono whitespace-nowrap">
+                          {new Date(item.assignedDate).toLocaleDateString('en-GB', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             ) : (
               <p className="text-xs text-slate-400 py-6 text-center italic">
                 No recent assignment events recorded yet.

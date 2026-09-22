@@ -33,6 +33,7 @@ import {
 } from '@/constants/assets';
 import TransferModal from '@/components/assignments/TransferModal';
 import ReturnModal from '@/components/assignments/ReturnModal';
+import AssignmentTimeline from '@/components/assignments/AssignmentTimeline';
 
 interface AssetDetailsProps {
   asset: Asset;
@@ -124,6 +125,7 @@ export default function AssetDetails({ asset, onRefresh }: AssetDetailsProps) {
 
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [showReturnModal, setShowReturnModal] = useState(false);
+  const [refreshTimelineTrigger, setRefreshTimelineTrigger] = useState(0);
 
   const currentAssignment = asset.currentAssignment;
   const isAssigned = asset.status === 'ASSIGNED' && Boolean(currentAssignment);
@@ -341,6 +343,12 @@ export default function AssetDetails({ asset, onRefresh }: AssetDetailsProps) {
         )}
       </div>
 
+      {/* Assignment Timeline Card */}
+      <AssignmentTimeline
+        assetId={asset.id}
+        refreshTrigger={refreshTimelineTrigger}
+      />
+
       {/* Detail Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* Asset Identity */}
@@ -401,6 +409,7 @@ export default function AssetDetails({ asset, onRefresh }: AssetDetailsProps) {
             currentEmployeeId: currentAssignment.employeeId,
           }}
           onSuccess={() => {
+            setRefreshTimelineTrigger((prev) => prev + 1);
             if (onRefresh) onRefresh();
           }}
         />
@@ -418,6 +427,7 @@ export default function AssetDetails({ asset, onRefresh }: AssetDetailsProps) {
             currentHolderName: currentAssignment.employeeName,
           }}
           onSuccess={() => {
+            setRefreshTimelineTrigger((prev) => prev + 1);
             if (onRefresh) onRefresh();
           }}
         />

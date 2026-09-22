@@ -69,6 +69,7 @@ export default function EmployeeTable({
             <th className="py-3.5 px-4 text-center">Role</th>
             <th className="py-3.5 px-4 text-center">Account Status</th>
             <th className="py-3.5 px-4 text-center">Active Status</th>
+            <th className="py-3.5 px-4 text-center">Assigned Assets</th>
             <th className="py-3.5 px-5 text-right">Actions</th>
           </tr>
         </thead>
@@ -148,6 +149,20 @@ export default function EmployeeTable({
               {/* Active Status */}
               <td className="py-3.5 px-4 text-center">
                 <StatusBadge status={emp.isActive ? 'active' : 'inactive'} />
+              </td>
+
+              {/* Assigned Assets */}
+              <td className="py-3.5 px-4 text-center">
+                <span
+                  className={`inline-flex items-center justify-center min-w-[24px] px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                    (emp._count?.assetAssignments ?? 0) > 0
+                      ? 'bg-eec-primary/10 text-eec-primary border border-eec-primary/20'
+                      : 'bg-slate-100 text-slate-500 border border-slate-200'
+                  }`}
+                  title={`${emp._count?.assetAssignments ?? 0} active asset(s) assigned`}
+                >
+                  {emp._count?.assetAssignments ?? 0}
+                </span>
               </td>
 
               {/* Actions */}
