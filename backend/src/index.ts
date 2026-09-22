@@ -34,6 +34,9 @@ import assignmentRoutes from './modules/asset-assignments/assignment.routes';
 import maintenanceRoutes from './modules/maintenance/maintenance.routes';
 import testingRoutes from './modules/testing/testing.routes';
 
+import searchRoutes from './modules/search/search.routes';
+import reportRoutes from './modules/reports/report.routes';
+
 // ─── Routes ──────────────────────────────────────────────────────────────────
 app.use('/api/departments', departmentRoutes);
 app.use('/api/employees', employeeRoutes);
@@ -41,7 +44,8 @@ app.use('/api/assets', assetRoutes);
 app.use('/api/assignments', assignmentRoutes);
 app.use('/api/maintenance', maintenanceRoutes);
 app.use('/api/testing', testingRoutes);
-// app.use('/api/reports', reportRoutes);
+app.use('/api/search', searchRoutes);
+app.use('/api/reports', reportRoutes);
 // app.use('/api/notifications', notificationRoutes);
 
 // ─── Start Server ─────────────────────────────────────────────────────────────

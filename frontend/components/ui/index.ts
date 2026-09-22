@@ -9,4 +9,5 @@ export { default as Breadcrumb } from './Breadcrumb';
 export type { BreadcrumbItem, BreadcrumbProps } from './Breadcrumb';
 export { default as ConfirmationModal } from './ConfirmationModal';
 export type { ConfirmationModalProps } from './ConfirmationModal';
+export { default as InfoCard } from './InfoCard';
 export { ToastProvider, useToast } from './Toast';

@@ -7,3 +7,4 @@ export { default as assignmentService }  from './assignment.service';
 export { default as maintenanceService } from './maintenance.service';
 export { default as testingService }     from './testing.service';
 export { default as reportService }      from './report.service';
+export { default as searchService }      from './search.service';

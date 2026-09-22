@@ -1,9 +1,10 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { Bell, Search } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import { navItems, bottomNavItems } from '@/lib/navigation';
 import clsx from 'clsx';
+import NavbarSearch from './NavbarSearch';
 
 interface NavbarProps {
   collapsed?: boolean; // reserved for Phase 2 responsive behavior
@@ -51,18 +52,8 @@ export default function Navbar(_: NavbarProps) {
 
         {/* ─── Right Controls ──────────────────────────────────────── */}
         <div className="flex items-center gap-3">
-          {/* Search Box (UI only) */}
-          <div className="relative hidden sm:block">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              size={15}
-            />
-            <input
-              type="text"
-              placeholder="Search assets, employees…"
-              className="pl-8 pr-4 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-lg w-56 focus:outline-none focus:ring-2 focus:ring-eec-accent/30 focus:border-eec-accent transition-all placeholder:text-slate-400"
-            />
-          </div>
+          {/* Global Search */}
+          <NavbarSearch />
 
           {/* Notification Bell */}
           <button
