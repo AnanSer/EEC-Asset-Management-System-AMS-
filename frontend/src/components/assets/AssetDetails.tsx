@@ -13,14 +13,14 @@ import {
   Shield,
   FileText,
   Edit2,
-  RefreshCw,
   Package,
   Wrench,
+  User,
+  Clock,
 } from 'lucide-react';
 import StatusBadge from '@/components/ui/StatusBadge';
 import {
   Asset,
-  AssetStatus,
   ASSET_CATEGORY_LABELS,
   ASSET_STATUS_LABELS,
   ASSET_CONDITION_LABELS,
@@ -28,8 +28,6 @@ import {
 
 interface AssetDetailsProps {
   asset: Asset;
-  onChangeStatus: () => void;
-  statusLoading?: boolean;
 }
 
 function InfoCard({
@@ -82,17 +80,20 @@ function formatDate(dateStr?: string | null) {
   }
 }
 
-const ALL_STATUSES: AssetStatus[] = [
-  'AVAILABLE', 'ASSIGNED', 'MAINTENANCE', 'TESTING', 'RETIRED', 'DISPOSED',
-];
+function warrantyLabel(warrantyExpiry?: string | null): { label: string; status: string } {
+  if (!warrantyExpiry) return { label: 'No Warranty', status: 'inactive' };
+  const expiry = new Date(warrantyExpiry);
+  const now = new Date();
+  const daysLeft = Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  if (daysLeft < 0) return { label: 'Expired', status: 'disposed' };
+  if (daysLeft < 90) return { label: `Expiring in ${daysLeft}d`, status: 'maintenance' };
+  return { label: `Valid until ${formatDate(warrantyExpiry)}`, status: 'available' };
+}
 
-export default function AssetDetails({
-  asset,
-  onChangeStatus,
-  statusLoading = false,
-}: AssetDetailsProps) {
+export default function AssetDetails({ asset }: AssetDetailsProps) {
   const assignmentsCount = asset._count?.assignments ?? 0;
   const maintenanceCount = asset._count?.maintenanceTickets ?? 0;
+  const warranty = warrantyLabel(asset.warrantyExpiry);
 
   return (
     <div className="space-y-6">
@@ -108,14 +109,6 @@ export default function AssetDetails({
               <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-eec-primary/10 text-eec-primary border border-eec-primary/20">
                 {asset.assetCode}
               </span>
-              <StatusBadge
-                status={asset.status.toLowerCase()}
-                label={ASSET_STATUS_LABELS[asset.status] ?? asset.status}
-              />
-              <StatusBadge
-                status={asset.condition.toLowerCase()}
-                label={`Condition: ${ASSET_CONDITION_LABELS[asset.condition] ?? asset.condition}`}
-              />
             </div>
             <p className="text-sm text-slate-500 mt-1">
               {[asset.brand, asset.model].filter(Boolean).join(' · ') || 'No brand / model specified'}
@@ -123,17 +116,8 @@ export default function AssetDetails({
           </div>
         </div>
 
-        {/* Action Buttons */}
+        {/* Edit Button only */}
         <div className="flex items-center gap-3 shrink-0">
-          <button
-            type="button"
-            onClick={onChangeStatus}
-            disabled={statusLoading}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={`w-4 h-4 ${statusLoading ? 'animate-spin' : ''}`} />
-            Change Status
-          </button>
           <Link
             href={`/assets/${asset.id}/edit`}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-eec-primary text-white text-sm font-medium hover:bg-eec-primary/90 transition-colors"
@@ -163,6 +147,53 @@ export default function AssetDetails({
             <p className="text-2xl font-bold text-eec-text">{maintenanceCount}</p>
             <p className="text-xs text-slate-500 font-medium">Maintenance Tickets</p>
           </div>
+        </div>
+      </div>
+
+      {/* Asset Status Card — read-only */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+        <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-4">Asset Status</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {/* Status */}
+          <div className="space-y-1.5">
+            <p className="text-xs text-slate-400 font-medium">Operational Status</p>
+            <StatusBadge
+              status={asset.status.toLowerCase()}
+              label={ASSET_STATUS_LABELS[asset.status] ?? asset.status}
+            />
+          </div>
+
+          {/* Condition */}
+          <div className="space-y-1.5">
+            <p className="text-xs text-slate-400 font-medium">Physical Condition</p>
+            <StatusBadge
+              status={asset.condition.toLowerCase()}
+              label={ASSET_CONDITION_LABELS[asset.condition] ?? asset.condition}
+            />
+          </div>
+
+          {/* Warranty */}
+          <div className="space-y-1.5">
+            <p className="text-xs text-slate-400 font-medium">Warranty</p>
+            <StatusBadge status={warranty.status} label={warranty.label} />
+          </div>
+
+          {/* Assigned Employee */}
+          <div className="space-y-1.5">
+            <p className="text-xs text-slate-400 font-medium">Assigned To</p>
+            <div className="flex items-center gap-1.5">
+              <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center">
+                <User className="w-3.5 h-3.5 text-slate-400" />
+              </div>
+              <span className="text-xs text-slate-400 italic">Not Assigned Yet</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Last Updated */}
+        <div className="mt-4 pt-4 border-t border-slate-100 flex items-center gap-1.5 text-xs text-slate-400">
+          <Clock className="w-3.5 h-3.5" />
+          Last updated: {formatDate(asset.updatedAt) ?? '—'}
         </div>
       </div>
 

@@ -5,10 +5,20 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2, Tag, Hash, Monitor, Building2, MapPin, DollarSign, Calendar, FileText } from 'lucide-react';
-import { Asset, CreateAssetInput, ASSET_CATEGORY_LABELS, ASSET_STATUS_LABELS, ASSET_CONDITION_LABELS } from '@/constants/assets';
+import { Loader2, Tag, Hash, Monitor, Building2, DollarSign, FileText, Lock } from 'lucide-react';
+import {
+  Asset,
+  CreateAssetInput,
+  ASSET_CATEGORY_LABELS,
+  ASSET_STATUS_LABELS,
+  ASSET_CONDITION_LABELS,
+} from '@/constants/assets';
+import StatusBadge from '@/components/ui/StatusBadge';
 import departmentService from '@/services/department.service';
 import { Department } from '@/constants/departments';
+
+// Statuses that are workflow-controlled (cannot be manually changed)
+const WORKFLOW_STATUSES = ['AVAILABLE', 'ASSIGNED', 'MAINTENANCE', 'TESTING'] as const;
 
 export const assetFormSchema = z.object({
   assetCode: z
@@ -33,7 +43,8 @@ export const assetFormSchema = z.object({
     .trim()
     .min(2, 'Serial number must be at least 2 characters')
     .max(100, 'Serial number cannot exceed 100 characters'),
-  status: z.enum(['AVAILABLE', 'ASSIGNED', 'MAINTENANCE', 'TESTING', 'RETIRED', 'DISPOSED'] as const),
+  // status only relevant on edit (RETIRED only)
+  status: z.enum(['AVAILABLE', 'ASSIGNED', 'MAINTENANCE', 'TESTING', 'RETIRED', 'DISPOSED'] as const).optional(),
   condition: z.enum(['EXCELLENT', 'GOOD', 'FAIR', 'NEEDS_REPAIR', 'DAMAGED', 'RETIRED'] as const),
   departmentId: z.string().optional().nullable(),
   location: z.string().trim().max(150).optional().nullable(),
@@ -56,6 +67,17 @@ function FieldError({ message }: { message?: string }) {
   return <p className="text-xs text-rose-600 mt-1">{message}</p>;
 }
 
+function ReadOnlyBadge({ label, status }: { label: string; status: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <StatusBadge status={status.toLowerCase()} label={label} />
+      <span className="text-xs text-slate-400 flex items-center gap-1">
+        <Lock className="w-3 h-3" /> Controlled by workflow
+      </span>
+    </div>
+  );
+}
+
 export default function AssetForm({
   initialData,
   onSubmit,
@@ -66,6 +88,16 @@ export default function AssetForm({
 
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loadingDepts, setLoadingDepts] = useState(false);
+
+  // Is the current status workflow-controlled? (cannot manually change it)
+  const currentStatus = initialData?.status ?? 'AVAILABLE';
+  const isWorkflowStatus = (WORKFLOW_STATUSES as readonly string[]).includes(currentStatus);
+
+  const [statusAction, setStatusAction] = useState<string>(
+    initialData?.status === 'RETIRED' || initialData?.status === 'DISPOSED'
+      ? initialData.status
+      : ''
+  );
 
   const {
     register,
@@ -111,13 +143,24 @@ export default function AssetForm({
     loadDepts();
   }, []);
 
-  const handleFormSubmit = handleSubmit(async (data) => {
-    await onSubmit({
-      ...data,
-      departmentId: data.departmentId || null,
-      purchaseDate: data.purchaseDate || null,
-      warrantyExpiry: data.warrantyExpiry || null,
-    } as unknown as CreateAssetInput);
+  const handleFormSubmit = handleSubmit(async (formData) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { status, ...rest } = formData;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const payload: any = {
+      ...rest,
+      departmentId: formData.departmentId || null,
+      purchaseDate: formData.purchaseDate || null,
+      warrantyExpiry: formData.warrantyExpiry || null,
+    };
+
+    if (isEdit) {
+      if (statusAction === 'RETIRED' || statusAction === 'DISPOSED') {
+        payload.status = statusAction;
+      }
+    }
+
+    await onSubmit(payload as unknown as CreateAssetInput);
   });
 
   const inputClass =
@@ -177,18 +220,55 @@ export default function AssetForm({
       {/* Section: Status & Condition */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
         <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-5 flex items-center gap-2">
-          <Monitor className="w-4 h-4" /> Status &amp; Condition
+          <Monitor className="w-4 h-4" /> {isEdit ? 'Status & Condition' : 'Condition'}
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div>
-            <label className={labelClass}>Status *</label>
-            <select {...register('status')} className={inputClass}>
-              {(Object.entries(ASSET_STATUS_LABELS) as [string, string][]).map(([val, label]) => (
-                <option key={val} value={val}>{label}</option>
-              ))}
-            </select>
-            <FieldError message={errors.status?.message} />
-          </div>
+        <div className={`grid grid-cols-1 ${isEdit ? 'md:grid-cols-2' : ''} gap-5`}>
+          {/* Status — completely hidden on create; read-only badge + RETIRED option on edit */}
+          {isEdit && (
+            <div>
+              <label className={labelClass}>Status</label>
+              {isWorkflowStatus ? (
+                <div className="space-y-3">
+                  <div className="px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-between">
+                    <ReadOnlyBadge
+                      status={currentStatus}
+                      label={ASSET_STATUS_LABELS[currentStatus as keyof typeof ASSET_STATUS_LABELS] ?? currentStatus}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-500 mb-1 block">Change Status</label>
+                    <select
+                      value={statusAction}
+                      onChange={(e) => setStatusAction(e.target.value)}
+                      className={inputClass}
+                    >
+                      <option value="">Keep current status ({ASSET_STATUS_LABELS[currentStatus as keyof typeof ASSET_STATUS_LABELS] ?? currentStatus})</option>
+                      <option value="RETIRED">Retire Asset</option>
+                    </select>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Operational statuses are workflow-controlled. Only retiring an asset is permitted here.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <select
+                    value={statusAction}
+                    onChange={(e) => setStatusAction(e.target.value)}
+                    className={inputClass}
+                  >
+                    <option value="RETIRED">Retired</option>
+                    <option value="DISPOSED">Disposed</option>
+                  </select>
+                  <p className="text-xs text-slate-400">
+                    This asset has been decommissioned from operational workflow.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Condition — always editable */}
           <div>
             <label className={labelClass}>Condition *</label>
             <select {...register('condition')} className={inputClass}>

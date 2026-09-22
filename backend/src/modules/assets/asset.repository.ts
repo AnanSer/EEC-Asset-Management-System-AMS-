@@ -91,7 +91,7 @@ export class AssetRepository {
     return prisma.asset.findUnique({ where: { serialNumber } });
   }
 
-  async create(data: CreateAssetDTO) {
+  async create(data: CreateAssetDTO & { status?: AssetStatus }) {
     return prisma.asset.create({
       data: {
         assetCode: data.assetCode,

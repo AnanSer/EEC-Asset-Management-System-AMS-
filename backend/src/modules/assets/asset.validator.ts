@@ -13,6 +13,9 @@ export const assetConditionEnum = z.enum([
   'EXCELLENT', 'GOOD', 'FAIR', 'NEEDS_REPAIR', 'DAMAGED', 'RETIRED',
 ]);
 
+// Statuses controlled exclusively by workflow (assignment, maintenance, testing)
+export const WORKFLOW_CONTROLLED_STATUSES = ['AVAILABLE', 'ASSIGNED', 'MAINTENANCE', 'TESTING'] as const;
+
 export const createAssetSchema = z.object({
   assetCode: z
     .string()
@@ -34,7 +37,7 @@ export const createAssetSchema = z.object({
     .trim()
     .min(2, 'Serial number must be at least 2 characters')
     .max(100, 'Serial number cannot exceed 100 characters'),
-  status: assetStatusEnum.default('AVAILABLE'),
+  // status is intentionally omitted — always defaults to AVAILABLE on create
   condition: assetConditionEnum.default('GOOD'),
   departmentId: z.string().uuid('Invalid department ID').optional().nullable(),
   location: z.string().trim().max(150).optional().nullable(),
@@ -58,7 +61,8 @@ export const updateAssetSchema = z.object({
   brand: z.string().trim().max(100).optional().nullable(),
   model: z.string().trim().max(100).optional().nullable(),
   serialNumber: z.string().trim().min(2).max(100).optional(),
-  status: assetStatusEnum.optional(),
+  // Only RETIRED and DISPOSED are manually settable via PUT
+  status: z.enum(['RETIRED', 'DISPOSED']).optional(),
   condition: assetConditionEnum.optional(),
   departmentId: z.string().uuid('Invalid department ID').optional().nullable(),
   location: z.string().trim().max(150).optional().nullable(),
@@ -68,8 +72,9 @@ export const updateAssetSchema = z.object({
   notes: z.string().trim().max(1000).optional().nullable(),
 });
 
+// PATCH /api/assets/:id/status — only RETIRED and DISPOSED are manually settable
 export const updateAssetStatusSchema = z.object({
-  status: assetStatusEnum,
+  status: z.enum(['RETIRED', 'DISPOSED']),
 });
 
 export const assetQuerySchema = z.object({

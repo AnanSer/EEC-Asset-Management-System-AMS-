@@ -1,6 +1,6 @@
 import prisma from '../../lib/prisma';
 import { assetRepository, AssetRepository } from './asset.repository';
-import { CreateAssetDTO, UpdateAssetDTO, AssetQueryDTO } from './asset.validator';
+import { CreateAssetDTO, UpdateAssetDTO, AssetQueryDTO, WORKFLOW_CONTROLLED_STATUSES } from './asset.validator';
 import { AssetStatus } from '@prisma/client';
 
 export class AppError extends Error {
@@ -101,7 +101,8 @@ export class AssetService {
       }
     }
 
-    const created = await this.repo.create(data);
+    // Always create assets as AVAILABLE — status is workflow-controlled
+    const created = await this.repo.create({ ...data, status: 'AVAILABLE' } as any);
     return this.formatAsset(created);
   }
 
@@ -135,6 +136,14 @@ export class AssetService {
       }
     }
 
+    // Guard: block setting workflow-controlled statuses through PUT
+    if (data.status && (WORKFLOW_CONTROLLED_STATUSES as readonly string[]).includes(data.status)) {
+      throw new AppError(
+        `Status '${data.status}' is controlled by the workflow and cannot be set manually. Use asset assignment or maintenance modules.`,
+        422,
+      );
+    }
+
     const updated = await this.repo.update(id, data);
     return this.formatAsset(updated);
   }
@@ -143,6 +152,14 @@ export class AssetService {
     const current = await this.repo.findById(id);
     if (!current) {
       throw new AppError(`Asset with ID '${id}' not found`, 404);
+    }
+
+    // Only RETIRED and DISPOSED are manually settable
+    if ((WORKFLOW_CONTROLLED_STATUSES as readonly string[]).includes(status)) {
+      throw new AppError(
+        `Status '${status}' is controlled by the workflow and cannot be set manually.`,
+        422,
+      );
     }
 
     const updated = await this.repo.updateStatus(id, status as AssetStatus);

@@ -6,7 +6,6 @@ import PageHeader from '@/components/ui/PageHeader';
 import SearchInput from '@/components/ui/SearchInput';
 import EmptyState from '@/components/ui/EmptyState';
 import LoadingSkeleton, { TableSkeleton } from '@/components/ui/LoadingSkeleton';
-import ConfirmationModal from '@/components/ui/ConfirmationModal';
 import { useToast } from '@/components/ui/Toast';
 import assetService from '@/services/asset.service';
 import departmentService from '@/services/department.service';
@@ -33,14 +32,6 @@ export default function AssetsPage() {
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
-
-  // Status change modal
-  const [statusModal, setStatusModal] = useState<{
-    open: boolean;
-    asset: Asset | null;
-    newStatus: string;
-    isUpdating: boolean;
-  }>({ open: false, asset: null, newStatus: '', isUpdating: false });
 
   // Load departments for filter
   useEffect(() => {
@@ -81,30 +72,6 @@ export default function AssetsPage() {
     setStatusFilter('all');
     setDepartmentFilter('all');
     setPage(1);
-  };
-
-  const handleChangeStatus = (asset: Asset) => {
-    // Cycle to next status or prompt
-    const nextStatus = asset.status === 'AVAILABLE' ? 'RETIRED' : 'AVAILABLE';
-    setStatusModal({ open: true, asset, newStatus: nextStatus, isUpdating: false });
-  };
-
-  const confirmStatusChange = async () => {
-    if (!statusModal.asset) return;
-    const { asset, newStatus } = statusModal;
-    try {
-      setStatusModal((prev) => ({ ...prev, isUpdating: true }));
-      const res = await assetService.updateStatus(asset.id, newStatus);
-      if (res.success) {
-        toast.success(`Asset '${asset.name}' status updated to '${ASSET_STATUS_LABELS[newStatus as keyof typeof ASSET_STATUS_LABELS] ?? newStatus}'`);
-        setAssets((prev) => prev.map((a) => a.id === asset.id ? { ...a, status: newStatus as Asset['status'] } : a));
-        setStatusModal({ open: false, asset: null, newStatus: '', isUpdating: false });
-      }
-    } catch (err: unknown) {
-      const msg = (err as any)?.response?.data?.message || 'Failed to update status';
-      toast.error(msg);
-      setStatusModal((prev) => ({ ...prev, isUpdating: false }));
-    }
   };
 
   const isInitialLoad = loading && assets.length === 0 && !search && categoryFilter === 'all' && statusFilter === 'all' && departmentFilter === 'all';
@@ -192,7 +159,7 @@ export default function AssetsPage() {
       {/* Table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         {loading ? (
-          <TableSkeleton rows={6} cols={7} />
+          <TableSkeleton rows={6} cols={6} />
         ) : assets.length === 0 ? (
           <div className="p-8">
             <EmptyState
@@ -204,7 +171,7 @@ export default function AssetsPage() {
           </div>
         ) : (
           <>
-            <AssetTable assets={assets} onChangeStatus={handleChangeStatus} />
+            <AssetTable assets={assets} />
 
             {/* Pagination */}
             {meta.totalPages > 1 && (
@@ -234,19 +201,6 @@ export default function AssetsPage() {
           </>
         )}
       </div>
-
-      {/* Status Change Modal */}
-      <ConfirmationModal
-        isOpen={statusModal.open && Boolean(statusModal.asset)}
-        onClose={() => setStatusModal({ open: false, asset: null, newStatus: '', isUpdating: false })}
-        onConfirm={confirmStatusChange}
-        title="Change Asset Status?"
-        message={`Change '${statusModal.asset?.name}' status to '${ASSET_STATUS_LABELS[statusModal.newStatus as keyof typeof ASSET_STATUS_LABELS] ?? statusModal.newStatus}'?`}
-        confirmLabel="Confirm"
-        cancelLabel="Cancel"
-        variant="warning"
-        isLoading={statusModal.isUpdating}
-      />
     </div>
   );
 }

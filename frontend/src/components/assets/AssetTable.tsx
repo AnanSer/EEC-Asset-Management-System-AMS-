@@ -2,16 +2,15 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Eye, Power, Tag, Hash } from 'lucide-react';
+import { Eye, Tag, Hash } from 'lucide-react';
 import StatusBadge from '@/components/ui/StatusBadge';
 import { Asset, ASSET_CATEGORY_LABELS, ASSET_STATUS_LABELS, ASSET_CONDITION_LABELS } from '@/constants/assets';
 
 interface AssetTableProps {
   assets: Asset[];
-  onChangeStatus: (asset: Asset) => void;
 }
 
-export default function AssetTable({ assets, onChangeStatus }: AssetTableProps) {
+export default function AssetTable({ assets }: AssetTableProps) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
@@ -65,7 +64,7 @@ export default function AssetTable({ assets, onChangeStatus }: AssetTableProps) 
                 <p className="text-xs text-slate-400">{asset.location ?? asset.department?.officeLocation ?? ''}</p>
               </td>
 
-              {/* Status */}
+              {/* Status — read-only badge */}
               <td className="px-4 py-3">
                 <StatusBadge
                   status={asset.status.toLowerCase()}
@@ -73,7 +72,7 @@ export default function AssetTable({ assets, onChangeStatus }: AssetTableProps) 
                 />
               </td>
 
-              {/* Condition */}
+              {/* Condition — read-only badge */}
               <td className="px-4 py-3">
                 <StatusBadge
                   status={asset.condition.toLowerCase()}
@@ -81,9 +80,9 @@ export default function AssetTable({ assets, onChangeStatus }: AssetTableProps) 
                 />
               </td>
 
-              {/* Actions */}
+              {/* Actions — View only */}
               <td className="px-4 py-3">
-                <div className="flex items-center justify-end gap-2">
+                <div className="flex items-center justify-end">
                   <Link
                     href={`/assets/${asset.id}`}
                     className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium bg-eec-primary/10 text-eec-primary hover:bg-eec-primary/20 transition-colors"
@@ -91,14 +90,6 @@ export default function AssetTable({ assets, onChangeStatus }: AssetTableProps) 
                     <Eye className="w-3.5 h-3.5" />
                     View
                   </Link>
-                  <button
-                    type="button"
-                    onClick={() => onChangeStatus(asset)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
-                  >
-                    <Power className="w-3.5 h-3.5" />
-                    Status
-                  </button>
                 </div>
               </td>
             </tr>
