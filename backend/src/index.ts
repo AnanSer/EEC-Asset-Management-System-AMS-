@@ -31,14 +31,16 @@ import departmentRoutes from './modules/departments/department.routes';
 import employeeRoutes from './modules/employees/employee.routes';
 import assetRoutes from './modules/assets/asset.routes';
 import assignmentRoutes from './modules/asset-assignments/assignment.routes';
+import maintenanceRoutes from './modules/maintenance/maintenance.routes';
+import testingRoutes from './modules/testing/testing.routes';
 
 // ─── Routes ──────────────────────────────────────────────────────────────────
 app.use('/api/departments', departmentRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/assets', assetRoutes);
 app.use('/api/assignments', assignmentRoutes);
-// app.use('/api/maintenance', maintenanceRoutes);
-// app.use('/api/testing', testingRoutes);
+app.use('/api/maintenance', maintenanceRoutes);
+app.use('/api/testing', testingRoutes);
 // app.use('/api/reports', reportRoutes);
 // app.use('/api/notifications', notificationRoutes);
 

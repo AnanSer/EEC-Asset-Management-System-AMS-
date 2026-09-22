@@ -24,7 +24,9 @@ import StatusBadge from '@/components/ui/StatusBadge';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { Employee } from '@/constants/employees';
 import assignmentService from '@/services/assignment.service';
+import maintenanceService from '@/services/maintenance.service';
 import { AssetAssignment } from '@/constants/assignments';
+import { MaintenanceTicket } from '@/constants/maintenance';
 import { ASSET_CATEGORY_LABELS, ASSET_STATUS_LABELS } from '@/constants/assets';
 
 interface EmployeeDetailsProps {
@@ -40,6 +42,9 @@ export default function EmployeeDetails({
 }: EmployeeDetailsProps) {
   const [assignedAssets, setAssignedAssets] = useState<AssetAssignment[]>([]);
   const [loadingAssets, setLoadingAssets] = useState(true);
+
+  const [reportedTickets, setReportedTickets] = useState<MaintenanceTicket[]>([]);
+  const [loadingTickets, setLoadingTickets] = useState(true);
 
   useEffect(() => {
     async function loadAssignedAssets() {
@@ -60,8 +65,27 @@ export default function EmployeeDetails({
       }
     }
 
+    async function loadMaintenanceTickets() {
+      try {
+        setLoadingTickets(true);
+        const fullName = `${employee.firstName} ${employee.lastName}`;
+        const res = await maintenanceService.getAll({
+          search: fullName,
+          limit: 20,
+        });
+        if (res.success) {
+          setReportedTickets(res.data);
+        }
+      } catch {
+        // fail gracefully
+      } finally {
+        setLoadingTickets(false);
+      }
+    }
+
     loadAssignedAssets();
-  }, [employee.id]);
+    loadMaintenanceTickets();
+  }, [employee.id, employee.firstName, employee.lastName]);
 
   const formatRoleLabel = (role: string) => {
     return role.replace(/_/g, ' ');
@@ -423,6 +447,88 @@ export default function EmployeeDetails({
                     </tr>
                   );
                 })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Reported / Handled Maintenance Tickets */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Wrench className="w-5 h-5 text-orange-600" />
+            <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider">
+              Maintenance &amp; Support Tickets ({reportedTickets.length})
+            </h3>
+          </div>
+          <Link
+            href="/maintenance/new"
+            className="text-xs font-semibold text-orange-600 hover:text-orange-700 hover:underline flex items-center gap-1"
+          >
+            <Plus className="w-3.5 h-3.5" /> Log Issue
+          </Link>
+        </div>
+
+        {loadingTickets ? (
+          <div className="p-6">
+            <TableSkeleton rows={2} cols={5} />
+          </div>
+        ) : reportedTickets.length === 0 ? (
+          <div className="p-8 text-center text-slate-500">
+            <Wrench className="w-8 h-8 mx-auto text-slate-300 mb-2" />
+            <p className="font-semibold text-slate-700 text-sm">No Maintenance Tickets</p>
+            <p className="text-xs text-slate-400 mt-0.5">
+              This employee has not reported or been assigned any maintenance tickets.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-slate-50/80 text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                <tr>
+                  <th className="px-6 py-3">Ticket #</th>
+                  <th className="px-6 py-3">Asset</th>
+                  <th className="px-6 py-3">Category</th>
+                  <th className="px-6 py-3">Status</th>
+                  <th className="px-6 py-3">Date</th>
+                  <th className="px-6 py-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {reportedTickets.map((ticket) => (
+                  <tr key={ticket.id} className="hover:bg-slate-50/70 transition-colors">
+                    <td className="px-6 py-3.5 font-mono text-xs font-semibold text-eec-primary">
+                      <Link href={`/maintenance/${ticket.id}`} className="hover:underline">
+                        {ticket.ticketNumber}
+                      </Link>
+                    </td>
+                    <td className="px-6 py-3.5 font-medium text-slate-800">
+                      {ticket.asset?.name || 'Asset'}
+                    </td>
+                    <td className="px-6 py-3.5 text-xs text-slate-600">
+                      {ticket.category}
+                    </td>
+                    <td className="px-6 py-3.5">
+                      <StatusBadge status={ticket.status.toLowerCase()} />
+                    </td>
+                    <td className="px-6 py-3.5 text-xs text-slate-600 whitespace-nowrap">
+                      {new Date(ticket.createdAt).toLocaleDateString('en-GB', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                    </td>
+                    <td className="px-6 py-3.5 text-right">
+                      <Link
+                        href={`/maintenance/${ticket.id}`}
+                        className="text-xs text-eec-primary hover:underline font-semibold"
+                      >
+                        View &rarr;
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

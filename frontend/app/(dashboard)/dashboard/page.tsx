@@ -8,17 +8,18 @@ import {
   Wrench,
   FlaskConical,
   Clock,
-  AlertTriangle,
   CheckCircle2,
-  TrendingUp,
   Users,
   ArrowRight,
+  Plus,
 } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
 import StatusBadge from '@/components/ui/StatusBadge';
 import assignmentService from '@/services/assignment.service';
+import maintenanceService from '@/services/maintenance.service';
 import { AssignmentStats } from '@/constants/assignments';
+import { MaintenanceStats as MaintenanceStatsType } from '@/constants/maintenance';
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
 
@@ -51,12 +52,20 @@ function SectionCard({
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<AssignmentStats | null>(null);
+  const [maintenanceStats, setMaintenanceStats] = useState<MaintenanceStatsType | null>(null);
 
   useEffect(() => {
     assignmentService
       .getStats()
       .then((res) => {
         if (res.success) setStats(res.data);
+      })
+      .catch(() => {});
+
+    maintenanceService
+      .getStats()
+      .then((res) => {
+        if (res.success) setMaintenanceStats(res.data);
       })
       .catch(() => {});
   }, []);
@@ -99,6 +108,37 @@ export default function DashboardPage() {
     },
   ];
 
+  const maintenanceKpis = [
+    {
+      title: 'Open Tickets',
+      value: maintenanceStats ? maintenanceStats.openTickets : '—',
+      icon: Clock,
+      accent: 'warning' as const,
+      subtitle: 'Defects awaiting technician review',
+    },
+    {
+      title: 'Under Repair',
+      value: maintenanceStats ? maintenanceStats.inProgress : '—',
+      icon: Wrench,
+      accent: 'primary' as const,
+      subtitle: 'Currently being serviced by IT',
+    },
+    {
+      title: 'Under Testing',
+      value: maintenanceStats ? maintenanceStats.testing : '—',
+      icon: FlaskConical,
+      accent: 'accent' as const,
+      subtitle: 'Benchmarked for quality pass/fail',
+    },
+    {
+      title: 'Repairs This Month',
+      value: maintenanceStats ? maintenanceStats.completedThisMonth : '—',
+      icon: CheckCircle2,
+      accent: 'success' as const,
+      subtitle: 'Completed and restored to inventory',
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -112,17 +152,42 @@ export default function DashboardPage() {
         }
       />
 
-      {/* ── KPI Cards ──────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
-        {kpis.map((kpi) => (
-          <StatCard key={kpi.title} {...kpi} />
-        ))}
+      {/* ── Asset Inventory KPIs ────────────────────────────────────────── */}
+      <div>
+        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+          Asset Inventory & Custody Overview
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+          {kpis.map((kpi) => (
+            <StatCard key={kpi.title} {...kpi} />
+          ))}
+        </div>
       </div>
 
-      {/* ── Middle Row ─────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      {/* ── Maintenance KPIs ────────────────────────────────────────────── */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+            Maintenance & Quality Testing
+          </h3>
+          <Link
+            href="/maintenance/new"
+            className="text-xs font-semibold text-eec-primary hover:underline inline-flex items-center gap-1"
+          >
+            <Plus className="w-3.5 h-3.5" /> New Ticket
+          </Link>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+          {maintenanceKpis.map((kpi) => (
+            <StatCard key={kpi.title} {...kpi} />
+          ))}
+        </div>
+      </div>
+
+      {/* ── Activity Grids: Assignments & Maintenance ─────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Recent Asset Assignments */}
-        <div className="lg:col-span-2">
+        <div>
           <SectionCard
             title="Recent Asset Assignments"
             icon={Clock}
@@ -197,37 +262,68 @@ export default function DashboardPage() {
           </SectionCard>
         </div>
 
-        {/* Operational Guidelines & Quick Links */}
+        {/* Recent Maintenance Requests */}
         <div>
-          <SectionCard title="Quick Allocations" icon={TrendingUp}>
-            <div className="space-y-4 text-xs text-slate-600">
-              <p className="leading-relaxed">
-                Equipment allocation workflow automatically maintains synchronization between asset status and personnel custody.
-              </p>
-              <div className="space-y-2 pt-2">
-                <Link
-                  href="/assignments/new"
-                  className="flex items-center justify-between p-3 rounded-lg bg-eec-primary/5 hover:bg-eec-primary/10 text-eec-primary font-semibold transition"
-                >
-                  <span>New Equipment Assignment</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-                <Link
-                  href="/assets"
-                  className="flex items-center justify-between p-3 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 font-medium transition"
-                >
-                  <span>Browse Available Assets</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-                <Link
-                  href="/employees"
-                  className="flex items-center justify-between p-3 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 font-medium transition"
-                >
-                  <span>Staff Directory</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
+          <SectionCard
+            title="Recent Maintenance Requests"
+            icon={Wrench}
+            action={
+              <Link
+                href="/maintenance"
+                className="text-xs text-eec-primary hover:underline font-semibold inline-flex items-center gap-1"
+              >
+                View all <ArrowRight className="w-3 h-3" />
+              </Link>
+            }
+          >
+            {maintenanceStats && maintenanceStats.recentTickets.length > 0 ? (
+              <div className="overflow-x-auto -mx-4 -mb-4 sm:mx-0 sm:mb-0">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-100 bg-slate-50/75 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                      <th className="py-2.5 px-3">Ticket #</th>
+                      <th className="py-2.5 px-3">Asset</th>
+                      <th className="py-2.5 px-3">Technician</th>
+                      <th className="py-2.5 px-3 text-right">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {maintenanceStats.recentTickets.slice(0, 5).map((t) => (
+                      <tr key={t.id} className="hover:bg-slate-50/70 transition-colors">
+                        <td className="py-2.5 px-3 font-mono font-semibold text-eec-primary">
+                          <Link href={`/maintenance/${t.id}`} className="hover:underline">
+                            {t.ticketNumber}
+                          </Link>
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <Link
+                            href={`/assets/${t.assetId}`}
+                            className="font-medium text-slate-800 hover:text-eec-primary block truncate max-w-[140px]"
+                          >
+                            {t.asset?.name || 'Asset'}
+                          </Link>
+                          <span className="text-[10px] font-mono text-slate-400 block">
+                            {t.asset?.assetCode}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3 text-slate-600 font-medium">
+                          <span className="truncate block max-w-[120px]">
+                            {t.assignedTechnician || 'Unassigned'}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3 text-right">
+                          <StatusBadge status={t.status.toLowerCase()} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            </div>
+            ) : (
+              <p className="text-xs text-slate-400 py-6 text-center italic">
+                No active maintenance requests recorded yet.
+              </p>
+            )}
           </SectionCard>
         </div>
       </div>
