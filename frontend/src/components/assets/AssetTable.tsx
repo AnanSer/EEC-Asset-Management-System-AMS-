@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Eye, Tag, Hash } from 'lucide-react';
 import StatusBadge from '@/components/ui/StatusBadge';
 import { Asset, ASSET_CATEGORY_LABELS, ASSET_STATUS_LABELS, ASSET_CONDITION_LABELS } from '@/constants/assets';
+import AssetThumbnail from './AssetThumbnail';
 
 interface AssetTableProps {
   assets: Asset[];
@@ -16,29 +17,58 @@ export default function AssetTable({ assets }: AssetTableProps) {
       <table className="w-full text-sm">
         <thead>
           <tr className="bg-slate-50 border-b border-slate-200">
-            <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Asset</th>
-            <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Code / Serial</th>
-            <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Category</th>
-            <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Department</th>
-            <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</th>
-            <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Condition</th>
-            <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Actions</th>
+            <th className="w-12 px-3 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wide">
+              Item
+            </th>
+            <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+              Asset Name
+            </th>
+            <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+              Code / Serial
+            </th>
+            <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+              Category
+            </th>
+            <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+              Department
+            </th>
+            <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+              Status
+            </th>
+            <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+              Condition
+            </th>
+            <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+              Actions
+            </th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
           {assets.map((asset) => (
             <tr key={asset.id} className="hover:bg-slate-50/70 transition-colors">
+              {/* Thumbnail / Avatar */}
+              <td className="px-3 py-3 text-center">
+                <Link href={`/assets/${asset.id}`} className="inline-block" title={asset.name}>
+                  <AssetThumbnail
+                    category={asset.category}
+                    alt={asset.name}
+                    size="sm"
+                    className="w-10 h-10 p-1 rounded-lg border border-slate-200 bg-slate-50/80 shadow-xs hover:border-eec-primary/40 transition"
+                  />
+                </Link>
+              </td>
+
               {/* Asset Name */}
               <td className="px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-eec-primary/10 text-eec-primary flex items-center justify-center shrink-0">
-                    <Tag className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-eec-text leading-tight">{asset.name}</p>
-                    <p className="text-xs text-slate-400">{[asset.brand, asset.model].filter(Boolean).join(' · ') || '—'}</p>
-                  </div>
-                </div>
+                <Link
+                  href={`/assets/${asset.id}`}
+                  className="font-semibold text-eec-text hover:text-eec-primary transition leading-tight block"
+                >
+                  {asset.name}
+                </Link>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {[asset.brand, asset.model].filter(Boolean).join(' · ') || '—'}
+                </p>
               </td>
 
               {/* Code / Serial */}

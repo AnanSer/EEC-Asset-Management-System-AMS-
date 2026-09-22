@@ -34,6 +34,7 @@ import {
 import TransferModal from '@/components/assignments/TransferModal';
 import ReturnModal from '@/components/assignments/ReturnModal';
 import AssignmentTimeline from '@/components/assignments/AssignmentTimeline';
+import AssetThumbnail from './AssetThumbnail';
 
 interface AssetDetailsProps {
   asset: Asset;
@@ -132,17 +133,23 @@ export default function AssetDetails({ asset, onRefresh }: AssetDetailsProps) {
 
   return (
     <div className="space-y-6">
-      {/* Top Banner */}
+      {/* Top Banner with Thumbnail Card */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col md:flex-row md:items-center justify-between gap-5">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-eec-primary/10 text-eec-primary flex items-center justify-center shrink-0">
-            <Package className="w-8 h-8" />
-          </div>
+          <AssetThumbnail
+            category={asset.category}
+            alt={asset.name}
+            size="xl"
+            className="w-20 h-20 p-2 rounded-2xl border border-slate-200 bg-slate-50/75 shadow-xs"
+          />
           <div>
-            <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2.5 flex-wrap">
               <h2 className="text-xl font-bold text-eec-text">{asset.name}</h2>
               <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-eec-primary/10 text-eec-primary border border-eec-primary/20">
                 {asset.assetCode}
+              </span>
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                {ASSET_CATEGORY_LABELS[asset.category] ?? asset.category}
               </span>
               <StatusBadge
                 status={asset.status.toLowerCase()}

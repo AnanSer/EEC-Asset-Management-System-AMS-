@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" fill="none">
+  <rect width="80" height="80" rx="16" fill="#F1F5F9"/>
+  <!-- Paper In Tray -->
+  <rect x="25" y="16" width="30" height="18" rx="2" fill="#FFFFFF" stroke="#94A3B8" stroke-width="1.5"/>
+  <line x1="30" y1="22" x2="50" y2="22" stroke="#CBD5E1" stroke-width="1.5"/>
+  <line x1="30" y1="26" x2="45" y2="26" stroke="#CBD5E1" stroke-width="1.5"/>
+  <!-- Printer Body -->
+  <rect x="16" y="30" width="48" height="26" rx="4" fill="#0B2545" stroke="#134074" stroke-width="2"/>
+  <!-- Control Panel -->
+  <rect x="46" y="35" width="12" height="6" rx="1" fill="#1E293B"/>
+  <circle cx="55" cy="38" r="1.5" fill="#10B981"/>
+  <circle cx="50" cy="38" r="1.5" fill="#ECA72C"/>
+  <!-- Paper Output Slot -->
+  <rect x="22" y="44" width="36" height="5" rx="1" fill="#1E293B"/>
+  <!-- Printed Paper Output -->
+  <path d="M25 47H55V60C55 61.1046 54.1046 62 53 62H27C25.8954 62 25 61.1046 25 60V47Z" fill="#FFFFFF" stroke="#94A3B8" stroke-width="1.5"/>
+  <line x1="29" y1="52" x2="48" y2="52" stroke="#0B2545" stroke-width="1.5"/>
+  <line x1="29" y1="56" x2="42" y2="56" stroke="#ECA72C" stroke-width="1.5"/>
+</svg>

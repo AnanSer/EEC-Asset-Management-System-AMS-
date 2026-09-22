@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" fill="none">
+  <rect width="80" height="80" rx="16" fill="#F1F5F9"/>
+  <!-- Network Switch 1U Chassis -->
+  <rect x="12" y="30" width="56" height="22" rx="3" fill="#0B2545" stroke="#134074" stroke-width="2"/>
+  <!-- Rack Ears / Screws -->
+  <circle cx="15" cy="35" r="1" fill="#94A3B8"/>
+  <circle cx="15" cy="47" r="1" fill="#94A3B8"/>
+  <circle cx="65" cy="35" r="1" fill="#94A3B8"/>
+  <circle cx="65" cy="47" r="1" fill="#94A3B8"/>
+  <!-- RJ45 Ethernet Port Row -->
+  <rect x="20" y="37" width="5" height="6" rx="1" fill="#1E293B" stroke="#475569" stroke-width="0.75"/>
+  <rect x="27" y="37" width="5" height="6" rx="1" fill="#1E293B" stroke="#475569" stroke-width="0.75"/>
+  <rect x="34" y="37" width="5" height="6" rx="1" fill="#1E293B" stroke="#475569" stroke-width="0.75"/>
+  <rect x="41" y="37" width="5" height="6" rx="1" fill="#1E293B" stroke="#475569" stroke-width="0.75"/>
+  <rect x="48" y="37" width="5" height="6" rx="1" fill="#1E293B" stroke="#475569" stroke-width="0.75"/>
+  <rect x="55" y="37" width="5" height="6" rx="1" fill="#1E293B" stroke="#475569" stroke-width="0.75"/>
+  <!-- Port LEDs -->
+  <circle cx="22.5" cy="34" r="1" fill="#10B981"/>
+  <circle cx="29.5" cy="34" r="1" fill="#10B981"/>
+  <circle cx="36.5" cy="34" r="1" fill="#10B981"/>
+  <circle cx="43.5" cy="34" r="1" fill="#ECA72C"/>
+  <circle cx="50.5" cy="34" r="1" fill="#10B981"/>
+  <circle cx="57.5" cy="34" r="1" fill="#94A3B8"/>
+  <!-- Activity Arrow Motif -->
+  <path d="M22 47L30 47M30 47L27 45M30 47L27 49" stroke="#ECA72C" stroke-width="1" stroke-linecap="round"/>
+</svg>

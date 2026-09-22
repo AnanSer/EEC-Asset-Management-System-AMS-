@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" fill="none">
+  <rect width="80" height="80" rx="16" fill="#F1F5F9"/>
+  <!-- Scanner Base Body -->
+  <rect x="16" y="38" width="48" height="18" rx="3" fill="#0B2545" stroke="#134074" stroke-width="2"/>
+  <!-- Control Buttons -->
+  <circle cx="56" cy="47" r="2.5" fill="#ECA72C"/>
+  <circle cx="50" cy="47" r="1.5" fill="#10B981"/>
+  <!-- Open Scanner Lid (perspective/angle) -->
+  <path d="M16 38L32 20H64L48 38H16Z" fill="#1E293B" stroke="#334155" stroke-width="1.5"/>
+  <!-- Scanner Glass Bed -->
+  <rect x="20" y="34" width="28" height="6" rx="1" fill="#38BDF8" opacity="0.6"/>
+  <line x1="22" y1="37" x2="46" y2="37" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Base Shadow / Footers -->
+  <rect x="20" y="56" width="8" height="4" rx="1" fill="#334155"/>
+  <rect x="52" y="56" width="8" height="4" rx="1" fill="#334155"/>
+</svg>
