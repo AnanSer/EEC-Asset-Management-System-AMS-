@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/layout/Sidebar';
 import Navbar from '@/components/layout/Navbar';
 import { ToastProvider, useToast } from '@/components/ui/Toast';
+import { authClient } from '@/lib/auth-client';
 
 function DashboardAuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -36,6 +37,19 @@ function DashboardAuthGuard({ children }: { children: React.ReactNode }) {
         const json = await res.json();
         const businessUser = json?.data?.businessUser;
         const status = businessUser?.status;
+
+        if (status === 'SUSPENDED') {
+          if (isMounted) {
+            try {
+              await authClient.signOut();
+            } catch (signOutErr) {
+              console.error('Sign out error:', signOutErr);
+            }
+            error('Your account has been suspended. Please contact EEC ICT Administration.');
+            router.push('/login');
+          }
+          return;
+        }
 
         if (status === 'PENDING') {
           if (isMounted) router.push('/pending');

@@ -23,6 +23,11 @@ export declare class IdentityController {
      * Reject a pending user account.
      */
     reject: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
+    /**
+     * PATCH /api/identity/:id/suspend
+     * Suspend a user account.
+     */
+    suspend: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
     private handleError;
 }
 export declare const identityController: IdentityController;

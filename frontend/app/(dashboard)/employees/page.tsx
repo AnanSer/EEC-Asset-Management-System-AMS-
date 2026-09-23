@@ -14,9 +14,12 @@ import { Employee, EmployeesResponse } from '@/constants/employees';
 import { Department } from '@/constants/departments';
 import EmployeeStats from '@/components/employees/EmployeeStats';
 import EmployeeTable from '@/components/employees/EmployeeTable';
+import { usePermissions } from '@/hooks/usePermissions';
+import { PERMISSIONS } from '@/lib/authorization';
 
 export default function EmployeesPage() {
   const toast = useToast();
+  const { can } = usePermissions();
 
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -149,11 +152,15 @@ export default function EmployeesPage() {
             { label: 'Dashboard', href: '/dashboard' },
             { label: 'Employees' },
           ]}
-          action={{
-            label: 'Add Employee',
-            href: '/employees/new',
-            icon: Plus,
-          }}
+          action={
+            can(PERMISSIONS.EMPLOYEES_CREATE)
+              ? {
+                  label: 'Add Employee',
+                  href: '/employees/new',
+                  icon: Plus,
+                }
+              : undefined
+          }
         />
         <LoadingSkeleton />
       </div>
@@ -170,11 +177,15 @@ export default function EmployeesPage() {
           { label: 'Dashboard', href: '/dashboard' },
           { label: 'Employees' },
         ]}
-        action={{
-          label: 'Add Employee',
-          href: '/employees/new',
-          icon: Plus,
-        }}
+        action={
+          can(PERMISSIONS.EMPLOYEES_CREATE)
+            ? {
+                label: 'Add Employee',
+                href: '/employees/new',
+                icon: Plus,
+              }
+            : undefined
+        }
       />
 
       {/* Stats Cards */}

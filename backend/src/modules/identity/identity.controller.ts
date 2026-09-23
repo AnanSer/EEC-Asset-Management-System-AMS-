@@ -92,6 +92,25 @@ export class IdentityController {
     }
   };
 
+  /**
+   * PATCH /api/identity/:id/suspend
+   * Suspend a user account.
+   */
+  suspend = async (req: Request, res: Response) => {
+    try {
+      const id = String(req.params.id);
+      const result = await this.service.suspendAccount(id);
+
+      return res.status(200).json({
+        success: true,
+        message: result.message,
+        data: result.user,
+      });
+    } catch (err: any) {
+      return this.handleError(res, err);
+    }
+  };
+
   private handleError(res: Response, err: any) {
     if (err instanceof AppError) {
       return res.status(err.statusCode).json({

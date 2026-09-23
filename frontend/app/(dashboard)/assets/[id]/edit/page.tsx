@@ -8,6 +8,8 @@ import { useToast } from '@/components/ui/Toast';
 import assetService from '@/services/asset.service';
 import { Asset, UpdateAssetInput } from '@/constants/assets';
 import AssetForm from '@/components/assets/AssetForm';
+import PermissionGuard from '@/components/auth/PermissionGuard';
+import { PERMISSIONS } from '@/lib/authorization';
 
 export default function EditAssetPage() {
   const params = useParams();
@@ -69,22 +71,24 @@ export default function EditAssetPage() {
   if (!asset) return null;
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title={`Edit: ${asset.name}`}
-        description={`Asset Code: ${asset.assetCode}`}
-        breadcrumbs={[
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Assets', href: '/assets' },
-          { label: asset.name, href: `/assets/${id}` },
-          { label: 'Edit' },
-        ]}
-      />
-      <AssetForm
-        initialData={asset}
-        onSubmit={handleSubmit as any}
-        isSubmitting={isSubmitting}
-      />
-    </div>
+    <PermissionGuard permission={PERMISSIONS.ASSETS_UPDATE}>
+      <div className="space-y-6">
+        <PageHeader
+          title={`Edit: ${asset.name}`}
+          description={`Asset Code: ${asset.assetCode}`}
+          breadcrumbs={[
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: 'Assets', href: '/assets' },
+            { label: asset.name, href: `/assets/${id}` },
+            { label: 'Edit' },
+          ]}
+        />
+        <AssetForm
+          initialData={asset}
+          onSubmit={handleSubmit as any}
+          isSubmitting={isSubmitting}
+        />
+      </div>
+    </PermissionGuard>
   );
 }

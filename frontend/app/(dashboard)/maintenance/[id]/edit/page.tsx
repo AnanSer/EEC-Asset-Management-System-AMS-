@@ -10,6 +10,8 @@ import { useToast } from '@/components/ui/Toast';
 import maintenanceService from '@/services/maintenance.service';
 import { MaintenanceTicket } from '@/constants/maintenance';
 import MaintenanceForm from '@/components/maintenance/MaintenanceForm';
+import PermissionGuard from '@/components/auth/PermissionGuard';
+import { PERMISSIONS } from '@/lib/authorization';
 
 export default function EditMaintenanceTicketPage() {
   const params = useParams();
@@ -78,19 +80,21 @@ export default function EditMaintenanceTicketPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
-      <PageHeader
-        title={`Edit Ticket: ${ticket.ticketNumber}`}
-        description={`Update diagnostic notes, repair details, or assignees for ${ticket.asset?.name || 'Asset'}`}
-        breadcrumbs={[
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Maintenance', href: '/maintenance' },
-          { label: ticket.ticketNumber, href: `/maintenance/${ticket.id}` },
-          { label: 'Edit' },
-        ]}
-      />
+    <PermissionGuard permission={PERMISSIONS.MAINTENANCE_UPDATE}>
+      <div className="space-y-6 max-w-4xl mx-auto">
+        <PageHeader
+          title={`Edit Ticket: ${ticket.ticketNumber}`}
+          description={`Update diagnostic notes, repair details, or assignees for ${ticket.asset?.name || 'Asset'}`}
+          breadcrumbs={[
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: 'Maintenance', href: '/maintenance' },
+            { label: ticket.ticketNumber, href: `/maintenance/${ticket.id}` },
+            { label: 'Edit' },
+          ]}
+        />
 
-      <MaintenanceForm mode="edit" initialData={ticket} />
-    </div>
+        <MaintenanceForm mode="edit" initialData={ticket} />
+      </div>
+    </PermissionGuard>
   );
 }

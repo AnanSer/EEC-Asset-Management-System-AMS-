@@ -17,9 +17,12 @@ import AssignmentTable from '@/components/assignments/AssignmentTable';
 import AssignmentSummary from '@/components/assignments/AssignmentSummary';
 import TransferModal from '@/components/assignments/TransferModal';
 import ReturnModal from '@/components/assignments/ReturnModal';
+import { usePermissions } from '@/hooks/usePermissions';
+import { PERMISSIONS } from '@/lib/authorization';
 
 export default function AssignmentsPage() {
   const toast = useToast();
+  const { can } = usePermissions();
 
   const [assignments, setAssignments] = useState<AssetAssignment[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -128,7 +131,11 @@ export default function AssignmentsPage() {
             { label: 'Dashboard', href: '/dashboard' },
             { label: 'Assignments' },
           ]}
-          action={{ label: 'New Assignment', href: '/assignments/new', icon: Plus }}
+          action={
+            can(PERMISSIONS.ASSETS_ASSIGN)
+              ? { label: 'New Assignment', href: '/assignments/new', icon: Plus }
+              : undefined
+          }
         />
         <LoadingSkeleton />
       </div>
@@ -144,7 +151,11 @@ export default function AssignmentsPage() {
           { label: 'Dashboard', href: '/dashboard' },
           { label: 'Assignments' },
         ]}
-        action={{ label: 'New Assignment', href: '/assignments/new', icon: Plus }}
+        action={
+          can(PERMISSIONS.ASSETS_ASSIGN)
+            ? { label: 'New Assignment', href: '/assignments/new', icon: Plus }
+            : undefined
+        }
       />
 
       {/* Summary KPI Cards */}
@@ -259,7 +270,9 @@ export default function AssignmentsPage() {
               action={
                 search || departmentFilter !== 'all' || employeeFilter !== 'all' || statusFilter !== 'all'
                   ? { label: 'Clear Filters', onClick: handleClearFilters }
-                  : { label: 'New Assignment', href: '/assignments/new' }
+                  : can(PERMISSIONS.ASSETS_ASSIGN)
+                  ? { label: 'New Assignment', href: '/assignments/new' }
+                  : undefined
               }
             />
           </div>
@@ -267,8 +280,8 @@ export default function AssignmentsPage() {
           <>
             <AssignmentTable
               assignments={assignments}
-              onTransfer={(item) => setTransferTarget(item)}
-              onReturn={(item) => setReturnTarget(item)}
+              onTransfer={can(PERMISSIONS.ASSETS_ASSIGN) ? (item) => setTransferTarget(item) : undefined}
+              onReturn={can(PERMISSIONS.ASSETS_ASSIGN) ? (item) => setReturnTarget(item) : undefined}
             />
 
             {/* Pagination Bar */}

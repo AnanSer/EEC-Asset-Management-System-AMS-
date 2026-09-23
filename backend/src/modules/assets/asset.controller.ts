@@ -6,6 +6,9 @@ import {
   updateAssetStatusSchema,
   assetQuerySchema,
 } from './asset.validator';
+import prisma from '../../lib/prisma';
+import { ROLES, type Role } from '../../constants';
+import { canAccessAsset, AuthUserContext } from '../../lib/authorization';
 
 export class AssetController {
   constructor(private service: AssetService = assetService) {}
@@ -13,6 +16,64 @@ export class AssetController {
   getAll = async (req: Request, res: Response) => {
     try {
       const parsedQuery = assetQuerySchema.parse(req.query);
+
+      // Scoped access based on authenticated user role
+      if (req.auth?.user) {
+        const user = await prisma.user.findFirst({
+          where: { OR: [{ id: req.auth.user.id }, { email: req.auth.user.email }] },
+          include: { employeeProfile: true },
+        });
+
+        if (user) {
+          const role = user.role as Role;
+
+          // DEPARTMENT_MANAGER: View only assets inside own department
+          if (role === ROLES.DEPARTMENT_MANAGER && user.employeeProfile?.departmentId) {
+            parsedQuery.departmentId = user.employeeProfile.departmentId;
+          }
+
+          // EMPLOYEE: View only assets currently assigned to them
+          if (role === ROLES.EMPLOYEE) {
+            if (user.employeeProfile) {
+              const activeAssignments = await prisma.assetAssignment.findMany({
+                where: {
+                  employeeId: user.employeeProfile.id,
+                  isCurrent: true,
+                },
+                include: {
+                  asset: {
+                    include: {
+                      department: { select: { id: true, code: true, name: true } },
+                      assignments: {
+                        where: { isCurrent: true },
+                        include: {
+                          employee: {
+                            select: { id: true, employeeId: true, firstName: true, lastName: true },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              });
+
+              const userAssets = activeAssignments.map((a) => a.asset);
+              return res.status(200).json({
+                success: true,
+                data: userAssets,
+                meta: { total: userAssets.length, page: 1, limit: 10, totalPages: 1 },
+              });
+            } else {
+              return res.status(200).json({
+                success: true,
+                data: [],
+                meta: { total: 0, page: 1, limit: 10, totalPages: 0 },
+              });
+            }
+          }
+        }
+      }
+
       const { assets, meta } = await this.service.getAssets(parsedQuery);
 
       return res.status(200).json({
@@ -29,6 +90,44 @@ export class AssetController {
     try {
       const id = String(req.params.id);
       const asset = await this.service.getAssetById(id);
+
+      if (!asset) {
+        return res.status(404).json({
+          success: false,
+          message: 'Asset not found',
+        });
+      }
+
+      // Check ownership & department access
+      if (req.auth?.user) {
+        const user = await prisma.user.findFirst({
+          where: { OR: [{ id: req.auth.user.id }, { email: req.auth.user.email }] },
+          include: { employeeProfile: true },
+        });
+
+        if (user) {
+          const authContext: AuthUserContext = {
+            userId: user.id,
+            role: user.role as Role,
+            departmentId: user.employeeProfile?.departmentId,
+            employeeProfileId: user.employeeProfile?.id,
+            employeeId: user.employeeProfile?.employeeId,
+          };
+
+          const allowed = canAccessAsset(authContext, {
+            id: asset.id,
+            departmentId: asset.departmentId,
+            currentAssignment: asset.currentAssignment,
+          });
+
+          if (!allowed) {
+            return res.status(403).json({
+              success: false,
+              message: 'Forbidden: You do not have permission to view this asset',
+            });
+          }
+        }
+      }
 
       return res.status(200).json({
         success: true,

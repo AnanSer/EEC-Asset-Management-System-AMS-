@@ -23,9 +23,12 @@ import ConfirmationModal from '@/components/ui/ConfirmationModal';
 import { useToast } from '@/components/ui/Toast';
 import departmentService from '@/services/department.service';
 import { Department, PaginationMeta } from '@/constants/departments';
+import { usePermissions } from '@/hooks/usePermissions';
+import { PERMISSIONS } from '@/lib/authorization';
 
 export default function DepartmentsPage() {
   const toast = useToast();
+  const { can } = usePermissions();
 
   const [departments, setDepartments] = useState<Department[]>([]);
   const [meta, setMeta] = useState<PaginationMeta>({
@@ -126,11 +129,15 @@ export default function DepartmentsPage() {
             { label: 'Dashboard', href: '/dashboard' },
             { label: 'Departments' },
           ]}
-          action={{
-            label: 'Add Department',
-            href: '/departments/new',
-            icon: Plus,
-          }}
+          action={
+            can(PERMISSIONS.DEPARTMENTS_CREATE)
+              ? {
+                  label: 'Add Department',
+                  href: '/departments/new',
+                  icon: Plus,
+                }
+              : undefined
+          }
         />
         <LoadingSkeleton />
       </div>
@@ -147,11 +154,15 @@ export default function DepartmentsPage() {
           { label: 'Dashboard', href: '/dashboard' },
           { label: 'Departments' },
         ]}
-        action={{
-          label: 'Add Department',
-          href: '/departments/new',
-          icon: Plus,
-        }}
+        action={
+          can(PERMISSIONS.DEPARTMENTS_CREATE)
+            ? {
+                label: 'Add Department',
+                href: '/departments/new',
+                icon: Plus,
+              }
+            : undefined
+        }
       />
 
       {/* Filter and Search Bar */}
@@ -291,27 +302,31 @@ export default function DepartmentsPage() {
                         </Link>
 
                         {/* Edit */}
-                        <Link
-                          href={`/departments/${dept.id}/edit`}
-                          className="p-1.5 text-slate-400 hover:text-eec-accent hover:bg-slate-100 rounded-lg transition-colors"
-                          title="Edit Department"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </Link>
+                        {can(PERMISSIONS.DEPARTMENTS_UPDATE) && (
+                          <Link
+                            href={`/departments/${dept.id}/edit`}
+                            className="p-1.5 text-slate-400 hover:text-eec-accent hover:bg-slate-100 rounded-lg transition-colors"
+                            title="Edit Department"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </Link>
+                        )}
 
                         {/* Toggle Active/Inactive */}
-                        <button
-                          type="button"
-                          onClick={() => setStatusModal({ open: true, department: dept, isUpdating: false })}
-                          className={`p-1.5 rounded-lg transition-colors ${
-                            dept.isActive
-                              ? 'text-slate-400 hover:text-rose-600 hover:bg-rose-50'
-                              : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50'
-                          }`}
-                          title={dept.isActive ? 'Deactivate Department' : 'Activate Department'}
-                        >
-                          <Power className="w-4 h-4" />
-                        </button>
+                        {can(PERMISSIONS.DEPARTMENTS_UPDATE) && (
+                          <button
+                            type="button"
+                            onClick={() => setStatusModal({ open: true, department: dept, isUpdating: false })}
+                            className={`p-1.5 rounded-lg transition-colors ${
+                              dept.isActive
+                                ? 'text-slate-400 hover:text-rose-600 hover:bg-rose-50'
+                                : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50'
+                            }`}
+                            title={dept.isActive ? 'Deactivate Department' : 'Activate Department'}
+                          >
+                            <Power className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

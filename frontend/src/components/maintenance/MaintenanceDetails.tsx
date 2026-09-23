@@ -28,6 +28,8 @@ import {
 } from '@/constants/maintenance';
 import TestingResultCard from './TestingResultCard';
 import MaintenanceTimeline from './MaintenanceTimeline';
+import { usePermissions } from '@/hooks/usePermissions';
+import { PERMISSIONS } from '@/lib/authorization';
 
 interface MaintenanceDetailsProps {
   ticket: MaintenanceTicket;
@@ -53,6 +55,7 @@ export default function MaintenanceDetails({
 }: MaintenanceDetailsProps) {
   const router = useRouter();
   const toast = useToast();
+  const { can } = usePermissions();
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   const asset = ticket.asset;
@@ -116,74 +119,76 @@ export default function MaintenanceDetails({
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <Link
-              href={`/maintenance/${ticket.id}/edit`}
-              className="px-3.5 py-2 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-1.5"
-            >
-              <Edit className="w-3.5 h-3.5" />
-              Edit Ticket
-            </Link>
-
-            {ticket.status === 'OPEN' && (
-              <button
-                type="button"
-                onClick={() => handleStatusChange('IN_PROGRESS')}
-                disabled={isUpdatingStatus}
-                className="px-4 py-2 rounded-lg bg-amber-600 text-white text-xs font-semibold hover:bg-amber-700 transition-colors flex items-center gap-1.5 shadow-sm disabled:opacity-50"
-              >
-                {isUpdatingStatus ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Play className="w-3.5 h-3.5" />
-                )}
-                Start Work
-              </button>
-            )}
-
-            {ticket.status === 'IN_PROGRESS' && (
-              <button
-                type="button"
-                onClick={() => handleStatusChange('TESTING')}
-                disabled={isUpdatingStatus}
-                className="px-4 py-2 rounded-lg bg-purple-600 text-white text-xs font-semibold hover:bg-purple-700 transition-colors flex items-center gap-1.5 shadow-sm disabled:opacity-50"
-              >
-                {isUpdatingStatus ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <FlaskConical className="w-3.5 h-3.5" />
-                )}
-                Move to Testing
-              </button>
-            )}
-
-            {ticket.status === 'TESTING' && (
+          {/* Action Buttons: Only for staff with maintenance update permissions (IT_TECHNICIAN, ADMIN) */}
+          {can(PERMISSIONS.MAINTENANCE_UPDATE) && (
+            <div className="flex items-center gap-2.5 flex-wrap">
               <Link
-                href={`/testing/${ticket.id}`}
-                className="px-4 py-2 rounded-lg bg-purple-600 text-white text-xs font-semibold hover:bg-purple-700 transition-colors flex items-center gap-1.5 shadow-sm"
+                href={`/maintenance/${ticket.id}/edit`}
+                className="px-3.5 py-2 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-1.5"
               >
-                <FlaskConical className="w-3.5 h-3.5" />
-                Conduct Inspection
+                <Edit className="w-3.5 h-3.5" />
+                Edit Ticket
               </Link>
-            )}
 
-            {(ticket.status === 'TESTING' || ticket.status === 'IN_PROGRESS') && (
-              <button
-                type="button"
-                onClick={() => handleStatusChange('COMPLETED')}
-                disabled={isUpdatingStatus}
-                className="px-4 py-2 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors flex items-center gap-1.5 shadow-sm disabled:opacity-50"
-              >
-                {isUpdatingStatus ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                )}
-                Mark Completed
-              </button>
-            )}
-          </div>
+              {ticket.status === 'OPEN' && (
+                <button
+                  type="button"
+                  onClick={() => handleStatusChange('IN_PROGRESS')}
+                  disabled={isUpdatingStatus}
+                  className="px-4 py-2 rounded-lg bg-amber-600 text-white text-xs font-semibold hover:bg-amber-700 transition-colors flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+                >
+                  {isUpdatingStatus ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Play className="w-3.5 h-3.5" />
+                  )}
+                  Start Work
+                </button>
+              )}
+
+              {ticket.status === 'IN_PROGRESS' && (
+                <button
+                  type="button"
+                  onClick={() => handleStatusChange('TESTING')}
+                  disabled={isUpdatingStatus}
+                  className="px-4 py-2 rounded-lg bg-purple-600 text-white text-xs font-semibold hover:bg-purple-700 transition-colors flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+                >
+                  {isUpdatingStatus ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <FlaskConical className="w-3.5 h-3.5" />
+                  )}
+                  Move to Testing
+                </button>
+              )}
+
+              {ticket.status === 'TESTING' && (
+                <Link
+                  href={`/testing/${ticket.id}`}
+                  className="px-4 py-2 rounded-lg bg-purple-600 text-white text-xs font-semibold hover:bg-purple-700 transition-colors flex items-center gap-1.5 shadow-sm"
+                >
+                  <FlaskConical className="w-3.5 h-3.5" />
+                  Conduct Inspection
+                </Link>
+              )}
+
+              {(ticket.status === 'TESTING' || ticket.status === 'IN_PROGRESS') && (
+                <button
+                  type="button"
+                  onClick={() => handleStatusChange('COMPLETED')}
+                  disabled={isUpdatingStatus}
+                  className="px-4 py-2 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+                >
+                  {isUpdatingStatus ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                  )}
+                  Mark Completed
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

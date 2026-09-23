@@ -7,6 +7,8 @@ import { useToast } from '@/components/ui/Toast';
 import assetService from '@/services/asset.service';
 import { CreateAssetInput } from '@/constants/assets';
 import AssetForm from '@/components/assets/AssetForm';
+import PermissionGuard from '@/components/auth/PermissionGuard';
+import { PERMISSIONS } from '@/lib/authorization';
 
 export default function NewAssetPage() {
   const router = useRouter();
@@ -30,17 +32,19 @@ export default function NewAssetPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Register Asset"
-        description="Add a new asset to the EEC inventory."
-        breadcrumbs={[
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Assets', href: '/assets' },
-          { label: 'New' },
-        ]}
-      />
-      <AssetForm onSubmit={handleSubmit} isSubmitting={isSubmitting} />
-    </div>
+    <PermissionGuard permission={PERMISSIONS.ASSETS_CREATE}>
+      <div className="space-y-6">
+        <PageHeader
+          title="Register Asset"
+          description="Add a new asset to the EEC inventory."
+          breadcrumbs={[
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: 'Assets', href: '/assets' },
+            { label: 'New' },
+          ]}
+        />
+        <AssetForm onSubmit={handleSubmit} isSubmitting={isSubmitting} />
+      </div>
+    </PermissionGuard>
   );
 }

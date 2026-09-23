@@ -13,12 +13,15 @@ import { Asset, AssetsResponse, ASSET_CATEGORY_LABELS, ASSET_STATUS_LABELS } fro
 import { Department } from '@/constants/departments';
 import AssetStats from '@/components/assets/AssetStats';
 import AssetTable from '@/components/assets/AssetTable';
+import { usePermissions } from '@/hooks/usePermissions';
+import { PERMISSIONS } from '@/lib/authorization';
 
 const ASSET_STATUSES = ['AVAILABLE', 'ASSIGNED', 'MAINTENANCE', 'TESTING', 'RETIRED', 'DISPOSED'] as const;
 const ASSET_CATEGORIES = ['LAPTOP', 'DESKTOP', 'PRINTER', 'SCANNER', 'ROUTER', 'SWITCH', 'PROJECTOR', 'MONITOR', 'SERVER', 'UPS', 'OTHER'] as const;
 
 export default function AssetsPage() {
   const toast = useToast();
+  const { can } = usePermissions();
 
   const [assets, setAssets] = useState<Asset[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -83,7 +86,11 @@ export default function AssetsPage() {
           title="Assets"
           description="Manage EEC's IT and operational asset inventory."
           breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Assets' }]}
-          action={{ label: 'Register Asset', href: '/assets/new', icon: Plus }}
+          action={
+            can(PERMISSIONS.ASSETS_CREATE)
+              ? { label: 'Register Asset', href: '/assets/new', icon: Plus }
+              : undefined
+          }
         />
         <LoadingSkeleton />
       </div>
@@ -96,7 +103,11 @@ export default function AssetsPage() {
         title="Assets"
         description="Manage EEC's IT and operational asset inventory."
         breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Assets' }]}
-        action={{ label: 'Register Asset', href: '/assets/new', icon: Plus }}
+        action={
+          can(PERMISSIONS.ASSETS_CREATE)
+            ? { label: 'Register Asset', href: '/assets/new', icon: Plus }
+            : undefined
+        }
       />
 
       {/* Stats */}

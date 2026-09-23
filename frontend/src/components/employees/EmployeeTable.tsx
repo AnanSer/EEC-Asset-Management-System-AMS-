@@ -12,6 +12,8 @@ import {
 } from 'lucide-react';
 import StatusBadge from '@/components/ui/StatusBadge';
 import { Employee } from '@/constants/employees';
+import { usePermissions } from '@/hooks/usePermissions';
+import { PERMISSIONS } from '@/lib/authorization';
 
 interface EmployeeTableProps {
   employees: Employee[];
@@ -22,6 +24,7 @@ export default function EmployeeTable({
   employees,
   onToggleStatus,
 }: EmployeeTableProps) {
+  const { can } = usePermissions();
   const getRoleBadgeClasses = (role: string) => {
     switch (role) {
       case 'ADMIN':
@@ -178,27 +181,31 @@ export default function EmployeeTable({
                   </Link>
 
                   {/* Edit */}
-                  <Link
-                    href={`/employees/${emp.id}/edit`}
-                    className="p-1.5 rounded-md text-slate-500 hover:text-eec-accent hover:bg-slate-100 transition-colors"
-                    title="Edit Employee"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </Link>
+                  {can(PERMISSIONS.EMPLOYEES_UPDATE) && (
+                    <Link
+                      href={`/employees/${emp.id}/edit`}
+                      className="p-1.5 rounded-md text-slate-500 hover:text-eec-accent hover:bg-slate-100 transition-colors"
+                      title="Edit Employee"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </Link>
+                  )}
 
                   {/* Deactivate/Activate */}
-                  <button
-                    type="button"
-                    onClick={() => onToggleStatus(emp)}
-                    className={`p-1.5 rounded-md transition-colors ${
-                      emp.isActive
-                        ? 'text-slate-400 hover:text-amber-600 hover:bg-amber-50'
-                        : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50'
-                    }`}
-                    title={emp.isActive ? 'Deactivate Employee' : 'Activate Employee'}
-                  >
-                    <Power className="w-4 h-4" />
-                  </button>
+                  {can(PERMISSIONS.EMPLOYEES_UPDATE) && (
+                    <button
+                      type="button"
+                      onClick={() => onToggleStatus(emp)}
+                      className={`p-1.5 rounded-md transition-colors ${
+                        emp.isActive
+                          ? 'text-slate-400 hover:text-amber-600 hover:bg-amber-50'
+                          : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50'
+                      }`}
+                      title={emp.isActive ? 'Deactivate Employee' : 'Activate Employee'}
+                    >
+                      <Power className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </td>
             </tr>

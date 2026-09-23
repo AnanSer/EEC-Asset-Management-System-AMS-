@@ -10,6 +10,8 @@ import { useToast } from '@/components/ui/Toast';
 import { Building2 } from 'lucide-react';
 import departmentService from '@/services/department.service';
 import { Department, CreateDepartmentInput } from '@/constants/departments';
+import PermissionGuard from '@/components/auth/PermissionGuard';
+import { PERMISSIONS } from '@/lib/authorization';
 
 export default function EditDepartmentPage() {
   const params = useParams();
@@ -99,22 +101,24 @@ export default function EditDepartmentPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <PageHeader
-        title={`Edit ${department.name}`}
-        description={`Update details, office location, or code for ${department.code}`}
-        breadcrumbs={[
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Departments', href: '/departments' },
-          { label: 'Edit' },
-        ]}
-      />
+    <PermissionGuard permission={PERMISSIONS.DEPARTMENTS_UPDATE}>
+      <div className="max-w-4xl mx-auto space-y-6">
+        <PageHeader
+          title={`Edit ${department.name}`}
+          description={`Update details, office location, or code for ${department.code}`}
+          breadcrumbs={[
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: 'Departments', href: '/departments' },
+            { label: 'Edit' },
+          ]}
+        />
 
-      <DepartmentForm
-        initialData={department}
-        onSubmit={handleSubmit}
-        isSubmitting={isSubmitting}
-      />
-    </div>
+        <DepartmentForm
+          initialData={department}
+          onSubmit={handleSubmit}
+          isSubmitting={isSubmitting}
+        />
+      </div>
+    </PermissionGuard>
   );
 }

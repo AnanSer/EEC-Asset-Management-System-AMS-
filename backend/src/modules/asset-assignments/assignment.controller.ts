@@ -6,6 +6,9 @@ import {
   returnAssetSchema,
   assignmentQuerySchema,
 } from './assignment.validator';
+import prisma from '../../lib/prisma';
+import { ROLES, type Role } from '../../constants';
+import { canAccessAsset, AuthUserContext } from '../../lib/authorization';
 
 export class AssignmentController {
   constructor(private service: AssignmentService = assignmentService) {}
@@ -13,6 +16,37 @@ export class AssignmentController {
   getAll = async (req: Request, res: Response) => {
     try {
       const parsedQuery = assignmentQuerySchema.parse(req.query);
+
+      // Scoped access based on authenticated user role
+      if (req.auth?.user) {
+        const user = await prisma.user.findFirst({
+          where: { OR: [{ id: req.auth.user.id }, { email: req.auth.user.email }] },
+          include: { employeeProfile: true },
+        });
+
+        if (user) {
+          const role = user.role as Role;
+
+          // DEPARTMENT_MANAGER: View assignments belonging to own department
+          if (role === ROLES.DEPARTMENT_MANAGER && user.employeeProfile?.departmentId) {
+            parsedQuery.departmentId = user.employeeProfile.departmentId;
+          }
+
+          // EMPLOYEE: View assignment history for own assigned assets only
+          if (role === ROLES.EMPLOYEE) {
+            if (user.employeeProfile) {
+              parsedQuery.employeeId = user.employeeProfile.id;
+            } else {
+              return res.status(200).json({
+                success: true,
+                data: [],
+                meta: { total: 0, page: 1, limit: 10, totalPages: 0 },
+              });
+            }
+          }
+        }
+      }
+
       const { assignments, meta } = await this.service.getAssignments(parsedQuery);
 
       return res.status(200).json({
@@ -30,6 +64,13 @@ export class AssignmentController {
       const id = String(req.params.id);
       const assignment = await this.service.getAssignmentById(id);
 
+      if (!assignment) {
+        return res.status(404).json({
+          success: false,
+          message: 'Assignment not found',
+        });
+      }
+
       return res.status(200).json({
         success: true,
         data: assignment,
@@ -42,6 +83,50 @@ export class AssignmentController {
   getHistory = async (req: Request, res: Response) => {
     try {
       const assetId = String(req.params.assetId);
+
+      // Check whether user can access this asset's history
+      if (req.auth?.user) {
+        const user = await prisma.user.findFirst({
+          where: { OR: [{ id: req.auth.user.id }, { email: req.auth.user.email }] },
+          include: { employeeProfile: true },
+        });
+
+        if (user) {
+          const asset = await prisma.asset.findUnique({
+            where: { id: assetId },
+            include: { assignments: { where: { isCurrent: true } } },
+          });
+
+          if (!asset) {
+            return res.status(404).json({
+              success: false,
+              message: 'Asset not found',
+            });
+          }
+
+          const authContext: AuthUserContext = {
+            userId: user.id,
+            role: user.role as Role,
+            departmentId: user.employeeProfile?.departmentId,
+            employeeProfileId: user.employeeProfile?.id,
+            employeeId: user.employeeProfile?.employeeId,
+          };
+
+          const allowed = canAccessAsset(authContext, {
+            id: asset.id,
+            departmentId: asset.departmentId,
+            assignments: asset.assignments,
+          });
+
+          if (!allowed) {
+            return res.status(403).json({
+              success: false,
+              message: 'Forbidden: You do not have permission to view assignment history for this asset',
+            });
+          }
+        }
+      }
+
       const history = await this.service.getAssetHistory(assetId);
 
       return res.status(200).json({

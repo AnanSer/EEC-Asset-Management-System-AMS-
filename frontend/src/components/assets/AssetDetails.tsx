@@ -35,6 +35,8 @@ import AssignmentTimeline from '@/components/assignments/AssignmentTimeline';
 import AssetThumbnail from './AssetThumbnail';
 import maintenanceService from '@/services/maintenance.service';
 import { MaintenanceTicket } from '@/constants/maintenance';
+import { usePermissions } from '@/hooks/usePermissions';
+import { PERMISSIONS } from '@/lib/authorization';
 
 interface AssetDetailsProps {
   asset: Asset;
@@ -120,6 +122,7 @@ function warrantyLabel(warrantyExpiry?: string | null): { label: string; status:
 }
 
 export default function AssetDetails({ asset, onRefresh }: AssetDetailsProps) {
+  const { can } = usePermissions();
   const assignmentsCount = asset._count?.assignments ?? 0;
   const maintenanceCount = asset._count?.maintenanceTickets ?? 0;
   const warranty = warrantyLabel(asset.warrantyExpiry);
@@ -193,7 +196,7 @@ export default function AssetDetails({ asset, onRefresh }: AssetDetailsProps) {
             History ({assignmentsCount})
           </Link>
 
-          {asset.status === 'AVAILABLE' && (
+          {asset.status === 'AVAILABLE' && can(PERMISSIONS.ASSETS_ASSIGN) && (
             <Link
               href={`/assignments/new?assetId=${asset.id}`}
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition shadow-xs"
@@ -211,13 +214,15 @@ export default function AssetDetails({ asset, onRefresh }: AssetDetailsProps) {
             Request Maintenance
           </Link>
 
-          <Link
-            href={`/assets/${asset.id}/edit`}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-eec-primary text-white text-xs font-semibold hover:bg-eec-primary/90 transition shadow-xs"
-          >
-            <Edit2 className="w-3.5 h-3.5" />
-            Edit Asset
-          </Link>
+          {can(PERMISSIONS.ASSETS_UPDATE) && (
+            <Link
+              href={`/assets/${asset.id}/edit`}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-eec-primary text-white text-xs font-semibold hover:bg-eec-primary/90 transition shadow-xs"
+            >
+              <Edit2 className="w-3.5 h-3.5" />
+              Edit Asset
+            </Link>
+          )}
         </div>
       </div>
 
@@ -314,8 +319,8 @@ export default function AssetDetails({ asset, onRefresh }: AssetDetailsProps) {
             Assignment Information
           </h3>
 
-          {/* Action Buttons: Transfer & Return (only visible when asset is ASSIGNED) */}
-          {asset.status === 'ASSIGNED' && (
+          {/* Action Buttons: Transfer & Return (only visible when asset is ASSIGNED and user has assign permission) */}
+          {asset.status === 'ASSIGNED' && can(PERMISSIONS.ASSETS_ASSIGN) && (
             <div className="flex items-center gap-2">
               <button
                 type="button"

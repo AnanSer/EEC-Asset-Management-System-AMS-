@@ -1,21 +1,51 @@
 import { Router } from 'express';
 import { departmentController } from './department.controller';
+import { requireAuth, requireRole } from '../../middleware';
+import { ROLES } from '../../constants';
 
 const router = Router();
 
+// All department routes require an authenticated session
+router.use(requireAuth());
+
 // GET /api/departments — List with search, status filter, and pagination
-router.get('/', departmentController.getAll);
+// Allowed: ADMIN, IT_TECHNICIAN, DEPARTMENT_MANAGER
+router.get(
+  '/',
+  requireRole(ROLES.ADMIN, ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER),
+  departmentController.getAll
+);
 
 // GET /api/departments/:id — Single department details
-router.get('/:id', departmentController.getById);
+// Allowed: ADMIN, IT_TECHNICIAN, DEPARTMENT_MANAGER
+router.get(
+  '/:id',
+  requireRole(ROLES.ADMIN, ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER),
+  departmentController.getById
+);
 
 // POST /api/departments — Create department
-router.post('/', departmentController.create);
+// Allowed: ADMIN only
+router.post(
+  '/',
+  requireRole(ROLES.ADMIN),
+  departmentController.create
+);
 
 // PUT /api/departments/:id — Update department
-router.put('/:id', departmentController.update);
+// Allowed: ADMIN only
+router.put(
+  '/:id',
+  requireRole(ROLES.ADMIN),
+  departmentController.update
+);
 
 // PATCH /api/departments/:id/status — Soft activate/deactivate
-router.patch('/:id/status', departmentController.updateStatus);
+// Allowed: ADMIN only
+router.patch(
+  '/:id/status',
+  requireRole(ROLES.ADMIN),
+  departmentController.updateStatus
+);
 
 export default router;

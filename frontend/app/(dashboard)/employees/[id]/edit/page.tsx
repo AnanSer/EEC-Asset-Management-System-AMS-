@@ -10,6 +10,8 @@ import EmployeeForm from '@/components/employees/EmployeeForm';
 import { useToast } from '@/components/ui/Toast';
 import employeeService from '@/services/employee.service';
 import { Employee, CreateEmployeeInput } from '@/constants/employees';
+import PermissionGuard from '@/components/auth/PermissionGuard';
+import { PERMISSIONS } from '@/lib/authorization';
 
 export default function EditEmployeePage() {
   const params = useParams();
@@ -101,22 +103,24 @@ export default function EditEmployeePage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <PageHeader
-        title={`Edit ${employee.fullName}`}
-        description={`Update employment details, department, or system access for ${employee.employeeId}`}
-        breadcrumbs={[
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Employees', href: '/employees' },
-          { label: 'Edit' },
-        ]}
-      />
+    <PermissionGuard permission={PERMISSIONS.EMPLOYEES_UPDATE}>
+      <div className="max-w-4xl mx-auto space-y-6">
+        <PageHeader
+          title={`Edit ${employee.fullName}`}
+          description={`Update employment details, department, or system access for ${employee.employeeId}`}
+          breadcrumbs={[
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: 'Employees', href: '/employees' },
+            { label: 'Edit' },
+          ]}
+        />
 
-      <EmployeeForm
-        initialData={employee}
-        onSubmit={handleSubmit}
-        isSubmitting={isSubmitting}
-      />
-    </div>
+        <EmployeeForm
+          initialData={employee}
+          onSubmit={handleSubmit}
+          isSubmitting={isSubmitting}
+        />
+      </div>
+    </PermissionGuard>
   );
 }

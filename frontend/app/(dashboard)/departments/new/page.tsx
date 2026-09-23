@@ -7,6 +7,8 @@ import DepartmentForm from '@/components/departments/DepartmentForm';
 import { useToast } from '@/components/ui/Toast';
 import departmentService from '@/services/department.service';
 import { CreateDepartmentInput } from '@/constants/departments';
+import PermissionGuard from '@/components/auth/PermissionGuard';
+import { PERMISSIONS } from '@/lib/authorization';
 
 export default function NewDepartmentPage() {
   const router = useRouter();
@@ -34,18 +36,20 @@ export default function NewDepartmentPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <PageHeader
-        title="Create Department"
-        description="Register a new organizational sector, directorate, or facility for Ethiopian Engineering Corporation."
-        breadcrumbs={[
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Departments', href: '/departments' },
-          { label: 'New' },
-        ]}
-      />
+    <PermissionGuard permission={PERMISSIONS.DEPARTMENTS_CREATE}>
+      <div className="max-w-4xl mx-auto space-y-6">
+        <PageHeader
+          title="Create Department"
+          description="Register a new organizational sector, directorate, or facility for Ethiopian Engineering Corporation."
+          breadcrumbs={[
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: 'Departments', href: '/departments' },
+            { label: 'New' },
+          ]}
+        />
 
-      <DepartmentForm onSubmit={handleSubmit} isSubmitting={isSubmitting} />
-    </div>
+        <DepartmentForm onSubmit={handleSubmit} isSubmitting={isSubmitting} />
+      </div>
+    </PermissionGuard>
   );
 }

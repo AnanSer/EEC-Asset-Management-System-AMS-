@@ -7,6 +7,8 @@ import EmployeeForm from '@/components/employees/EmployeeForm';
 import { useToast } from '@/components/ui/Toast';
 import employeeService from '@/services/employee.service';
 import { CreateEmployeeInput } from '@/constants/employees';
+import PermissionGuard from '@/components/auth/PermissionGuard';
+import { PERMISSIONS } from '@/lib/authorization';
 
 export default function NewEmployeePage() {
   const router = useRouter();
@@ -36,18 +38,20 @@ export default function NewEmployeePage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <PageHeader
-        title="Register Employee"
-        description="Add a new employee record and assign them to an Ethiopian Engineering Corporation directorate."
-        breadcrumbs={[
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Employees', href: '/employees' },
-          { label: 'New' },
-        ]}
-      />
+    <PermissionGuard permission={PERMISSIONS.EMPLOYEES_CREATE}>
+      <div className="max-w-4xl mx-auto space-y-6">
+        <PageHeader
+          title="Register Employee"
+          description="Add a new employee record and assign them to an Ethiopian Engineering Corporation directorate."
+          breadcrumbs={[
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: 'Employees', href: '/employees' },
+            { label: 'New' },
+          ]}
+        />
 
-      <EmployeeForm onSubmit={handleSubmit} isSubmitting={isSubmitting} />
-    </div>
+        <EmployeeForm onSubmit={handleSubmit} isSubmitting={isSubmitting} />
+      </div>
+    </PermissionGuard>
   );
 }

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { navItems, bottomNavItems } from '@/lib/authorization';
+import { usePermissions } from '@/hooks/usePermissions';
 import EECLogo from '@/components/brand/EECLogo';
 import clsx from 'clsx';
 
@@ -14,6 +15,17 @@ interface SidebarProps {
 
 export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
+  const { role } = usePermissions();
+
+  const visibleNavItems = navItems.filter((item) => {
+    if (!role) return true;
+    return item.allowedRoles.includes(role);
+  });
+
+  const visibleBottomNavItems = bottomNavItems.filter((item) => {
+    if (!role) return true;
+    return item.allowedRoles.includes(role);
+  });
 
   return (
     <aside
@@ -62,7 +74,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
             Main Menu
           </p>
         )}
-        {navItems.map((item) => {
+        {visibleNavItems.map((item) => {
           const isActive =
             pathname === item.href ||
             (item.href !== '/dashboard' && pathname.startsWith(item.href));
@@ -106,7 +118,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
       {/* ─── Bottom Navigation ───────────────────────────────────────── */}
       <div className="border-t border-white/10 py-3 px-2 space-y-0.5">
-        {bottomNavItems.map((item) => {
+        {visibleBottomNavItems.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
 

@@ -8,6 +8,8 @@ import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import EmptyState from '@/components/ui/EmptyState';
 import { useToast } from '@/components/ui/Toast';
 import { UserAvatar } from '@/components/auth';
+import PermissionGuard from '@/components/auth/PermissionGuard';
+import { PERMISSIONS } from '@/lib/authorization';
 import {
   UserCheck,
   UserX,
@@ -204,7 +206,8 @@ export default function PendingUsersPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <PermissionGuard permission={PERMISSIONS.IDENTITY_APPROVE}>
+      <div className="space-y-6">
       {/* Page Header */}
       <PageHeader
         title="Pending Account Approvals"
@@ -554,6 +557,7 @@ export default function PendingUsersPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </PermissionGuard>
   );
 }

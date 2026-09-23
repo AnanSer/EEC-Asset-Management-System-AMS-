@@ -28,6 +28,8 @@ import maintenanceService from '@/services/maintenance.service';
 import { AssetAssignment } from '@/constants/assignments';
 import { MaintenanceTicket } from '@/constants/maintenance';
 import { ASSET_CATEGORY_LABELS, ASSET_STATUS_LABELS } from '@/constants/assets';
+import { usePermissions } from '@/hooks/usePermissions';
+import { PERMISSIONS } from '@/lib/authorization';
 
 interface EmployeeDetailsProps {
   employee: Employee;
@@ -40,6 +42,7 @@ export default function EmployeeDetails({
   onToggleStatus,
   statusLoading = false,
 }: EmployeeDetailsProps) {
+  const { can } = usePermissions();
   const [assignedAssets, setAssignedAssets] = useState<AssetAssignment[]>([]);
   const [loadingAssets, setLoadingAssets] = useState(true);
 
@@ -145,28 +148,30 @@ export default function EmployeeDetails({
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0 self-end md:self-center">
-          <Link
-            href={`/employees/${employee.id}/edit`}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs"
-          >
-            <Edit2 className="w-3.5 h-3.5 text-slate-500" />
-            Edit Profile
-          </Link>
-          <button
-            type="button"
-            onClick={onToggleStatus}
-            disabled={statusLoading}
-            className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold shadow-xs transition-colors ${
-              employee.isActive
-                ? 'border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100'
-                : 'border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-            }`}
-          >
-            <Power className="w-3.5 h-3.5" />
-            {employee.isActive ? 'Deactivate' : 'Activate'}
-          </button>
-        </div>
+        {can(PERMISSIONS.EMPLOYEES_UPDATE) && (
+          <div className="flex items-center gap-2.5 shrink-0 self-end md:self-center">
+            <Link
+              href={`/employees/${employee.id}/edit`}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs"
+            >
+              <Edit2 className="w-3.5 h-3.5 text-slate-500" />
+              Edit Profile
+            </Link>
+            <button
+              type="button"
+              onClick={onToggleStatus}
+              disabled={statusLoading}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold shadow-xs transition-colors ${
+                employee.isActive
+                  ? 'border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100'
+                  : 'border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+              }`}
+            >
+              <Power className="w-3.5 h-3.5" />
+              {employee.isActive ? 'Deactivate' : 'Activate'}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Summary Stat Cards */}
@@ -357,7 +362,7 @@ export default function EmployeeDetails({
               Assigned Assets ({assignedAssets.length})
             </h3>
           </div>
-          {employee.isActive && (
+          {employee.isActive && can(PERMISSIONS.ASSETS_ASSIGN) && (
             <Link
               href={`/assignments/new?employeeId=${employee.id}`}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-eec-primary text-white text-xs font-semibold hover:bg-eec-primary/90 transition shadow-xs"

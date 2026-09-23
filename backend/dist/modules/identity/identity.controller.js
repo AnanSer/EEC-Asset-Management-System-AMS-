@@ -83,6 +83,24 @@ class IdentityController {
                 return this.handleError(res, err);
             }
         };
+        /**
+         * PATCH /api/identity/:id/suspend
+         * Suspend a user account.
+         */
+        this.suspend = async (req, res) => {
+            try {
+                const id = String(req.params.id);
+                const result = await this.service.suspendAccount(id);
+                return res.status(200).json({
+                    success: true,
+                    message: result.message,
+                    data: result.user,
+                });
+            }
+            catch (err) {
+                return this.handleError(res, err);
+            }
+        };
     }
     handleError(res, err) {
         if (err instanceof identity_service_1.AppError) {
