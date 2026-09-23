@@ -10,6 +10,7 @@ import {
   Bell,
   Settings,
   UserCircle,
+  UserCheck,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -24,6 +25,7 @@ export const navItems: NavItem[] = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { label: 'Departments', href: '/departments', icon: Building2 },
   { label: 'Employees', href: '/employees', icon: Users },
+  { label: 'Pending Approvals', href: '/users/pending', icon: UserCheck },
   { label: 'Assets', href: '/assets', icon: Package },
   { label: 'Assignments', href: '/assignments', icon: ClipboardList },
   { label: 'Maintenance', href: '/maintenance', icon: Wrench, badge: 3 },

@@ -1,5 +1,5 @@
 // EEC EAMS – Express Entry Point
-// Phase 9A & 9A.1: Better Auth & Authentication Middleware
+// Phase 9A, 9A.1 & 9A.2 / 9B: Better Auth, Auth Middleware & Identity Module
 
 import express from 'express';
 import cors from 'cors';
@@ -7,8 +7,10 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { toNodeHandler } from 'better-auth/node';
 import { auth } from './lib/auth';
+import prisma from './lib/prisma';
 import { requireAuth } from './middleware/auth.middleware';
 
+import identityRoutes from './modules/identity/identity.routes';
 import departmentRoutes from './modules/departments/department.routes';
 import employeeRoutes from './modules/employees/employee.routes';
 import assetRoutes from './modules/assets/asset.routes';
@@ -35,9 +37,26 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
 }));
 
-// ─── Protected Verification Auth Endpoint (Phase 9A.1) ───────────────────────
+// ─── Protected Verification & User Info Auth Endpoint (Phase 9A.1 & 9B) ────────
 // Mounted before Better Auth wildcard handler so /api/auth/me is handled
-app.get('/api/auth/me', requireAuth, (req, res) => {
+app.get('/api/auth/me', requireAuth, async (req, res) => {
+  const businessUser = await prisma.user.findUnique({
+    where: { email: req.auth!.user.email },
+    include: {
+      employeeProfile: {
+        include: {
+          department: {
+            select: {
+              id: true,
+              code: true,
+              name: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
   return res.status(200).json({
     success: true,
     data: {
@@ -45,6 +64,16 @@ app.get('/api/auth/me', requireAuth, (req, res) => {
       email: req.auth!.user.email,
       user: req.auth!.user,
       session: req.auth!.session,
+      businessUser: businessUser
+        ? {
+            id: businessUser.id,
+            email: businessUser.email,
+            role: businessUser.role,
+            status: businessUser.status,
+            isEmailVerified: businessUser.isEmailVerified,
+            employeeProfile: businessUser.employeeProfile,
+          }
+        : null,
     },
   });
 });
@@ -69,7 +98,8 @@ app.get('/health', (_req, res) => {
   });
 });
 
-// ─── Business Routes ─────────────────────────────────────────────────────────
+// ─── Identity & Business Routes ──────────────────────────────────────────────
+app.use('/api/identity', identityRoutes);
 app.use('/api/departments', departmentRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/assets', assetRoutes);
