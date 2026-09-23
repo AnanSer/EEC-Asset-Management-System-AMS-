@@ -60,6 +60,7 @@ exports.maintenanceQuerySchema = zod_1.z.object({
     category: zod_1.z.string().optional(),
     technician: zod_1.z.string().optional(),
     assetId: zod_1.z.string().optional(),
+    personal: zod_1.z.enum(['true', 'false']).or(zod_1.z.boolean()).optional(),
     page: zod_1.z.coerce.number().int().positive().optional().default(1),
     limit: zod_1.z.coerce.number().int().positive().max(100).optional().default(10),
 });

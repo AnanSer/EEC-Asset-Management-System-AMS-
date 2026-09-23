@@ -26,14 +26,10 @@ export class AssetController {
 
         if (user) {
           const role = user.role as Role;
+          const isPersonal = parsedQuery.personal === 'true' || parsedQuery.personal === true || role === ROLES.EMPLOYEE;
 
-          // DEPARTMENT_MANAGER: View only assets inside own department
-          if (role === ROLES.DEPARTMENT_MANAGER && user.employeeProfile?.departmentId) {
-            parsedQuery.departmentId = user.employeeProfile.departmentId;
-          }
-
-          // EMPLOYEE: View only assets currently assigned to them
-          if (role === ROLES.EMPLOYEE) {
+          // Personal view: View only assets currently assigned to logged-in user (Employee or Manager)
+          if (isPersonal) {
             if (user.employeeProfile) {
               const activeAssignments = await prisma.assetAssignment.findMany({
                 where: {
@@ -70,6 +66,11 @@ export class AssetController {
                 meta: { total: 0, page: 1, limit: 10, totalPages: 0 },
               });
             }
+          }
+
+          // DEPARTMENT_MANAGER: View only assets inside own department
+          if (role === ROLES.DEPARTMENT_MANAGER && user.employeeProfile?.departmentId) {
+            parsedQuery.departmentId = user.employeeProfile.departmentId;
           }
         }
       }
@@ -112,13 +113,12 @@ export class AssetController {
             departmentId: user.employeeProfile?.departmentId,
             employeeProfileId: user.employeeProfile?.id,
             employeeId: user.employeeProfile?.employeeId,
+            name: user.employeeProfile
+              ? `${user.employeeProfile.firstName} ${user.employeeProfile.lastName}`.trim()
+              : null,
           };
 
-          const allowed = canAccessAsset(authContext, {
-            id: asset.id,
-            departmentId: asset.departmentId,
-            currentAssignment: asset.currentAssignment,
-          });
+          const allowed = canAccessAsset(authContext, asset);
 
           if (!allowed) {
             return res.status(403).json({

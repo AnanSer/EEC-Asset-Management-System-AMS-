@@ -12,6 +12,8 @@ router.get('/stats', (0, middleware_1.requireRole)(constants_1.ROLES.ADMIN, cons
 // List and Create (scoped by role in controller)
 router.get('/', (req, res) => maintenance_controller_1.maintenanceController.getTickets(req, res));
 router.post('/', (req, res) => maintenance_controller_1.maintenanceController.createTicket(req, res));
+// Technicians list for assignment dropdown (all authenticated users)
+router.get('/technicians', (req, res) => maintenance_controller_1.maintenanceController.getTechnicians(req, res));
 // Item details (scoped by canAccessMaintenanceTicket in controller)
 router.get('/:id', (req, res) => maintenance_controller_1.maintenanceController.getTicketById(req, res));
 // Mutation routes (ADMIN and IT_TECHNICIAN only)

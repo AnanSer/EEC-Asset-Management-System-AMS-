@@ -9,7 +9,7 @@ import {
 import { useToast } from '@/components/ui/Toast';
 import assetService from '@/services/asset.service';
 import employeeService from '@/services/employee.service';
-import maintenanceService from '@/services/maintenance.service';
+import maintenanceService, { MaintenanceTechnician } from '@/services/maintenance.service';
 import { Asset } from '@/constants/assets';
 import { Employee } from '@/constants/employees';
 import {
@@ -36,6 +36,7 @@ export default function MaintenanceForm({
 
   const [assets, setAssets] = useState<Asset[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [technicians, setTechnicians] = useState<MaintenanceTechnician[]>([]);
   const [loadingInitial, setLoadingInitial] = useState(true);
 
   // Form states
@@ -73,13 +74,23 @@ export default function MaintenanceForm({
     async function loadDependencies() {
       try {
         setLoadingInitial(true);
-        const [assetRes, empRes] = await Promise.all([
+        const [assetRes, empRes, techRes] = await Promise.all([
           assetService.getAll({ limit: 100 }),
-          employeeService.getAll({ status: 'active', limit: 100 }),
+          employeeService.getAll({ status: 'active', limit: 100 }).catch(() => ({ success: false, data: [] })),
+          maintenanceService.getTechnicians().catch(() => ({ success: false, data: [] })),
         ]);
 
         if (assetRes.success) setAssets(assetRes.data);
-        if (empRes.success) setEmployees(empRes.data);
+        if (empRes.success) {
+          setEmployees(empRes.data);
+          // If in create mode and reportedBy is empty, auto-fill with first employee if only 1 (e.g. employee portal)
+          if (!initialData?.reportedBy && empRes.data.length === 1) {
+            setReportedBy(`${empRes.data[0].firstName} ${empRes.data[0].lastName}`);
+          }
+        }
+        if (techRes.success) {
+          setTechnicians(techRes.data);
+        }
       } catch {
         toast.error('Failed to load assets or employee records');
       } finally {
@@ -88,12 +99,7 @@ export default function MaintenanceForm({
     }
 
     loadDependencies();
-  }, [toast]);
-
-  // Filter technicians
-  const technicians = employees.filter(
-    (emp) => emp.role === 'IT_TECHNICIAN'
-  );
+  }, [toast, initialData?.reportedBy]);
 
   // Selected asset
   const selectedAsset = assets.find((a) => a.id === assetId) || initialData?.asset;
@@ -338,23 +344,20 @@ export default function MaintenanceForm({
               <select
                 value={assignedTechnician}
                 onChange={(e) => setAssignedTechnician(e.target.value)}
-                className="w-full h-11 px-3.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-eec-primary/20 focus:border-eec-primary bg-white"
+                className="w-full h-11 px-3.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-eec-primary/20 focus:border-eec-primary bg-white disabled:bg-slate-50 disabled:text-slate-400"
                 required
+                disabled={technicians.length === 0}
               >
-                <option value="">-- Choose IT Technician --</option>
-                {technicians.length > 0 ? (
-                  technicians.map((tech) => (
-                    <option key={tech.id} value={`${tech.firstName} ${tech.lastName}`}>
-                      {tech.firstName} {tech.lastName} ({tech.employeeId})
-                    </option>
-                  ))
-                ) : (
-                  employees.map((emp) => (
-                    <option key={emp.id} value={`${emp.firstName} ${emp.lastName}`}>
-                      {emp.firstName} {emp.lastName} ({emp.employeeId} - {emp.role})
-                    </option>
-                  ))
-                )}
+                <option value="">
+                  {technicians.length === 0
+                    ? 'No active IT technicians available'
+                    : '-- Choose IT Technician --'}
+                </option>
+                {technicians.map((tech) => (
+                  <option key={tech.id} value={`${tech.firstName} ${tech.lastName}`}>
+                    {tech.firstName} {tech.lastName} ({tech.employeeId} - {tech.department?.name || 'ICT Directorate'})
+                  </option>
+                ))}
               </select>
               <p className="mt-1 text-xs text-slate-500">
                 Only active IT Technicians should diagnose and repair hardware/software issues.

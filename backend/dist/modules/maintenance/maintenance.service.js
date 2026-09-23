@@ -125,6 +125,10 @@ class MaintenanceService {
                                 email: data.assignedTechnician,
                             },
                         },
+                        {
+                            firstName: { equals: data.assignedTechnician.split(' ')[0], mode: 'insensitive' },
+                            lastName: { equals: data.assignedTechnician.split(' ').slice(1).join(' '), mode: 'insensitive' },
+                        },
                     ],
                 },
                 include: { user: true },

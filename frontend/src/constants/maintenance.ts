@@ -155,6 +155,7 @@ export interface MaintenanceQueryParams {
   category?: string;
   technician?: string;
   assetId?: string;
+  personal?: boolean;
   page?: number;
   limit?: number;
 }

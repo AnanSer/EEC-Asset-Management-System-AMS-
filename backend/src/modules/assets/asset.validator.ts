@@ -83,6 +83,7 @@ export const assetQuerySchema = z.object({
   status: z.string().optional(),
   condition: z.string().optional(),
   departmentId: z.string().optional(),
+  personal: z.enum(['true', 'false']).or(z.boolean()).optional(),
   page: z.coerce.number().int().positive().optional().default(1),
   limit: z.coerce.number().int().positive().max(100).optional().default(10),
 });

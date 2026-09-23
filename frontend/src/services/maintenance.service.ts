@@ -35,7 +35,30 @@ export interface MaintenanceStatsResponse {
   data: MaintenanceStats;
 }
 
+export interface MaintenanceTechnician {
+  id: string;
+  firstName: string;
+  lastName: string;
+  employeeId: string;
+  jobTitle?: string | null;
+  department?: { id: string; name: string } | null;
+  user: { id: string; email: string; role: string };
+}
+
+export interface MaintenanceTechniciansResponse {
+  success: boolean;
+  data: MaintenanceTechnician[];
+}
+
 export const maintenanceService = {
+  /**
+   * GET /api/maintenance/technicians — list active IT technicians
+   */
+  async getTechnicians(): Promise<MaintenanceTechniciansResponse> {
+    const res = await apiClient.get<MaintenanceTechniciansResponse>('/maintenance/technicians');
+    return res.data;
+  },
+
   /**
    * GET /api/maintenance — list tickets with filters & pagination
    */

@@ -16,6 +16,7 @@ import {
   Settings,
   UserCircle,
   UserCheck,
+  Laptop,
   type LucideIcon,
 } from 'lucide-react';
 import { ROLES, type Role } from './roles';
@@ -57,7 +58,13 @@ export const navItems: NavItem[] = [
     label: 'Assets',
     href: '/assets',
     icon: Package,
-    allowedRoles: [ROLES.ADMIN, ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER, ROLES.EMPLOYEE],
+    allowedRoles: [ROLES.ADMIN, ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER],
+  },
+  {
+    label: 'My Assets',
+    href: '/my-assets',
+    icon: Laptop,
+    allowedRoles: [ROLES.DEPARTMENT_MANAGER, ROLES.EMPLOYEE],
   },
   {
     label: 'Assignments',
@@ -70,7 +77,13 @@ export const navItems: NavItem[] = [
     href: '/maintenance',
     icon: Wrench,
     badge: 3,
-    allowedRoles: [ROLES.ADMIN, ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER, ROLES.EMPLOYEE],
+    allowedRoles: [ROLES.ADMIN, ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER],
+  },
+  {
+    label: 'My Maintenance',
+    href: '/my-maintenance',
+    icon: Wrench,
+    allowedRoles: [ROLES.DEPARTMENT_MANAGER, ROLES.EMPLOYEE],
   },
   {
     label: 'Testing',

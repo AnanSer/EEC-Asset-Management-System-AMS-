@@ -78,6 +78,7 @@ exports.assetQuerySchema = zod_1.z.object({
     status: zod_1.z.string().optional(),
     condition: zod_1.z.string().optional(),
     departmentId: zod_1.z.string().optional(),
+    personal: zod_1.z.enum(['true', 'false']).or(zod_1.z.boolean()).optional(),
     page: zod_1.z.coerce.number().int().positive().optional().default(1),
     limit: zod_1.z.coerce.number().int().positive().max(100).optional().default(10),
 });

@@ -19,6 +19,9 @@ router.get(
 router.get('/', (req, res) => maintenanceController.getTickets(req, res));
 router.post('/', (req, res) => maintenanceController.createTicket(req, res));
 
+// Technicians list for assignment dropdown (all authenticated users)
+router.get('/technicians', (req, res) => maintenanceController.getTechnicians(req, res));
+
 // Item details (scoped by canAccessMaintenanceTicket in controller)
 router.get('/:id', (req, res) => maintenanceController.getTicketById(req, res));
 

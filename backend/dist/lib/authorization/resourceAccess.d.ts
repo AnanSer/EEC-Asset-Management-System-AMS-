@@ -13,6 +13,7 @@ export interface AuthUserContext {
     departmentId?: string | null;
     employeeProfileId?: string | null;
     employeeId?: string | null;
+    name?: string | null;
 }
 export interface EmployeeAccessTarget {
     id?: string;
@@ -49,7 +50,22 @@ export interface MaintenanceTicketAccessTarget {
     reportedByUserId?: string | null;
     reportedByEmployeeId?: string | null;
     asset?: {
+        id?: string;
         departmentId?: string | null;
+        currentHolder?: {
+            id?: string;
+            employeeId?: string;
+            fullName?: string;
+        } | null;
+        assignments?: Array<{
+            employeeId?: string;
+            isCurrent?: boolean;
+            employee?: {
+                id?: string;
+                userId?: string;
+                employeeId?: string;
+            };
+        }>;
     } | null;
 }
 /**
@@ -75,7 +91,7 @@ export declare function canAccessDepartment(auth: AuthUserContext, departmentId:
  * Rules:
  * - ADMIN -> true
  * - IT_TECHNICIAN -> true
- * - DEPARTMENT_MANAGER -> asset.departmentId === manager.departmentId
+ * - DEPARTMENT_MANAGER -> asset in own department OR own assigned asset
  * - EMPLOYEE -> currently assigned asset only
  */
 export declare function canAccessAsset(auth: AuthUserContext, asset: AssetAccessTarget): boolean;
@@ -84,8 +100,8 @@ export declare function canAccessAsset(auth: AuthUserContext, asset: AssetAccess
  * Rules:
  * - ADMIN -> true
  * - IT_TECHNICIAN -> true
- * - DEPARTMENT_MANAGER -> ticket.departmentId === manager.departmentId (or asset department)
- * - EMPLOYEE -> reportedByUserId === auth.userId
+ * - DEPARTMENT_MANAGER -> ticket in own department OR own assigned asset OR reported by manager
+ * - EMPLOYEE -> ticket reported by employee OR ticket asset currently assigned to employee
  */
 export declare function canAccessMaintenanceTicket(auth: AuthUserContext, ticket: MaintenanceTicketAccessTarget): boolean;
 //# sourceMappingURL=resourceAccess.d.ts.map

@@ -64,6 +64,7 @@ export const maintenanceQuerySchema = z.object({
   category: z.string().optional(),
   technician: z.string().optional(),
   assetId: z.string().optional(),
+  personal: z.enum(['true', 'false']).or(z.boolean()).optional(),
   page: z.coerce.number().int().positive().optional().default(1),
   limit: z.coerce.number().int().positive().max(100).optional().default(10),
 });

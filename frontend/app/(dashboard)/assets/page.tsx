@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Plus, Package, ChevronLeft, ChevronRight } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import SearchInput from '@/components/ui/SearchInput';
@@ -20,8 +21,15 @@ const ASSET_STATUSES = ['AVAILABLE', 'ASSIGNED', 'MAINTENANCE', 'TESTING', 'RETI
 const ASSET_CATEGORIES = ['LAPTOP', 'DESKTOP', 'PRINTER', 'SCANNER', 'ROUTER', 'SWITCH', 'PROJECTOR', 'MONITOR', 'SERVER', 'UPS', 'OTHER'] as const;
 
 export default function AssetsPage() {
+  const router = useRouter();
   const toast = useToast();
-  const { can } = usePermissions();
+  const { can, isEmployee } = usePermissions();
+
+  useEffect(() => {
+    if (isEmployee) {
+      router.replace('/my-assets');
+    }
+  }, [isEmployee, router]);
 
   const [assets, setAssets] = useState<Asset[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);

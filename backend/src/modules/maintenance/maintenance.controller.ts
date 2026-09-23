@@ -52,34 +52,10 @@ export class MaintenanceController {
 
         if (user) {
           const role = user.role as Role;
+          const isPersonal = validatedQuery.personal === 'true' || validatedQuery.personal === true || role === ROLES.EMPLOYEE;
 
-          // DEPARTMENT_MANAGER: View maintenance tickets belonging to own department only
-          if (role === ROLES.DEPARTMENT_MANAGER && user.employeeProfile?.departmentId) {
-            const deptTickets = await prisma.maintenanceTicket.findMany({
-              where: {
-                asset: {
-                  departmentId: user.employeeProfile.departmentId,
-                },
-              },
-              include: {
-                asset: {
-                  include: {
-                    department: { select: { id: true, code: true, name: true } },
-                  },
-                },
-              },
-              orderBy: { createdAt: 'desc' },
-            });
-
-            return res.status(200).json({
-              success: true,
-              data: deptTickets,
-              meta: { total: deptTickets.length, page: 1, limit: 10, totalPages: 1 },
-            });
-          }
-
-          // EMPLOYEE: View only their own reported tickets
-          if (role === ROLES.EMPLOYEE) {
+          // Personal view: View tickets reported by user OR for assets currently assigned to user
+          if (isPersonal) {
             if (user.employeeProfile) {
               const tickets = await prisma.maintenanceTicket.findMany({
                 where: {
@@ -87,7 +63,18 @@ export class MaintenanceController {
                     { reportedBy: user.id },
                     { reportedBy: user.employeeProfile.employeeId },
                     { reportedBy: user.employeeProfile.id },
-                    { reportedBy: `${user.employeeProfile.firstName} ${user.employeeProfile.lastName}`.trim() },
+                    { reportedBy: { contains: user.employeeProfile.firstName, mode: 'insensitive' } },
+                    { reportedBy: { contains: user.employeeProfile.lastName, mode: 'insensitive' } },
+                    {
+                      asset: {
+                        assignments: {
+                          some: {
+                            employeeId: user.employeeProfile.id,
+                            isCurrent: true,
+                          },
+                        },
+                      },
+                    },
                   ],
                 },
                 include: {
@@ -113,6 +100,31 @@ export class MaintenanceController {
               });
             }
           }
+
+          // DEPARTMENT_MANAGER: View maintenance tickets belonging to own department only
+          if (role === ROLES.DEPARTMENT_MANAGER && user.employeeProfile?.departmentId) {
+            const deptTickets = await prisma.maintenanceTicket.findMany({
+              where: {
+                asset: {
+                  departmentId: user.employeeProfile.departmentId,
+                },
+              },
+              include: {
+                asset: {
+                  include: {
+                    department: { select: { id: true, code: true, name: true } },
+                  },
+                },
+              },
+              orderBy: { createdAt: 'desc' },
+            });
+
+            return res.status(200).json({
+              success: true,
+              data: deptTickets,
+              meta: { total: deptTickets.length, page: 1, limit: 10, totalPages: 1 },
+            });
+          }
         }
       }
 
@@ -121,6 +133,49 @@ export class MaintenanceController {
         success: true,
         data: result.tickets,
         meta: result.meta,
+      });
+    } catch (error) {
+      return this.handleError(res, error);
+    }
+  }
+
+  async getTechnicians(req: Request, res: Response) {
+    try {
+      const techUsers = await prisma.user.findMany({
+        where: {
+          role: ROLES.IT_TECHNICIAN,
+          status: 'APPROVED',
+          employeeProfile: {
+            isActive: true,
+          },
+        },
+        include: {
+          employeeProfile: {
+            include: {
+              department: { select: { id: true, code: true, name: true } },
+            },
+          },
+        },
+      });
+
+      const technicians = techUsers
+        .filter((u) => u.employeeProfile !== null)
+        .map((u) => {
+          const ep = u.employeeProfile!;
+          return {
+            id: ep.id,
+            employeeId: ep.employeeId,
+            firstName: ep.firstName,
+            lastName: ep.lastName,
+            fullName: `${ep.firstName} ${ep.lastName}`.trim(),
+            department: ep.department ? { id: ep.department.id, name: ep.department.name, code: ep.department.code } : null,
+            user: { id: u.id, email: u.email, role: u.role },
+          };
+        });
+
+      return res.status(200).json({
+        success: true,
+        data: technicians,
       });
     } catch (error) {
       return this.handleError(res, error);
@@ -153,13 +208,12 @@ export class MaintenanceController {
             departmentId: user.employeeProfile?.departmentId,
             employeeProfileId: user.employeeProfile?.id,
             employeeId: user.employeeProfile?.employeeId,
+            name: user.employeeProfile
+              ? `${user.employeeProfile.firstName} ${user.employeeProfile.lastName}`.trim()
+              : null,
           };
 
-          const allowed = canAccessMaintenanceTicket(authContext, {
-            id: ticket.id,
-            departmentId: ticket.asset?.department?.id,
-            reportedBy: ticket.reportedBy,
-          });
+          const allowed = canAccessMaintenanceTicket(authContext, ticket);
 
           if (!allowed) {
             return res.status(403).json({

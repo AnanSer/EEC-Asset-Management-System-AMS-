@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Plus, Wrench, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import SearchInput from '@/components/ui/SearchInput';
@@ -17,9 +18,18 @@ import {
 } from '@/constants/maintenance';
 import MaintenanceStats from '@/components/maintenance/MaintenanceStats';
 import MaintenanceTable from '@/components/maintenance/MaintenanceTable';
+import { usePermissions } from '@/hooks/usePermissions';
 
 export default function MaintenancePage() {
+  const router = useRouter();
   const toast = useToast();
+  const { isEmployee } = usePermissions();
+
+  useEffect(() => {
+    if (isEmployee) {
+      router.replace('/my-maintenance');
+    }
+  }, [isEmployee, router]);
 
   const [tickets, setTickets] = useState<MaintenanceTicket[]>([]);
   const [stats, setStats] = useState<StatsType>({

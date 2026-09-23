@@ -113,6 +113,10 @@ export declare const assetQuerySchema: z.ZodObject<{
     status: z.ZodOptional<z.ZodString>;
     condition: z.ZodOptional<z.ZodString>;
     departmentId: z.ZodOptional<z.ZodString>;
+    personal: z.ZodOptional<z.ZodUnion<[z.ZodEnum<{
+        false: "false";
+        true: "true";
+    }>, z.ZodBoolean]>>;
     page: z.ZodDefault<z.ZodOptional<z.ZodCoercedNumber<unknown>>>;
     limit: z.ZodDefault<z.ZodOptional<z.ZodCoercedNumber<unknown>>>;
 }, z.core.$strip>;

@@ -102,6 +102,10 @@ export declare const maintenanceQuerySchema: z.ZodObject<{
     category: z.ZodOptional<z.ZodString>;
     technician: z.ZodOptional<z.ZodString>;
     assetId: z.ZodOptional<z.ZodString>;
+    personal: z.ZodOptional<z.ZodUnion<[z.ZodEnum<{
+        false: "false";
+        true: "true";
+    }>, z.ZodBoolean]>>;
     page: z.ZodDefault<z.ZodOptional<z.ZodCoercedNumber<unknown>>>;
     limit: z.ZodDefault<z.ZodOptional<z.ZodCoercedNumber<unknown>>>;
 }, z.core.$strip>;

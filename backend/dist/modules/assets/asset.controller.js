@@ -23,12 +23,9 @@ class AssetController {
                     });
                     if (user) {
                         const role = user.role;
-                        // DEPARTMENT_MANAGER: View only assets inside own department
-                        if (role === constants_1.ROLES.DEPARTMENT_MANAGER && user.employeeProfile?.departmentId) {
-                            parsedQuery.departmentId = user.employeeProfile.departmentId;
-                        }
-                        // EMPLOYEE: View only assets currently assigned to them
-                        if (role === constants_1.ROLES.EMPLOYEE) {
+                        const isPersonal = parsedQuery.personal === 'true' || parsedQuery.personal === true || role === constants_1.ROLES.EMPLOYEE;
+                        // Personal view: View only assets currently assigned to logged-in user (Employee or Manager)
+                        if (isPersonal) {
                             if (user.employeeProfile) {
                                 const activeAssignments = await prisma_1.default.assetAssignment.findMany({
                                     where: {
@@ -66,6 +63,10 @@ class AssetController {
                                 });
                             }
                         }
+                        // DEPARTMENT_MANAGER: View only assets inside own department
+                        if (role === constants_1.ROLES.DEPARTMENT_MANAGER && user.employeeProfile?.departmentId) {
+                            parsedQuery.departmentId = user.employeeProfile.departmentId;
+                        }
                     }
                 }
                 const { assets, meta } = await this.service.getAssets(parsedQuery);
@@ -102,12 +103,11 @@ class AssetController {
                             departmentId: user.employeeProfile?.departmentId,
                             employeeProfileId: user.employeeProfile?.id,
                             employeeId: user.employeeProfile?.employeeId,
+                            name: user.employeeProfile
+                                ? `${user.employeeProfile.firstName} ${user.employeeProfile.lastName}`.trim()
+                                : null,
                         };
-                        const allowed = (0, authorization_1.canAccessAsset)(authContext, {
-                            id: asset.id,
-                            departmentId: asset.departmentId,
-                            currentAssignment: asset.currentAssignment,
-                        });
+                        const allowed = (0, authorization_1.canAccessAsset)(authContext, asset);
                         if (!allowed) {
                             return res.status(403).json({
                                 success: false,

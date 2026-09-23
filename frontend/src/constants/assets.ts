@@ -109,6 +109,7 @@ export interface AssetQuery {
   status?: string;
   condition?: string;
   departmentId?: string;
+  personal?: boolean;
   page?: number;
   limit?: number;
 }

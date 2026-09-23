@@ -15,6 +15,7 @@ export interface AuthUserContext {
   departmentId?: string | null;
   employeeProfileId?: string | null;
   employeeId?: string | null;
+  name?: string | null;
 }
 
 export interface EmployeeAccessTarget {
@@ -54,7 +55,22 @@ export interface MaintenanceTicketAccessTarget {
   reportedByUserId?: string | null;
   reportedByEmployeeId?: string | null;
   asset?: {
+    id?: string;
     departmentId?: string | null;
+    currentHolder?: {
+      id?: string;
+      employeeId?: string;
+      fullName?: string;
+    } | null;
+    assignments?: Array<{
+      employeeId?: string;
+      isCurrent?: boolean;
+      employee?: {
+        id?: string;
+        userId?: string;
+        employeeId?: string;
+      };
+    }>;
   } | null;
 }
 
@@ -143,6 +159,83 @@ export function canAccessDepartment(
  * - DEPARTMENT_MANAGER -> asset.departmentId === manager.departmentId
  * - EMPLOYEE -> currently assigned asset only
  */
+/**
+ * Helper to check if an asset is currently assigned to the authenticated user.
+ */
+function isAssetAssignedToAuthUser(
+  auth: AuthUserContext,
+  asset?: AssetAccessTarget | MaintenanceTicketAccessTarget['asset'] | null
+): boolean {
+  if (!asset || !auth) return false;
+
+  // Direct assignedToEmployeeId
+  if ('assignedToEmployeeId' in asset && asset.assignedToEmployeeId && auth.employeeProfileId) {
+    if (asset.assignedToEmployeeId === auth.employeeProfileId) return true;
+  }
+
+  // currentHolder (from formatTicket)
+  if ('currentHolder' in asset && asset.currentHolder) {
+    if (auth.employeeProfileId && asset.currentHolder.id === auth.employeeProfileId) return true;
+    if (auth.employeeId && asset.currentHolder.employeeId === auth.employeeId) return true;
+    if (auth.name && asset.currentHolder.fullName?.toLowerCase().includes(auth.name.toLowerCase())) return true;
+  }
+
+  // currentAssignment object
+  if ('currentAssignment' in asset && asset.currentAssignment) {
+    const ca = asset.currentAssignment;
+    if (ca.employeeId && auth.employeeProfileId && ca.employeeId === auth.employeeProfileId) return true;
+    if (ca.employee?.userId && auth.userId && ca.employee.userId === auth.userId) return true;
+    if (ca.employee?.employeeId && auth.employeeId && ca.employee.employeeId === auth.employeeId) return true;
+  }
+
+  // assignments array
+  if (Array.isArray(asset.assignments)) {
+    const isAssigned = asset.assignments.some((assignment) => {
+      if (assignment.isCurrent === false) return false;
+      if (assignment.employeeId && auth.employeeProfileId && assignment.employeeId === auth.employeeProfileId) return true;
+      if (assignment.employee?.userId && auth.userId && assignment.employee.userId === auth.userId) return true;
+      if (assignment.employee?.employeeId && auth.employeeId && assignment.employee.employeeId === auth.employeeId) return true;
+      return false;
+    });
+    if (isAssigned) return true;
+  }
+
+  return false;
+}
+
+/**
+ * Helper to check if a maintenance ticket was reported by the authenticated user.
+ */
+function isReportedByAuthUser(
+  auth: AuthUserContext,
+  ticket: MaintenanceTicketAccessTarget
+): boolean {
+  if (!auth || !ticket) return false;
+
+  if (ticket.reportedByUserId && auth.userId && ticket.reportedByUserId === auth.userId) {
+    return true;
+  }
+  if (ticket.reportedByEmployeeId && auth.employeeProfileId && ticket.reportedByEmployeeId === auth.employeeProfileId) {
+    return true;
+  }
+  if (ticket.reportedBy) {
+    if (auth.userId && ticket.reportedBy === auth.userId) return true;
+    if (auth.employeeId && ticket.reportedBy === auth.employeeId) return true;
+    if (auth.employeeProfileId && ticket.reportedBy === auth.employeeProfileId) return true;
+    if (auth.name && ticket.reportedBy.toLowerCase().includes(auth.name.toLowerCase())) return true;
+  }
+
+  return false;
+}
+
+/**
+ * Validates access to an Asset resource.
+ * Rules:
+ * - ADMIN -> true
+ * - IT_TECHNICIAN -> true
+ * - DEPARTMENT_MANAGER -> asset in own department OR own assigned asset
+ * - EMPLOYEE -> currently assigned asset only
+ */
 export function canAccessAsset(
   auth: AuthUserContext,
   asset: AssetAccessTarget
@@ -156,76 +249,20 @@ export function canAccessAsset(
     return true;
   }
 
-  // Rule 3: DEPARTMENT_MANAGER -> asset.departmentId === manager.departmentId
+  // Rule 3: DEPARTMENT_MANAGER -> asset in own department OR own assigned asset
   if (role === ROLES.DEPARTMENT_MANAGER) {
-    if (!auth.departmentId || !asset.departmentId) return false;
-    return auth.departmentId === asset.departmentId;
+    if (auth.departmentId && asset.departmentId && auth.departmentId === asset.departmentId) {
+      return true;
+    }
+    if (isAssetAssignedToAuthUser(auth, asset)) {
+      return true;
+    }
+    return false;
   }
 
   // Rule 4: EMPLOYEE -> currently assigned asset only
   if (role === ROLES.EMPLOYEE) {
-    // Check direct assignment key
-    if (asset.assignedToEmployeeId && auth.employeeProfileId) {
-      if (asset.assignedToEmployeeId === auth.employeeProfileId) return true;
-    }
-
-    // Check currentAssignment object
-    if (asset.currentAssignment) {
-      if (
-        asset.currentAssignment.employeeId &&
-        auth.employeeProfileId &&
-        asset.currentAssignment.employeeId === auth.employeeProfileId
-      ) {
-        return true;
-      }
-      if (
-        asset.currentAssignment.employee?.userId &&
-        auth.userId &&
-        asset.currentAssignment.employee.userId === auth.userId
-      ) {
-        return true;
-      }
-      if (
-        asset.currentAssignment.employee?.employeeId &&
-        auth.employeeId &&
-        asset.currentAssignment.employee.employeeId === auth.employeeId
-      ) {
-        return true;
-      }
-    }
-
-    // Check assignments array for active assignment
-    if (Array.isArray(asset.assignments)) {
-      const isAssigned = asset.assignments.some((assignment) => {
-        if (assignment.isCurrent === false) return false;
-        if (
-          assignment.employeeId &&
-          auth.employeeProfileId &&
-          assignment.employeeId === auth.employeeProfileId
-        ) {
-          return true;
-        }
-        if (
-          assignment.employee?.userId &&
-          auth.userId &&
-          assignment.employee.userId === auth.userId
-        ) {
-          return true;
-        }
-        if (
-          assignment.employee?.employeeId &&
-          auth.employeeId &&
-          assignment.employee.employeeId === auth.employeeId
-        ) {
-          return true;
-        }
-        return false;
-      });
-
-      if (isAssigned) return true;
-    }
-
-    return false;
+    return isAssetAssignedToAuthUser(auth, asset);
   }
 
   return false;
@@ -236,8 +273,8 @@ export function canAccessAsset(
  * Rules:
  * - ADMIN -> true
  * - IT_TECHNICIAN -> true
- * - DEPARTMENT_MANAGER -> ticket.departmentId === manager.departmentId (or asset department)
- * - EMPLOYEE -> reportedByUserId === auth.userId
+ * - DEPARTMENT_MANAGER -> ticket in own department OR own assigned asset OR reported by manager
+ * - EMPLOYEE -> ticket reported by employee OR ticket asset currently assigned to employee
  */
 export function canAccessMaintenanceTicket(
   auth: AuthUserContext,
@@ -252,25 +289,28 @@ export function canAccessMaintenanceTicket(
     return true;
   }
 
-  // Rule 3: DEPARTMENT_MANAGER -> ticket.departmentId === manager.departmentId
+  // Rule 3: DEPARTMENT_MANAGER -> department ticket OR own assigned asset OR reported by manager
   if (role === ROLES.DEPARTMENT_MANAGER) {
     const ticketDept = ticket.departmentId || ticket.asset?.departmentId;
-    if (!auth.departmentId || !ticketDept) return false;
-    return auth.departmentId === ticketDept;
+    if (auth.departmentId && ticketDept && auth.departmentId === ticketDept) {
+      return true;
+    }
+    if (isAssetAssignedToAuthUser(auth, ticket.asset)) {
+      return true;
+    }
+    if (isReportedByAuthUser(auth, ticket)) {
+      return true;
+    }
+    return false;
   }
 
-  // Rule 4: EMPLOYEE -> reportedByUserId === auth.userId
+  // Rule 4: EMPLOYEE -> reported by employee OR ticket asset currently assigned to employee
   if (role === ROLES.EMPLOYEE) {
-    if (ticket.reportedByUserId && auth.userId) {
-      if (ticket.reportedByUserId === auth.userId) return true;
+    if (isReportedByAuthUser(auth, ticket)) {
+      return true;
     }
-    if (ticket.reportedBy) {
-      if (ticket.reportedBy === auth.userId) return true;
-      if (auth.employeeId && ticket.reportedBy === auth.employeeId) return true;
-      if (auth.employeeProfileId && ticket.reportedBy === auth.employeeProfileId) return true;
-    }
-    if (ticket.reportedByEmployeeId && auth.employeeProfileId) {
-      if (ticket.reportedByEmployeeId === auth.employeeProfileId) return true;
+    if (isAssetAssignedToAuthUser(auth, ticket.asset)) {
+      return true;
     }
     return false;
   }
