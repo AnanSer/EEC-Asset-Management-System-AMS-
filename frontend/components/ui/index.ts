@@ -10,4 +10,6 @@ export type { BreadcrumbItem, BreadcrumbProps } from './Breadcrumb';
 export { default as ConfirmationModal } from './ConfirmationModal';
 export type { ConfirmationModalProps } from './ConfirmationModal';
 export { default as InfoCard } from './InfoCard';
+export { default as AccessDenied } from './AccessDenied';
+export type { AccessDeniedProps } from './AccessDenied';
 export { ToastProvider, useToast } from './Toast';

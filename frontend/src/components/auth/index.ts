@@ -7,3 +7,5 @@ export * from './PasswordInput';
 export * from './UserAvatar';
 export * from './PasswordStrengthIndicator';
 export { default as PasswordStrengthIndicator } from './PasswordStrengthIndicator';
+export * from './PermissionGuard';
+export { default as PermissionGuard } from './PermissionGuard';
