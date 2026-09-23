@@ -19,7 +19,7 @@ function DashboardAuthGuard({ children }: { children: React.ReactNode }) {
 
     async function verifySession(isHeartbeat = false) {
       try {
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+        const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000').replace(/\/api\/?$/, '');
         const res = await fetch(`${apiBase}/api/auth/me`, {
           credentials: 'include',
         });

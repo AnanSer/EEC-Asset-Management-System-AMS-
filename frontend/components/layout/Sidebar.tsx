@@ -17,10 +17,18 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
   const { role } = usePermissions();
 
-  const visibleNavItems = navItems.filter((item) => {
-    if (!role) return true;
-    return item.allowedRoles.includes(role);
-  });
+  const visibleNavItems = navItems
+    .filter((item) => {
+      if (!role) return true;
+      return item.allowedRoles.includes(role);
+    })
+    .map((item) => {
+      if (role === 'EMPLOYEE') {
+        if (item.href === '/assets') return { ...item, label: 'My Assets' };
+        if (item.href === '/maintenance') return { ...item, label: 'My Maintenance' };
+      }
+      return item;
+    });
 
   const visibleBottomNavItems = bottomNavItems.filter((item) => {
     if (!role) return true;

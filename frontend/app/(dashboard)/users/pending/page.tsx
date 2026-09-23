@@ -79,13 +79,15 @@ export default function PendingUsersPage() {
     else setLoading(true);
 
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000').replace(/\/api\/?$/, '');
       const params = new URLSearchParams();
       if (searchTerm.trim()) params.append('search', searchTerm.trim());
       if (selectedDepartment) params.append('departmentId', selectedDepartment);
       params.append('limit', '50');
 
-      const res = await fetch(`${apiBase}/api/identity/pending?${params.toString()}`);
+      const res = await fetch(`${apiBase}/api/identity/pending?${params.toString()}`, {
+        credentials: 'include',
+      });
       if (res.ok) {
         const json = await res.json();
         setUsers(json.data || []);
@@ -105,8 +107,10 @@ export default function PendingUsersPage() {
   useEffect(() => {
     async function loadDepartments() {
       try {
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-        const res = await fetch(`${apiBase}/api/departments?limit=100`);
+        const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000').replace(/\/api\/?$/, '');
+        const res = await fetch(`${apiBase}/api/departments?limit=100`, {
+          credentials: 'include',
+        });
         if (res.ok) {
           const json = await res.json();
           setDepartments(json.data || []);
@@ -130,9 +134,10 @@ export default function PendingUsersPage() {
     setIsApproving(true);
 
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000').replace(/\/api\/?$/, '');
       const res = await fetch(`${apiBase}/api/identity/${approveUser.id}/approve`, {
         method: 'PATCH',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -174,9 +179,10 @@ export default function PendingUsersPage() {
     setIsRejecting(true);
 
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000').replace(/\/api\/?$/, '');
       const res = await fetch(`${apiBase}/api/identity/${rejectUser.id}/reject`, {
         method: 'PATCH',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },

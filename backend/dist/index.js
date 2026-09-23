@@ -38,7 +38,7 @@ app.use((0, cors_1.default)({
 }));
 // ─── Protected Verification & User Info Auth Endpoint (Phase 9A.1 & 9B) ────────
 // Mounted before Better Auth wildcard handler so /api/auth/me is handled
-app.get('/api/auth/me', auth_middleware_1.requireAuth, async (req, res) => {
+app.get(['/api/auth/me', '/api/api/auth/me'], auth_middleware_1.requireAuth, async (req, res) => {
     const businessUser = await prisma_1.default.user.findUnique({
         where: { email: req.auth.user.email },
         include: {

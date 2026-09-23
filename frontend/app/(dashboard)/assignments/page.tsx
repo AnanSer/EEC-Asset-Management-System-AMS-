@@ -19,6 +19,7 @@ import TransferModal from '@/components/assignments/TransferModal';
 import ReturnModal from '@/components/assignments/ReturnModal';
 import { usePermissions } from '@/hooks/usePermissions';
 import { PERMISSIONS } from '@/lib/authorization';
+import PermissionGuard from '@/components/auth/PermissionGuard';
 
 export default function AssignmentsPage() {
   const toast = useToast();
@@ -123,27 +124,30 @@ export default function AssignmentsPage() {
 
   if (isInitialLoad) {
     return (
-      <div className="space-y-6">
-        <PageHeader
-          title="Asset Assignments"
-          description="Track custody, allocations, transfers, and inventory returns."
-          breadcrumbs={[
-            { label: 'Dashboard', href: '/dashboard' },
-            { label: 'Assignments' },
-          ]}
-          action={
-            can(PERMISSIONS.ASSETS_ASSIGN)
-              ? { label: 'New Assignment', href: '/assignments/new', icon: Plus }
-              : undefined
-          }
-        />
-        <LoadingSkeleton />
-      </div>
+      <PermissionGuard permission={PERMISSIONS.ASSETS_ASSIGN}>
+        <div className="space-y-6">
+          <PageHeader
+            title="Asset Assignments"
+            description="Track custody, allocations, transfers, and inventory returns."
+            breadcrumbs={[
+              { label: 'Dashboard', href: '/dashboard' },
+              { label: 'Assignments' },
+            ]}
+            action={
+              can(PERMISSIONS.ASSETS_ASSIGN)
+                ? { label: 'New Assignment', href: '/assignments/new', icon: Plus }
+                : undefined
+            }
+          />
+          <LoadingSkeleton />
+        </div>
+      </PermissionGuard>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <PermissionGuard permission={PERMISSIONS.ASSETS_ASSIGN}>
+      <div className="space-y-6">
       <PageHeader
         title="Asset Assignments"
         description="Track custody, allocations, transfers, and inventory returns."
@@ -343,6 +347,7 @@ export default function AssignmentsPage() {
           onSuccess={refreshData}
         />
       )}
-    </div>
+      </div>
+    </PermissionGuard>
   );
 }

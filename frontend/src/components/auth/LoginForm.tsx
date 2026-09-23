@@ -140,7 +140,7 @@ export const LoginForm: React.FC = () => {
       if (error) {
         const errMsg = error.message?.toLowerCase() || '';
 
-        if (errMsg.includes('not verified') || error.status === 403) {
+        if (errMsg.includes('not verified') || errMsg.includes('verification') || (error.status === 403 && errMsg.includes('email'))) {
           const emailTarget = formData.email.trim().toLowerCase();
           setUnverifiedEmail(emailTarget);
           setBanner({
@@ -152,7 +152,7 @@ export const LoginForm: React.FC = () => {
           setBanner({
             type: 'invalid_credentials',
             title: 'Invalid Credentials',
-            message: 'The corporate email or password you entered is incorrect. Please verify your credentials and try again.',
+            message: error.message || 'The corporate email or password you entered is incorrect. Please verify your credentials and try again.',
           });
         }
         setLoading(false);
@@ -160,7 +160,7 @@ export const LoginForm: React.FC = () => {
       }
 
       // Fetch user business account status from backend
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000').replace(/\/api\/?$/, '');
       const meRes = await fetch(`${apiBase}/api/auth/me`, {
         credentials: 'include',
       });

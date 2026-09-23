@@ -39,7 +39,7 @@ export default function Navbar(_: NavbarProps) {
   useEffect(() => {
     async function loadUser() {
       try {
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+        const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000').replace(/\/api\/?$/, '');
         const res = await fetch(`${apiBase}/api/auth/me`, {
           credentials: 'include',
         });

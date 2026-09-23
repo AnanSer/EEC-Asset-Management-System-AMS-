@@ -39,13 +39,13 @@ export const navItems: NavItem[] = [
     label: 'Departments',
     href: '/departments',
     icon: Building2,
-    allowedRoles: [ROLES.ADMIN, ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER, ROLES.EMPLOYEE],
+    allowedRoles: [ROLES.ADMIN, ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER],
   },
   {
     label: 'Employees',
     href: '/employees',
     icon: Users,
-    allowedRoles: [ROLES.ADMIN, ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER, ROLES.EMPLOYEE],
+    allowedRoles: [ROLES.ADMIN, ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER],
   },
   {
     label: 'Pending Approvals',
@@ -63,7 +63,7 @@ export const navItems: NavItem[] = [
     label: 'Assignments',
     href: '/assignments',
     icon: ClipboardList,
-    allowedRoles: [ROLES.ADMIN, ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER, ROLES.EMPLOYEE],
+    allowedRoles: [ROLES.ADMIN, ROLES.IT_TECHNICIAN],
   },
   {
     label: 'Maintenance',
@@ -89,7 +89,7 @@ export const navItems: NavItem[] = [
     href: '/notifications',
     icon: Bell,
     badge: 5,
-    allowedRoles: [ROLES.ADMIN, ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER, ROLES.EMPLOYEE],
+    allowedRoles: [ROLES.ADMIN, ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER],
   },
 ];
 

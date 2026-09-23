@@ -16,6 +16,7 @@ import EmployeeStats from '@/components/employees/EmployeeStats';
 import EmployeeTable from '@/components/employees/EmployeeTable';
 import { usePermissions } from '@/hooks/usePermissions';
 import { PERMISSIONS } from '@/lib/authorization';
+import PermissionGuard from '@/components/auth/PermissionGuard';
 
 export default function EmployeesPage() {
   const toast = useToast();
@@ -144,31 +145,34 @@ export default function EmployeesPage() {
   // Initial loading state
   if (loading && employees.length === 0 && !search && selectedDepartmentId === 'all' && selectedRole === 'all' && statusFilter === 'all') {
     return (
-      <div className="space-y-6">
-        <PageHeader
-          title="Employees"
-          description="Manage Ethiopian Engineering Corporation workforce, roles, and departmental assignments."
-          breadcrumbs={[
-            { label: 'Dashboard', href: '/dashboard' },
-            { label: 'Employees' },
-          ]}
-          action={
-            can(PERMISSIONS.EMPLOYEES_CREATE)
-              ? {
-                  label: 'Add Employee',
-                  href: '/employees/new',
-                  icon: Plus,
-                }
-              : undefined
-          }
-        />
-        <LoadingSkeleton />
-      </div>
+      <PermissionGuard permission={PERMISSIONS.EMPLOYEES_VIEW}>
+        <div className="space-y-6">
+          <PageHeader
+            title="Employees"
+            description="Manage Ethiopian Engineering Corporation workforce, roles, and departmental assignments."
+            breadcrumbs={[
+              { label: 'Dashboard', href: '/dashboard' },
+              { label: 'Employees' },
+            ]}
+            action={
+              can(PERMISSIONS.EMPLOYEES_CREATE)
+                ? {
+                    label: 'Add Employee',
+                    href: '/employees/new',
+                    icon: Plus,
+                  }
+                : undefined
+            }
+          />
+          <LoadingSkeleton />
+        </div>
+      </PermissionGuard>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <PermissionGuard permission={PERMISSIONS.EMPLOYEES_VIEW}>
+      <div className="space-y-6">
       {/* Page Header */}
       <PageHeader
         title="Employees"
@@ -335,6 +339,7 @@ export default function EmployeesPage() {
         variant={statusModal.employee?.isActive ? 'warning' : 'success'}
         isLoading={statusModal.isUpdating}
       />
-    </div>
+      </div>
+    </PermissionGuard>
   );
 }

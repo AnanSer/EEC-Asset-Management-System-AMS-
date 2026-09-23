@@ -81,7 +81,7 @@ export const RegisterForm: React.FC = () => {
   useEffect(() => {
     async function fetchDepartments() {
       try {
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+        const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000').replace(/\/api\/?$/, '');
         const res = await fetch(`${apiBase}/api/departments?limit=100`);
         if (res.ok) {
           const json = await res.json();
@@ -132,7 +132,7 @@ export const RegisterForm: React.FC = () => {
     setLoading(true);
 
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000').replace(/\/api\/?$/, '');
       const res = await fetch(`${apiBase}/api/identity/register`, {
         method: 'POST',
         headers: {
