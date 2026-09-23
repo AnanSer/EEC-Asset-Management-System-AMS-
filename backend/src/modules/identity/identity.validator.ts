@@ -2,9 +2,10 @@
 // Validation schemas and types for account lifecycle and authentication-related business logic.
 
 import { z } from 'zod';
+import { ROLE_LIST } from '../../constants';
 
 // Roles matching UserRole enum in schema.prisma
-export const userRoleEnum = z.enum(['ADMIN', 'IT_TECHNICIAN', 'DEPARTMENT_MANAGER', 'EMPLOYEE']);
+export const userRoleEnum = z.enum(ROLE_LIST);
 
 // Account statuses matching AccountStatus enum in schema.prisma
 export const accountStatusEnum = z.enum(['PENDING', 'APPROVED', 'REJECTED', 'SUSPENDED']);

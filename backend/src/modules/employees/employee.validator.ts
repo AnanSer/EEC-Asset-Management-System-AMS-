@@ -1,6 +1,7 @@
 import { z } from 'zod';
+import { ROLE_LIST } from '../../constants';
 
-export const userRoleEnum = z.enum(['ADMIN', 'IT_TECHNICIAN', 'DEPARTMENT_MANAGER', 'EMPLOYEE']);
+export const userRoleEnum = z.enum(ROLE_LIST);
 
 export const createEmployeeSchema = z.object({
   fullName: z

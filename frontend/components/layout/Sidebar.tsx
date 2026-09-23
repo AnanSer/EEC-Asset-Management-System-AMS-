@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { navItems, bottomNavItems } from '@/lib/navigation';
+import { navItems, bottomNavItems } from '@/lib/authorization';
 import EECLogo from '@/components/brand/EECLogo';
 import clsx from 'clsx';
 

@@ -4,8 +4,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.pendingUserQuerySchema = exports.suspensionSchema = exports.rejectionSchema = exports.approvalSchema = exports.registrationSchema = exports.accountStatusEnum = exports.userRoleEnum = void 0;
 const zod_1 = require("zod");
+const constants_1 = require("../../constants");
 // Roles matching UserRole enum in schema.prisma
-exports.userRoleEnum = zod_1.z.enum(['ADMIN', 'IT_TECHNICIAN', 'DEPARTMENT_MANAGER', 'EMPLOYEE']);
+exports.userRoleEnum = zod_1.z.enum(constants_1.ROLE_LIST);
 // Account statuses matching AccountStatus enum in schema.prisma
 exports.accountStatusEnum = zod_1.z.enum(['PENDING', 'APPROVED', 'REJECTED', 'SUSPENDED']);
 /**

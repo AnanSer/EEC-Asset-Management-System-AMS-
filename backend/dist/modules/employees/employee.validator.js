@@ -2,7 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.employeeQuerySchema = exports.updateEmployeeStatusSchema = exports.updateEmployeeSchema = exports.createEmployeeSchema = exports.userRoleEnum = void 0;
 const zod_1 = require("zod");
-exports.userRoleEnum = zod_1.z.enum(['ADMIN', 'IT_TECHNICIAN', 'DEPARTMENT_MANAGER', 'EMPLOYEE']);
+const constants_1 = require("../../constants");
+exports.userRoleEnum = zod_1.z.enum(constants_1.ROLE_LIST);
 exports.createEmployeeSchema = zod_1.z.object({
     fullName: zod_1.z
         .string()
