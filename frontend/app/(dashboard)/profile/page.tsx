@@ -5,6 +5,8 @@ import PageHeader from '@/components/ui/PageHeader';
 import StatusBadge from '@/components/ui/StatusBadge';
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton';
 import EmptyState from '@/components/ui/EmptyState';
+import { useToast } from '@/components/ui/Toast';
+import { authClient } from '@/lib/auth-client';
 import { UserAvatar } from '@/components/auth';
 import {
   UserCircle,
@@ -20,6 +22,8 @@ import {
   ShieldCheck,
   Phone,
   AlertCircle,
+  RotateCw,
+  Loader2,
 } from 'lucide-react';
 
 interface UserProfileData {
@@ -41,9 +45,21 @@ interface UserProfileData {
 }
 
 export default function ProfilePage() {
+  const { success, info } = useToast();
   const [profile, setProfile] = useState<UserProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Email verification resend state
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resending, setResending] = useState(false);
+
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => setResendCooldown((prev) => prev - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
 
   const loadUserProfile = useCallback(async () => {
     setLoading(true);
@@ -103,6 +119,27 @@ export default function ProfilePage() {
   useEffect(() => {
     loadUserProfile();
   }, [loadUserProfile]);
+
+  const handleResendVerification = async () => {
+    if (!profile?.email || resendCooldown > 0 || resending) return;
+
+    setResending(true);
+    try {
+      await authClient.sendVerificationEmail({
+        email: profile.email.trim().toLowerCase(),
+        callbackURL: `${window.location.origin}/verify-email`,
+      });
+
+      success(`A fresh verification email was sent to ${profile.email}.`);
+      setResendCooldown(60);
+    } catch (err: unknown) {
+      console.error('Resend verification error:', err);
+      info('If the account exists, a new verification link was dispatched.');
+      setResendCooldown(60);
+    } finally {
+      setResending(false);
+    }
+  };
 
   const breadcrumbs = [
     { label: 'Home', href: '/dashboard' },
@@ -256,20 +293,35 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {/* Email Verification Badge */}
+              {/* Email Verification Badge & Resend Action */}
               <div className="flex items-start gap-3.5 p-3.5 rounded-xl bg-slate-50/70 border border-slate-100">
                 <div className="p-2 rounded-lg bg-white text-eec-primary shadow-2xs border border-slate-100 shrink-0">
                   <ShieldCheck size={18} />
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <dt className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
                     Email Verification
                   </dt>
-                  <dd className="mt-1">
+                  <dd className="mt-1 flex flex-wrap items-center gap-2">
                     <StatusBadge
                       status={profile.isEmailVerified ? 'verified' : 'unverified'}
                       label={profile.isEmailVerified ? 'Verified' : 'Unverified'}
                     />
+                    {!profile.isEmailVerified && (
+                      <button
+                        type="button"
+                        onClick={handleResendVerification}
+                        disabled={resendCooldown > 0 || resending}
+                        className="text-xs font-semibold text-eec-accent hover:text-eec-primary transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                      >
+                        {resending ? (
+                          <Loader2 size={12} className="animate-spin" />
+                        ) : (
+                          <RotateCw size={12} />
+                        )}
+                        <span>{resendCooldown > 0 ? `Resend (${resendCooldown}s)` : 'Resend link'}</span>
+                      </button>
+                    )}
                   </dd>
                 </div>
               </div>

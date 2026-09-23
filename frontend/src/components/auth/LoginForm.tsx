@@ -1,19 +1,31 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import { authClient } from '@/lib/auth-client';
+import { useToast } from '@/components/ui/Toast';
 import PasswordInput from './PasswordInput';
-import { LogIn, Loader2, AlertCircle } from 'lucide-react';
+import {
+  LogIn,
+  Loader2,
+  AlertCircle,
+  ShieldAlert,
+  ShieldX,
+  Mail,
+  RotateCw,
+  Clock,
+  ArrowRight,
+  UserCheck,
+} from 'lucide-react';
 
 const loginSchema = z.object({
   email: z
     .string()
     .trim()
     .min(1, 'Email address is required')
-    .email('Please enter a valid email address'),
+    .email('Please enter a valid corporate email address'),
   password: z
     .string()
     .min(1, 'Password is required'),
@@ -22,8 +34,26 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
+type AuthBannerType =
+  | 'invalid_credentials'
+  | 'pending_approval'
+  | 'email_not_verified'
+  | 'account_suspended'
+  | 'account_rejected'
+  | 'generic'
+  | null;
+
+interface AuthBannerState {
+  type: AuthBannerType;
+  title: string;
+  message: string;
+  actionUrl?: string;
+  actionLabel?: string;
+}
+
 export const LoginForm: React.FC = () => {
   const router = useRouter();
+  const { success, info } = useToast();
 
   const [formData, setFormData] = useState<LoginFormData>({
     email: '',
@@ -32,8 +62,20 @@ export const LoginForm: React.FC = () => {
   });
 
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
-  const [globalError, setGlobalError] = useState<string | null>(null);
+  const [banner, setBanner] = useState<AuthBannerState | null>(null);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Resend state for unverified email
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resending, setResending] = useState(false);
+
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => setResendCooldown((prev) => prev - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -41,16 +83,38 @@ export const LoginForm: React.FC = () => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
-    // Clear field-specific error when user types
     if (errors[name as keyof typeof errors]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
-    setGlobalError(null);
+    setBanner(null);
+  };
+
+  const handleResendVerification = async () => {
+    const target = unverifiedEmail || formData.email.trim().toLowerCase();
+    if (!target || resendCooldown > 0 || resending) return;
+
+    setResending(true);
+    try {
+      await authClient.sendVerificationEmail({
+        email: target,
+        callbackURL: `${window.location.origin}/verify-email`,
+      });
+
+      success(`A fresh verification link has been dispatched to ${target}.`);
+      setResendCooldown(60);
+    } catch (err: unknown) {
+      console.error('Resend verification error:', err);
+      info('If the account exists, a new verification link was sent.');
+      setResendCooldown(60);
+    } finally {
+      setResending(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setGlobalError(null);
+    setBanner(null);
+    setUnverifiedEmail(null);
 
     // Validate with Zod
     const validation = loginSchema.safeParse(formData);
@@ -74,9 +138,23 @@ export const LoginForm: React.FC = () => {
       });
 
       if (error) {
-        setGlobalError(
-          error.message || 'Invalid email or password. Please check your credentials.'
-        );
+        const errMsg = error.message?.toLowerCase() || '';
+
+        if (errMsg.includes('not verified') || error.status === 403) {
+          const emailTarget = formData.email.trim().toLowerCase();
+          setUnverifiedEmail(emailTarget);
+          setBanner({
+            type: 'email_not_verified',
+            title: 'Corporate Email Not Verified',
+            message: `Your email address (${emailTarget}) requires verification before full dashboard access can be granted.`,
+          });
+        } else {
+          setBanner({
+            type: 'invalid_credentials',
+            title: 'Invalid Credentials',
+            message: 'The corporate email or password you entered is incorrect. Please verify your credentials and try again.',
+          });
+        }
         setLoading(false);
         return;
       }
@@ -89,7 +167,9 @@ export const LoginForm: React.FC = () => {
 
       if (meRes.ok) {
         const meJson = await meRes.json();
-        const status = meJson?.data?.businessUser?.status;
+        const businessUser = meJson?.data?.businessUser;
+        const status = businessUser?.status;
+        const isEmailVerified = businessUser?.isEmailVerified;
 
         if (status === 'PENDING') {
           router.push(`/pending?email=${encodeURIComponent(formData.email)}`);
@@ -101,15 +181,40 @@ export const LoginForm: React.FC = () => {
           return;
         }
 
+        if (status === 'SUSPENDED') {
+          setBanner({
+            type: 'account_suspended',
+            title: 'Corporate Account Suspended',
+            message: 'This account has been suspended by the ICT Security Administration. Access to EEC asset management systems has been temporarily restricted. Please contact the ICT Service Desk.',
+          });
+          setLoading(false);
+          return;
+        }
+
+        // Check if email is unverified on business user profile
+        if (isEmailVerified === false) {
+          const emailTarget = formData.email.trim().toLowerCase();
+          setUnverifiedEmail(emailTarget);
+          setBanner({
+            type: 'email_not_verified',
+            title: 'Corporate Email Not Verified',
+            message: `Your corporate email (${emailTarget}) is pending verification. Please verify your email via the link in your inbox.`,
+          });
+        }
+
         // Default or APPROVED: Redirect to dashboard
         router.push('/dashboard');
       } else {
         // Default fallback to dashboard if session established
         router.push('/dashboard');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Login error:', err);
-      setGlobalError(err?.message || 'An unexpected error occurred during sign-in. Please try again.');
+      setBanner({
+        type: 'generic',
+        title: 'Authentication Error',
+        message: err instanceof Error ? err.message : 'An unexpected error occurred during sign-in. Please try again.',
+      });
     } finally {
       setLoading(false);
     }
@@ -117,11 +222,73 @@ export const LoginForm: React.FC = () => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-      {/* Global Error Banner */}
-      {globalError && (
-        <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 flex items-start gap-3 text-red-700 text-xs sm:text-sm animate-in fade-in">
-          <AlertCircle size={18} className="flex-shrink-0 text-red-500 mt-0.5" />
-          <span>{globalError}</span>
+      {/* Enterprise Status & Error Banners */}
+      {banner && (
+        <div
+          className={`p-4 rounded-xl border text-xs sm:text-sm space-y-2.5 animate-in fade-in text-left ${
+            banner.type === 'invalid_credentials' || banner.type === 'account_suspended'
+              ? 'bg-rose-50 border-rose-200 text-rose-900'
+              : banner.type === 'pending_approval' || banner.type === 'email_not_verified'
+              ? 'bg-amber-50 border-amber-200 text-amber-900'
+              : 'bg-rose-50 border-rose-200 text-rose-800'
+          }`}
+        >
+          <div className="flex items-start gap-2.5">
+            {banner.type === 'account_suspended' ? (
+              <ShieldX size={19} className="text-rose-600 flex-shrink-0 mt-0.5" />
+            ) : banner.type === 'pending_approval' || banner.type === 'email_not_verified' ? (
+              <ShieldAlert size={19} className="text-amber-600 flex-shrink-0 mt-0.5" />
+            ) : (
+              <AlertCircle size={19} className="text-rose-600 flex-shrink-0 mt-0.5" />
+            )}
+
+            <div className="flex-1 min-w-0">
+              <p className="font-bold leading-tight mb-0.5">{banner.title}</p>
+              <p className="opacity-90 leading-relaxed">{banner.message}</p>
+            </div>
+          </div>
+
+          {/* Action Button for Unverified Email */}
+          {banner.type === 'email_not_verified' && (
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={handleResendVerification}
+                disabled={resendCooldown > 0 || resending}
+                className="py-2 px-3.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-xs"
+              >
+                {resending ? (
+                  <>
+                    <Loader2 size={13} className="animate-spin" />
+                    <span>Dispatching...</span>
+                  </>
+                ) : resendCooldown > 0 ? (
+                  <>
+                    <Clock size={13} />
+                    <span>Resend link in {resendCooldown}s</span>
+                  </>
+                ) : (
+                  <>
+                    <Mail size={13} />
+                    <span>Resend Verification Email</span>
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+
+          {/* Action Link for Pending Approval */}
+          {banner.type === 'pending_approval' && (
+            <div className="pt-1">
+              <Link
+                href={`/pending?email=${encodeURIComponent(formData.email)}`}
+                className="inline-flex items-center gap-1.5 font-semibold text-amber-950 hover:underline"
+              >
+                <span>View Request Details</span>
+                <ArrowRight size={13} />
+              </Link>
+            </div>
+          )}
         </div>
       )}
 
@@ -181,13 +348,12 @@ export const LoginForm: React.FC = () => {
           <span>Remember me</span>
         </label>
 
-        <button
-          type="button"
-          onClick={() => alert('Forgot password self-service is coming in a future update. Please contact the EEC ICT Administration desk.')}
+        <Link
+          href="/forgot-password"
           className="text-xs font-medium text-eec-accent hover:text-eec-primary transition-colors focus:outline-none hover:underline"
         >
           Forgot password?
-        </button>
+        </Link>
       </div>
 
       {/* Sign In Button */}

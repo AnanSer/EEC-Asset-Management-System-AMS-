@@ -1,10 +1,19 @@
 export declare const auth: import("better-auth").Auth<{
+    appName: string;
+    baseURL: string;
+    secret: string | undefined;
     database: (options: import("better-auth").BetterAuthOptions) => import("better-auth").DBAdapter<import("better-auth").BetterAuthOptions>;
     user: {
         modelName: "authUser";
     };
     session: {
         modelName: "authSession";
+        expiresIn: number;
+        updateAge: number;
+        cookieCache: {
+            enabled: true;
+            maxAge: number;
+        };
     };
     account: {
         modelName: "authAccount";
@@ -15,20 +24,45 @@ export declare const auth: import("better-auth").Auth<{
     emailAndPassword: {
         enabled: true;
         requireEmailVerification: false;
+        minPasswordLength: number;
+        maxPasswordLength: number;
+        resetPasswordTokenExpiresIn: number;
+        sendResetPassword({ user, token }: {
+            user: import("better-auth").User;
+            url: string;
+            token: string;
+        }): Promise<void>;
     };
-    secret: string | undefined;
-    baseURL: string;
-    trustedOrigins: string[];
+    emailVerification: {
+        sendOnSignUp: true;
+        autoSignInAfterVerification: true;
+        expiresIn: number;
+        sendVerificationEmail({ user, token }: {
+            user: import("better-auth").User;
+            url: string;
+            token: string;
+        }): Promise<void>;
+    };
+    databaseHooks: {
+        user: {
+            update: {
+                after: (user: {
+                    id: string;
+                    createdAt: Date;
+                    updatedAt: Date;
+                    email: string;
+                    emailVerified: boolean;
+                    name: string;
+                    image?: string | null | undefined;
+                } & Record<string, unknown>) => Promise<void>;
+            };
+        };
+    };
     advanced: {
-        cookiePrefix: string;
         crossSubDomainCookies: {
             enabled: false;
         };
-        defaultCookieAttributes: {
-            sameSite: "lax";
-            secure: boolean;
-            httpOnly: true;
-        };
+        useSecureCookies: boolean;
     };
 }>;
 export type Auth = typeof auth;

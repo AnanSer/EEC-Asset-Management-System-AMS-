@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import PasswordInput from './PasswordInput';
+import PasswordStrengthIndicator from './PasswordStrengthIndicator';
 import { UserPlus, Loader2, AlertCircle } from 'lucide-react';
 
 const registerSchema = z
@@ -367,6 +368,9 @@ export const RegisterForm: React.FC = () => {
           />
         </div>
       </div>
+
+      {/* Password Strength Indicator */}
+      <PasswordStrengthIndicator password={formData.password} />
 
       {/* Submit Button */}
       <button

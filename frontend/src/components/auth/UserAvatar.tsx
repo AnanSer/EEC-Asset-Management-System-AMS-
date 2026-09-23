@@ -44,7 +44,7 @@ export function getInitials(name?: string | null, email?: string | null): string
   return 'U';
 }
 
-export default function UserAvatar({
+export function UserAvatar({
   name,
   email,
   image,
@@ -90,3 +90,5 @@ export default function UserAvatar({
     </div>
   );
 }
+
+export default UserAvatar;

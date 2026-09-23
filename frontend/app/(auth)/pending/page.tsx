@@ -1,16 +1,60 @@
 'use client';
 
-import React, { Suspense } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import AuthCard from '@/components/auth/AuthCard';
-import { Clock, Mail, Building2, ArrowLeft, ShieldAlert } from 'lucide-react';
+import { useToast } from '@/components/ui/Toast';
+import { authClient } from '@/lib/auth-client';
+import {
+  Clock,
+  Mail,
+  Building2,
+  ArrowLeft,
+  ShieldAlert,
+  RotateCw,
+  Loader2,
+  CheckCircle2,
+} from 'lucide-react';
 
 function PendingContent() {
   const searchParams = useSearchParams();
   const email = searchParams.get('email');
   const dept = searchParams.get('dept');
   const name = searchParams.get('name');
+
+  const { success, info } = useToast();
+  const [cooldown, setCooldown] = useState(0);
+  const [resending, setResending] = useState(false);
+
+  // 60-second cooldown timer
+  useEffect(() => {
+    if (cooldown > 0) {
+      const timer = setTimeout(() => setCooldown((prev) => prev - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [cooldown]);
+
+  const handleResendVerification = async () => {
+    if (!email || cooldown > 0 || resending) return;
+
+    setResending(true);
+    try {
+      await authClient.sendVerificationEmail({
+        email: email.trim().toLowerCase(),
+        callbackURL: `${window.location.origin}/verify-email`,
+      });
+
+      success(`A fresh verification link has been sent to ${email}.`);
+      setCooldown(60);
+    } catch (err: unknown) {
+      console.error('Resend verification error:', err);
+      info('If the account exists, a new verification link was sent.');
+      setCooldown(60);
+    } finally {
+      setResending(false);
+    }
+  };
 
   return (
     <AuthCard
@@ -73,6 +117,40 @@ function PendingContent() {
             </span>
           </div>
         </div>
+
+        {/* Resend Verification Action if email exists */}
+        {email && (
+          <div className="p-3.5 rounded-xl border border-slate-200 bg-white flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
+            <div className="text-xs">
+              <p className="font-semibold text-slate-800">Email Verification</p>
+              <p className="text-slate-500 mt-0.5">Need another verification link for your inbox?</p>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleResendVerification}
+              disabled={cooldown > 0 || resending}
+              className="w-full sm:w-auto py-2 px-3.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shrink-0"
+            >
+              {resending ? (
+                <>
+                  <Loader2 size={13} className="animate-spin" />
+                  <span>Dispatching...</span>
+                </>
+              ) : cooldown > 0 ? (
+                <>
+                  <Clock size={13} className="text-slate-400" />
+                  <span>Resend in {cooldown}s</span>
+                </>
+              ) : (
+                <>
+                  <RotateCw size={13} />
+                  <span>Resend Verification</span>
+                </>
+              )}
+            </button>
+          </div>
+        )}
 
         {/* Action Button */}
         <div className="pt-2">

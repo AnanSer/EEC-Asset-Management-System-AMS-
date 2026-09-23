@@ -5,4 +5,5 @@ export * from './LoginForm';
 export * from './RegisterForm';
 export * from './PasswordInput';
 export * from './UserAvatar';
-export { default as UserAvatar } from './UserAvatar';
+export * from './PasswordStrengthIndicator';
+export { default as PasswordStrengthIndicator } from './PasswordStrengthIndicator';
