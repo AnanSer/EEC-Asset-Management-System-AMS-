@@ -1,0 +1,52 @@
+"use strict";
+/**
+ * Event Types — EEC EAMS (Phase 10A.2)
+ *
+ * Centralized enumeration of all domain and system event types.
+ * Used for standardized event logging, audit trails, and telemetry.
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.EVENT_TYPES = void 0;
+exports.EVENT_TYPES = {
+    // Authentication & Identity
+    AUTH_LOGIN: 'AUTH_LOGIN',
+    AUTH_LOGOUT: 'AUTH_LOGOUT',
+    AUTH_REGISTER: 'AUTH_REGISTER',
+    AUTH_APPROVED: 'AUTH_APPROVED',
+    AUTH_REJECTED: 'AUTH_REJECTED',
+    AUTH_PASSWORD_RESET: 'AUTH_PASSWORD_RESET',
+    AUTH_EMAIL_VERIFIED: 'AUTH_EMAIL_VERIFIED',
+    // Employee Management
+    EMPLOYEE_CREATED: 'EMPLOYEE_CREATED',
+    EMPLOYEE_UPDATED: 'EMPLOYEE_UPDATED',
+    EMPLOYEE_DEACTIVATED: 'EMPLOYEE_DEACTIVATED',
+    EMPLOYEE_ASSIGNED: 'EMPLOYEE_ASSIGNED',
+    // Asset Lifecycle
+    ASSET_CREATED: 'ASSET_CREATED',
+    ASSET_UPDATED: 'ASSET_UPDATED',
+    ASSET_ASSIGNED: 'ASSET_ASSIGNED',
+    ASSET_TRANSFERRED: 'ASSET_TRANSFERRED',
+    ASSET_RETURNED: 'ASSET_RETURNED',
+    ASSET_DECOMMISSIONED: 'ASSET_DECOMMISSIONED',
+    // Maintenance & Repairs
+    MAINTENANCE_CREATED: 'MAINTENANCE_CREATED',
+    MAINTENANCE_STARTED: 'MAINTENANCE_STARTED',
+    MAINTENANCE_TESTING: 'MAINTENANCE_TESTING',
+    MAINTENANCE_COMPLETED: 'MAINTENANCE_COMPLETED',
+    MAINTENANCE_CANCELLED: 'MAINTENANCE_CANCELLED',
+    // Quality & Testing
+    TESTING_PASS: 'TESTING_PASS',
+    TESTING_FAIL: 'TESTING_FAIL',
+    // Department Management
+    DEPARTMENT_CREATED: 'DEPARTMENT_CREATED',
+    DEPARTMENT_UPDATED: 'DEPARTMENT_UPDATED',
+    // System & Organization Settings
+    SETTINGS_UPDATED: 'SETTINGS_UPDATED',
+    // Reporting & Exporting
+    REPORT_EXPORTED: 'REPORT_EXPORTED',
+    REPORT_GENERATED: 'REPORT_GENERATED',
+    // System Telemetry
+    SYSTEM_STARTUP: 'SYSTEM_STARTUP',
+    SYSTEM_ERROR: 'SYSTEM_ERROR',
+};
+//# sourceMappingURL=eventTypes.js.map

@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Globe } from 'lucide-react';
 import { navItems, bottomNavItems } from '@/lib/authorization';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useSystemSettings } from '@/hooks/useSystemSettings';
 import EECLogo from '@/components/brand/EECLogo';
 import clsx from 'clsx';
 
@@ -16,6 +17,7 @@ interface SidebarProps {
 export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
   const { role } = usePermissions();
+  const { branding, isLoading } = useSystemSettings();
 
   const visibleNavItems = navItems.filter((item) => {
     if (!role) return true;
@@ -41,16 +43,37 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
           collapsed && 'justify-center px-2'
         )}
       >
-        <EECLogo size={collapsed ? 32 : 36} />
-        {!collapsed && (
-          <div className="overflow-hidden">
-            <p className="text-white font-bold text-sm leading-tight truncate">
-              Ethiopian Engineering
-            </p>
-            <p className="text-eec-accent text-xs font-semibold tracking-widest">
-              EAMS
-            </p>
+        {isLoading ? (
+          <div className="flex items-center gap-3 animate-pulse">
+            <div className="w-8 h-8 rounded-lg bg-white/10" />
+            {!collapsed && (
+              <div className="space-y-1.5">
+                <div className="w-24 h-3.5 bg-white/10 rounded" />
+                <div className="w-12 h-2.5 bg-white/10 rounded" />
+              </div>
+            )}
           </div>
+        ) : (
+          <>
+            {collapsed ? (
+              <img
+                src="/branding/logo-mark.png"
+                alt={branding.organizationShortName}
+                className="w-8 h-8 rounded-lg object-contain bg-white/10 border border-white/15 p-1 flex-shrink-0"
+              />
+            ) : (
+              <div className="flex flex-col gap-1 overflow-hidden">
+                <img
+                  src={branding.logoUrl || '/branding/eec-logo.png'}
+                  alt={branding.organizationName}
+                  className="h-9 w-auto max-w-[185px] object-contain"
+                />
+                <p className="text-eec-accent text-[10px] font-bold tracking-widest uppercase pl-0.5">
+                  {branding.organizationShortName} Asset Management
+                </p>
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -146,6 +169,43 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
             </Link>
           );
         })}
+      </div>
+
+      {/* ─── Footer Branding ─────────────────────────────────────────── */}
+      <div className="border-t border-white/10 p-3 mt-auto bg-black/10">
+        {isLoading ? (
+          <div className="space-y-1.5 animate-pulse">
+            <div className={clsx('h-3 bg-white/10 rounded', collapsed ? 'w-6 mx-auto' : 'w-24')} />
+            {!collapsed && <div className="h-2.5 bg-white/10 rounded w-36" />}
+          </div>
+        ) : collapsed ? (
+          <div
+            className="flex flex-col items-center justify-center text-white/60 hover:text-white transition-colors cursor-default"
+            title={`${branding.organizationShortName} • ${branding.systemVersion} • ${branding.timezone}`}
+          >
+            <span className="text-[10px] font-bold text-eec-accent tracking-tighter">
+              {branding.organizationShortName.slice(0, 3)}
+            </span>
+            <span className="text-[8px] text-white/40 font-mono">
+              {branding.systemVersion}
+            </span>
+          </div>
+        ) : (
+          <div className="space-y-1 text-white/50 text-[11px] leading-tight select-none">
+            <div className="flex items-center justify-between text-white/80 font-semibold">
+              <span className="truncate pr-1" title={branding.organizationName}>
+                {branding.organizationShortName}
+              </span>
+              <span className="text-[10px] font-mono text-eec-accent shrink-0 px-1 py-0.2 rounded bg-white/5 border border-white/10">
+                {branding.systemVersion}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 text-[10px] text-white/40 truncate" title={branding.timezone}>
+              <Globe size={11} className="shrink-0 text-white/30" />
+              <span className="truncate">{branding.timezone}</span>
+            </div>
+          </div>
+        )}
       </div>
     </aside>
   );

@@ -19,12 +19,14 @@ import {
   LogIn,
   Clock,
 } from 'lucide-react';
+import { useSystemSettings } from '@/hooks/useSystemSettings';
 
 function ResetPasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
   const errorParam = searchParams.get('error');
+  const { branding } = useSystemSettings();
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -93,7 +95,7 @@ function ResetPasswordContent() {
   return (
     <AuthCard
       title="Reset Account Password"
-      subtitle="Establish new corporate credentials for your EEC EAMS account."
+      subtitle={`Establish new corporate credentials for your ${branding.organizationShortName} EAMS account.`}
       icon={<KeyRound size={28} className="text-eec-primary" />}
       className="max-w-lg"
     >

@@ -9,6 +9,13 @@ import {
   rejectionSchema,
   pendingUserQuerySchema,
 } from './identity.validator';
+import {
+  successResponse,
+  createdResponse,
+  errorResponse,
+  paginatedResponse,
+  buildPagination,
+} from '../../lib/api';
 
 export class IdentityController {
   constructor(private service: IdentityService = identityService) {}
@@ -20,10 +27,7 @@ export class IdentityController {
   getPublicDepartments = async (_req: Request, res: Response) => {
     try {
       const departments = await this.service.getPublicDepartments();
-      return res.status(200).json({
-        success: true,
-        data: departments,
-      });
+      return res.status(200).json(successResponse(departments));
     } catch (err: any) {
       return this.handleError(res, err);
     }
@@ -38,11 +42,9 @@ export class IdentityController {
       const validatedData = registrationSchema.parse(req.body);
       const result = await this.service.register(validatedData);
 
-      return res.status(201).json({
-        success: true,
-        message: result.message,
-        data: result.user,
-      });
+      return res.status(201).json(
+        createdResponse(result.user, undefined, result.message)
+      );
     } catch (err: any) {
       return this.handleError(res, err);
     }
@@ -57,12 +59,9 @@ export class IdentityController {
     try {
       const parsedQuery = pendingUserQuerySchema.parse(req.query);
       const { users, meta } = await this.service.getPendingUsers(parsedQuery);
+      const pagination = buildPagination(meta.page, meta.limit, meta.total);
 
-      return res.status(200).json({
-        success: true,
-        data: users,
-        meta,
-      });
+      return res.status(200).json(paginatedResponse(users, pagination));
     } catch (err: any) {
       return this.handleError(res, err);
     }
@@ -78,11 +77,9 @@ export class IdentityController {
       const validatedData = approvalSchema.parse(req.body);
       const result = await this.service.approveAccount(id, validatedData);
 
-      return res.status(200).json({
-        success: true,
-        message: result.message,
-        data: result.user,
-      });
+      return res.status(200).json(
+        successResponse(result.user, undefined, result.message)
+      );
     } catch (err: any) {
       return this.handleError(res, err);
     }
@@ -99,10 +96,8 @@ export class IdentityController {
       const result = await this.service.rejectAccount(id, validatedData);
 
       return res.status(200).json({
-        success: true,
-        message: result.message,
+        ...successResponse(result.user, undefined, result.message),
         reason: result.reason,
-        data: result.user,
       });
     } catch (err: any) {
       return this.handleError(res, err);
@@ -118,11 +113,9 @@ export class IdentityController {
       const id = String(req.params.id);
       const result = await this.service.suspendAccount(id);
 
-      return res.status(200).json({
-        success: true,
-        message: result.message,
-        data: result.user,
-      });
+      return res.status(200).json(
+        successResponse(result.user, undefined, result.message)
+      );
     } catch (err: any) {
       return this.handleError(res, err);
     }
@@ -130,11 +123,9 @@ export class IdentityController {
 
   private handleError(res: Response, err: any) {
     if (err instanceof AppError) {
-      return res.status(err.statusCode).json({
-        success: false,
-        message: err.message,
-        errors: err.errors,
-      });
+      return res.status(err.statusCode).json(
+        errorResponse(err.message, 'APP_ERROR', err.errors)
+      );
     }
 
     if (err?.name === 'ZodError') {
@@ -142,19 +133,17 @@ export class IdentityController {
         field: issue.path.join('.'),
         message: issue.message,
       }));
-      return res.status(422).json({
-        success: false,
-        message: 'Validation failed',
-        errors: formattedErrors,
-      });
+      return res.status(422).json(
+        errorResponse('Validation failed', 'VALIDATION_ERROR', formattedErrors)
+      );
     }
 
     console.error('Unhandled Identity Error:', err);
-    return res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-    });
+    return res.status(500).json(
+      errorResponse('Internal server error', 'INTERNAL_ERROR')
+    );
   }
 }
 
 export const identityController = new IdentityController();
+

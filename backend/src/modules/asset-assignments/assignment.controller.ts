@@ -9,6 +9,13 @@ import {
 import prisma from '../../lib/prisma';
 import { ROLES, type Role } from '../../constants';
 import { canAccessAsset, AuthUserContext } from '../../lib/authorization';
+import {
+  successResponse,
+  createdResponse,
+  errorResponse,
+  paginatedResponse,
+  buildPagination,
+} from '../../lib/api';
 
 export class AssignmentController {
   constructor(private service: AssignmentService = assignmentService) {}
@@ -37,23 +44,20 @@ export class AssignmentController {
             if (user.employeeProfile) {
               parsedQuery.employeeId = user.employeeProfile.id;
             } else {
-              return res.status(200).json({
-                success: true,
-                data: [],
-                meta: { total: 0, page: 1, limit: 10, totalPages: 0 },
-              });
+              return res.status(200).json(
+                paginatedResponse([], buildPagination(1, 10, 0))
+              );
             }
           }
         }
       }
 
       const { assignments, meta } = await this.service.getAssignments(parsedQuery);
+      const pagination = buildPagination(meta.page, meta.limit, meta.total);
 
-      return res.status(200).json({
-        success: true,
-        data: assignments,
-        meta,
-      });
+      return res.status(200).json(
+        paginatedResponse(assignments, pagination)
+      );
     } catch (err: any) {
       return this.handleError(res, err);
     }
@@ -65,16 +69,14 @@ export class AssignmentController {
       const assignment = await this.service.getAssignmentById(id);
 
       if (!assignment) {
-        return res.status(404).json({
-          success: false,
-          message: 'Assignment not found',
-        });
+        return res.status(404).json(
+          errorResponse('Assignment not found')
+        );
       }
 
-      return res.status(200).json({
-        success: true,
-        data: assignment,
-      });
+      return res.status(200).json(
+        successResponse(assignment)
+      );
     } catch (err: any) {
       return this.handleError(res, err);
     }
@@ -98,10 +100,9 @@ export class AssignmentController {
           });
 
           if (!asset) {
-            return res.status(404).json({
-              success: false,
-              message: 'Asset not found',
-            });
+            return res.status(404).json(
+              errorResponse('Asset not found')
+            );
           }
 
           const authContext: AuthUserContext = {
@@ -119,20 +120,18 @@ export class AssignmentController {
           });
 
           if (!allowed) {
-            return res.status(403).json({
-              success: false,
-              message: 'Forbidden: You do not have permission to view assignment history for this asset',
-            });
+            return res.status(403).json(
+              errorResponse('Forbidden: You do not have permission to view assignment history for this asset')
+            );
           }
         }
       }
 
       const history = await this.service.getAssetHistory(assetId);
 
-      return res.status(200).json({
-        success: true,
-        data: history,
-      });
+      return res.status(200).json(
+        successResponse(history)
+      );
     } catch (err: any) {
       return this.handleError(res, err);
     }
@@ -143,11 +142,9 @@ export class AssignmentController {
       const validatedData = assignAssetSchema.parse(req.body);
       const newAssignment = await this.service.assignAsset(validatedData);
 
-      return res.status(201).json({
-        success: true,
-        message: 'Asset assigned successfully',
-        data: newAssignment,
-      });
+      return res.status(201).json(
+        createdResponse(newAssignment, null, 'Asset assigned successfully')
+      );
     } catch (err: any) {
       return this.handleError(res, err);
     }
@@ -159,11 +156,9 @@ export class AssignmentController {
       const validatedData = transferAssetSchema.parse(req.body);
       const updatedAssignment = await this.service.transferAsset(assetId, validatedData);
 
-      return res.status(200).json({
-        success: true,
-        message: 'Asset transferred successfully',
-        data: updatedAssignment,
-      });
+      return res.status(200).json(
+        successResponse(updatedAssignment, null, 'Asset transferred successfully')
+      );
     } catch (err: any) {
       return this.handleError(res, err);
     }
@@ -175,11 +170,9 @@ export class AssignmentController {
       const validatedData = returnAssetSchema.parse(req.body);
       const closedAssignment = await this.service.returnAsset(assetId, validatedData);
 
-      return res.status(200).json({
-        success: true,
-        message: 'Asset returned successfully',
-        data: closedAssignment,
-      });
+      return res.status(200).json(
+        successResponse(closedAssignment, null, 'Asset returned successfully')
+      );
     } catch (err: any) {
       return this.handleError(res, err);
     }
@@ -188,10 +181,9 @@ export class AssignmentController {
   getStats = async (_req: Request, res: Response) => {
     try {
       const stats = await this.service.getDashboardStats();
-      return res.status(200).json({
-        success: true,
-        data: stats,
-      });
+      return res.status(200).json(
+        successResponse(stats)
+      );
     } catch (err: any) {
       return this.handleError(res, err);
     }
@@ -199,11 +191,9 @@ export class AssignmentController {
 
   private handleError(res: Response, err: any) {
     if (err instanceof AppError) {
-      return res.status(err.statusCode).json({
-        success: false,
-        message: err.message,
-        errors: err.errors,
-      });
+      return res.status(err.statusCode).json(
+        errorResponse(err.message, err.statusCode, err.errors)
+      );
     }
 
     if (err?.name === 'ZodError') {
@@ -211,18 +201,15 @@ export class AssignmentController {
         field: issue.path.join('.'),
         message: issue.message,
       }));
-      return res.status(422).json({
-        success: false,
-        message: 'Validation failed',
-        errors: formattedErrors,
-      });
+      return res.status(422).json(
+        errorResponse('Validation failed', 422, formattedErrors)
+      );
     }
 
     console.error('Unhandled Assignment Error:', err);
-    return res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-    });
+    return res.status(500).json(
+      errorResponse('Internal server error')
+    );
   }
 }
 

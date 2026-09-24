@@ -24,7 +24,9 @@ import {
   AlertCircle,
   RotateCw,
   Loader2,
+  Landmark,
 } from 'lucide-react';
+import { useSystemSettings } from '@/hooks/useSystemSettings';
 
 interface UserProfileData {
   userId: string;
@@ -45,6 +47,7 @@ interface UserProfileData {
 }
 
 export default function ProfilePage() {
+  const { branding } = useSystemSettings();
   const { success, info } = useToast();
   const [profile, setProfile] = useState<UserProfileData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -486,6 +489,95 @@ export default function ProfilePage() {
                   </div>
                 </div>
               )}
+            </dl>
+          </div>
+
+          {/* 3. Corporate Organization & Support Card */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 sm:p-7 space-y-6">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-eec-primary/10 text-eec-primary">
+                  <Landmark size={20} />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">
+                    Corporate Organization & Support
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Official organization headquarters and corporate helpdesk contacts
+                  </p>
+                </div>
+              </div>
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                {branding.organizationShortName}
+              </span>
+            </div>
+
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Organization Name */}
+              <div className="flex items-start gap-3.5 p-3.5 rounded-xl bg-slate-50/70 border border-slate-100">
+                <div className="p-2 rounded-lg bg-white text-eec-primary shadow-2xs border border-slate-100 shrink-0">
+                  <Building2 size={18} />
+                </div>
+                <div className="min-w-0">
+                  <dt className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    Organization
+                  </dt>
+                  <dd className="text-sm font-semibold text-slate-900 truncate mt-0.5">
+                    {branding.organizationName}
+                  </dd>
+                </div>
+              </div>
+
+              {/* Headquarters Address */}
+              <div className="flex items-start gap-3.5 p-3.5 rounded-xl bg-slate-50/70 border border-slate-100">
+                <div className="p-2 rounded-lg bg-white text-eec-primary shadow-2xs border border-slate-100 shrink-0">
+                  <MapPin size={18} />
+                </div>
+                <div className="min-w-0">
+                  <dt className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    Headquarters Address
+                  </dt>
+                  <dd className="text-sm font-semibold text-slate-900 mt-0.5">
+                    {branding.headquartersAddress}
+                  </dd>
+                </div>
+              </div>
+
+              {/* Corporate Support Email */}
+              <div className="flex items-start gap-3.5 p-3.5 rounded-xl bg-slate-50/70 border border-slate-100">
+                <div className="p-2 rounded-lg bg-white text-eec-primary shadow-2xs border border-slate-100 shrink-0">
+                  <Mail size={18} />
+                </div>
+                <div className="min-w-0">
+                  <dt className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    Support Email
+                  </dt>
+                  <dd className="text-sm font-semibold text-slate-900 truncate mt-0.5">
+                    <a
+                      href={`mailto:${branding.supportEmail}`}
+                      className="text-eec-primary hover:underline"
+                    >
+                      {branding.supportEmail}
+                    </a>
+                  </dd>
+                </div>
+              </div>
+
+              {/* Corporate Support Phone */}
+              <div className="flex items-start gap-3.5 p-3.5 rounded-xl bg-slate-50/70 border border-slate-100">
+                <div className="p-2 rounded-lg bg-white text-eec-primary shadow-2xs border border-slate-100 shrink-0">
+                  <Phone size={18} />
+                </div>
+                <div className="min-w-0">
+                  <dt className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    Support Helpdesk
+                  </dt>
+                  <dd className="text-sm font-semibold text-slate-900 truncate mt-0.5">
+                    {branding.supportPhone}
+                  </dd>
+                </div>
+              </div>
             </dl>
           </div>
         </div>

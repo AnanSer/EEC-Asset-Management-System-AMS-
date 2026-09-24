@@ -15,7 +15,9 @@ import {
   RotateCw,
   Loader2,
   CheckCircle2,
+  Phone,
 } from 'lucide-react';
+import { useSystemSettings } from '@/hooks/useSystemSettings';
 
 function PendingContent() {
   const searchParams = useSearchParams();
@@ -23,6 +25,7 @@ function PendingContent() {
   const dept = searchParams.get('dept');
   const name = searchParams.get('name');
 
+  const { branding } = useSystemSettings();
   const { success, info } = useToast();
   const [cooldown, setCooldown] = useState(0);
   const [resending, setResending] = useState(false);
@@ -59,7 +62,7 @@ function PendingContent() {
   return (
     <AuthCard
       title="Registration Submitted"
-      subtitle="Your registration request has been submitted successfully and is awaiting review."
+      subtitle={`Your registration request has been submitted to ${branding.organizationName} and is awaiting review.`}
       icon={<Clock size={28} className="text-amber-500" />}
       className="max-w-lg"
     >
@@ -73,7 +76,7 @@ function PendingContent() {
                 Waiting for ICT Administrator Approval
               </p>
               <p className="text-amber-800/90">
-                To protect corporate assets, new account requests must be verified and approved by the EEC ICT Directorate before granting system access.
+                To protect corporate assets, new account requests must be verified and approved by the {branding.organizationShortName} ICT Directorate before granting system access.
               </p>
             </div>
           </div>
@@ -152,6 +155,23 @@ function PendingContent() {
             </button>
           </div>
         )}
+
+        {/* Support Contact */}
+        <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 space-y-2 text-left text-xs">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            Corporate Support & Inquiries
+          </p>
+          <div className="flex items-center justify-between text-slate-600">
+            <span className="flex items-center gap-1.5"><Mail size={13} className="text-slate-400" /> Support Email:</span>
+            <a href={`mailto:${branding.supportEmail}`} className="font-semibold text-eec-primary hover:underline">
+              {branding.supportEmail}
+            </a>
+          </div>
+          <div className="flex items-center justify-between text-slate-600">
+            <span className="flex items-center gap-1.5"><Phone size={13} className="text-slate-400" /> Support Phone:</span>
+            <span className="font-semibold text-slate-800">{branding.supportPhone}</span>
+          </div>
+        </div>
 
         {/* Action Button */}
         <div className="pt-2">

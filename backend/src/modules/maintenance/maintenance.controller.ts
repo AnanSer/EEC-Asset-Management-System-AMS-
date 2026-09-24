@@ -10,33 +10,39 @@ import { ZodError } from 'zod';
 import prisma from '../../lib/prisma';
 import { ROLES, type Role } from '../../constants';
 import { canAccessMaintenanceTicket, AuthUserContext } from '../../lib/authorization';
+import {
+  successResponse,
+  createdResponse,
+  errorResponse,
+  paginatedResponse,
+  buildPagination,
+} from '../../lib/api';
 
 export class MaintenanceController {
   private handleError(res: Response, error: unknown) {
     if (error instanceof ZodError) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation failed',
-        errors: error.issues.map((err: any) => ({
-          field: err.path.join('.'),
-          message: err.message,
-        })),
-      });
+      return res.status(400).json(
+        errorResponse(
+          'Validation failed',
+          'VALIDATION_ERROR',
+          error.issues.map((err: any) => ({
+            field: err.path.join('.'),
+            message: err.message,
+          }))
+        )
+      );
     }
 
     if (error instanceof AppError) {
-      return res.status(error.statusCode).json({
-        success: false,
-        message: error.message,
-        errors: error.errors,
-      });
+      return res.status(error.statusCode).json(
+        errorResponse(error.message, 'APP_ERROR', error.errors)
+      );
     }
 
     const err = error as Error;
-    return res.status(500).json({
-      success: false,
-      message: err.message || 'Internal server error',
-    });
+    return res.status(500).json(
+      errorResponse(err.message || 'Internal server error', 'INTERNAL_ERROR')
+    );
   }
 
   async getTickets(req: Request, res: Response) {
@@ -113,17 +119,11 @@ export class MaintenanceController {
                 orderBy: { createdAt: 'desc' },
               });
 
-              return res.status(200).json({
-                success: true,
-                data: tickets,
-                meta: { total: tickets.length, page: 1, limit: 10, totalPages: 1 },
-              });
+              const pagination = buildPagination(1, 10, tickets.length);
+              return res.status(200).json(paginatedResponse(tickets, pagination));
             } else {
-              return res.status(200).json({
-                success: true,
-                data: [],
-                meta: { total: 0, page: 1, limit: 10, totalPages: 0 },
-              });
+              const pagination = buildPagination(1, 10, 0);
+              return res.status(200).json(paginatedResponse([], pagination));
             }
           }
 
@@ -145,21 +145,15 @@ export class MaintenanceController {
               orderBy: { createdAt: 'desc' },
             });
 
-            return res.status(200).json({
-              success: true,
-              data: deptTickets,
-              meta: { total: deptTickets.length, page: 1, limit: 10, totalPages: 1 },
-            });
+            const pagination = buildPagination(1, 10, deptTickets.length);
+            return res.status(200).json(paginatedResponse(deptTickets, pagination));
           }
         }
       }
 
       const result = await maintenanceService.getTickets(validatedQuery);
-      return res.status(200).json({
-        success: true,
-        data: result.tickets,
-        meta: result.meta,
-      });
+      const pagination = buildPagination(result.meta.page, result.meta.limit, result.meta.total);
+      return res.status(200).json(paginatedResponse(result.tickets, pagination));
     } catch (error) {
       return this.handleError(res, error);
     }
@@ -199,10 +193,7 @@ export class MaintenanceController {
           };
         });
 
-      return res.status(200).json({
-        success: true,
-        data: technicians,
-      });
+      return res.status(200).json(successResponse(technicians));
     } catch (error) {
       return this.handleError(res, error);
     }
@@ -214,10 +205,9 @@ export class MaintenanceController {
       const ticket = await maintenanceService.getTicketById(id);
 
       if (!ticket) {
-        return res.status(404).json({
-          success: false,
-          message: 'Maintenance ticket not found',
-        });
+        return res.status(404).json(
+          errorResponse('Maintenance ticket not found', 'NOT_FOUND')
+        );
       }
 
       // Check ownership & department access
@@ -242,18 +232,14 @@ export class MaintenanceController {
           const allowed = canAccessMaintenanceTicket(authContext, ticket);
 
           if (!allowed) {
-            return res.status(403).json({
-              success: false,
-              message: 'Forbidden: You do not have permission to view this maintenance ticket',
-            });
+            return res.status(403).json(
+              errorResponse('Forbidden: You do not have permission to view this maintenance ticket', 'FORBIDDEN')
+            );
           }
         }
       }
 
-      return res.status(200).json({
-        success: true,
-        data: ticket,
-      });
+      return res.status(200).json(successResponse(ticket));
     } catch (error) {
       return this.handleError(res, error);
     }
@@ -272,10 +258,9 @@ export class MaintenanceController {
 
         if (user && (user.role as Role) === ROLES.EMPLOYEE) {
           if (!user.employeeProfile) {
-            return res.status(403).json({
-              success: false,
-              message: 'Forbidden: No employee profile associated with this account',
-            });
+            return res.status(403).json(
+              errorResponse('Forbidden: No employee profile associated with this account', 'FORBIDDEN')
+            );
           }
 
           const isAssigned = await prisma.assetAssignment.findFirst({
@@ -287,10 +272,9 @@ export class MaintenanceController {
           });
 
           if (!isAssigned) {
-            return res.status(403).json({
-              success: false,
-              message: 'Forbidden: Employees can only report maintenance tickets for assets currently assigned to them',
-            });
+            return res.status(403).json(
+              errorResponse('Forbidden: Employees can only report maintenance tickets for assets currently assigned to them', 'FORBIDDEN')
+            );
           }
 
           // Ensure reportedBy is set to employee name/id
@@ -301,11 +285,9 @@ export class MaintenanceController {
       }
 
       const ticket = await maintenanceService.createTicket(validatedData);
-      return res.status(201).json({
-        success: true,
-        message: 'Maintenance ticket created successfully',
-        data: ticket,
-      });
+      return res.status(201).json(
+        createdResponse(ticket, undefined, 'Maintenance ticket created successfully')
+      );
     } catch (error) {
       return this.handleError(res, error);
     }
@@ -316,11 +298,9 @@ export class MaintenanceController {
       const id = String(req.params.id);
       const validatedData = updateMaintenanceSchema.parse(req.body);
       const ticket = await maintenanceService.updateTicket(id, validatedData);
-      return res.status(200).json({
-        success: true,
-        message: 'Maintenance ticket updated successfully',
-        data: ticket,
-      });
+      return res.status(200).json(
+        successResponse(ticket, undefined, 'Maintenance ticket updated successfully')
+      );
     } catch (error) {
       return this.handleError(res, error);
     }
@@ -331,11 +311,9 @@ export class MaintenanceController {
       const id = String(req.params.id);
       const validatedData = updateMaintenanceStatusSchema.parse(req.body);
       const ticket = await maintenanceService.updateStatus(id, validatedData);
-      return res.status(200).json({
-        success: true,
-        message: 'Maintenance ticket status updated successfully',
-        data: ticket,
-      });
+      return res.status(200).json(
+        successResponse(ticket, undefined, 'Maintenance ticket status updated successfully')
+      );
     } catch (error) {
       return this.handleError(res, error);
     }
@@ -344,10 +322,7 @@ export class MaintenanceController {
   async getDashboardStats(req: Request, res: Response) {
     try {
       const stats = await maintenanceService.getDashboardStats();
-      return res.status(200).json({
-        success: true,
-        data: stats,
-      });
+      return res.status(200).json(successResponse(stats));
     } catch (error) {
       return this.handleError(res, error);
     }

@@ -9,6 +9,7 @@ const assignment_validator_1 = require("./assignment.validator");
 const prisma_1 = __importDefault(require("../../lib/prisma"));
 const constants_1 = require("../../constants");
 const authorization_1 = require("../../lib/authorization");
+const api_1 = require("../../lib/api");
 class AssignmentController {
     constructor(service = assignment_service_1.assignmentService) {
         this.service = service;
@@ -33,21 +34,14 @@ class AssignmentController {
                                 parsedQuery.employeeId = user.employeeProfile.id;
                             }
                             else {
-                                return res.status(200).json({
-                                    success: true,
-                                    data: [],
-                                    meta: { total: 0, page: 1, limit: 10, totalPages: 0 },
-                                });
+                                return res.status(200).json((0, api_1.paginatedResponse)([], (0, api_1.buildPagination)(1, 10, 0)));
                             }
                         }
                     }
                 }
                 const { assignments, meta } = await this.service.getAssignments(parsedQuery);
-                return res.status(200).json({
-                    success: true,
-                    data: assignments,
-                    meta,
-                });
+                const pagination = (0, api_1.buildPagination)(meta.page, meta.limit, meta.total);
+                return res.status(200).json((0, api_1.paginatedResponse)(assignments, pagination));
             }
             catch (err) {
                 return this.handleError(res, err);
@@ -58,15 +52,9 @@ class AssignmentController {
                 const id = String(req.params.id);
                 const assignment = await this.service.getAssignmentById(id);
                 if (!assignment) {
-                    return res.status(404).json({
-                        success: false,
-                        message: 'Assignment not found',
-                    });
+                    return res.status(404).json((0, api_1.errorResponse)('Assignment not found'));
                 }
-                return res.status(200).json({
-                    success: true,
-                    data: assignment,
-                });
+                return res.status(200).json((0, api_1.successResponse)(assignment));
             }
             catch (err) {
                 return this.handleError(res, err);
@@ -87,10 +75,7 @@ class AssignmentController {
                             include: { assignments: { where: { isCurrent: true } } },
                         });
                         if (!asset) {
-                            return res.status(404).json({
-                                success: false,
-                                message: 'Asset not found',
-                            });
+                            return res.status(404).json((0, api_1.errorResponse)('Asset not found'));
                         }
                         const authContext = {
                             userId: user.id,
@@ -105,18 +90,12 @@ class AssignmentController {
                             assignments: asset.assignments,
                         });
                         if (!allowed) {
-                            return res.status(403).json({
-                                success: false,
-                                message: 'Forbidden: You do not have permission to view assignment history for this asset',
-                            });
+                            return res.status(403).json((0, api_1.errorResponse)('Forbidden: You do not have permission to view assignment history for this asset'));
                         }
                     }
                 }
                 const history = await this.service.getAssetHistory(assetId);
-                return res.status(200).json({
-                    success: true,
-                    data: history,
-                });
+                return res.status(200).json((0, api_1.successResponse)(history));
             }
             catch (err) {
                 return this.handleError(res, err);
@@ -126,11 +105,7 @@ class AssignmentController {
             try {
                 const validatedData = assignment_validator_1.assignAssetSchema.parse(req.body);
                 const newAssignment = await this.service.assignAsset(validatedData);
-                return res.status(201).json({
-                    success: true,
-                    message: 'Asset assigned successfully',
-                    data: newAssignment,
-                });
+                return res.status(201).json((0, api_1.createdResponse)(newAssignment, null, 'Asset assigned successfully'));
             }
             catch (err) {
                 return this.handleError(res, err);
@@ -141,11 +116,7 @@ class AssignmentController {
                 const assetId = String(req.params.assetId);
                 const validatedData = assignment_validator_1.transferAssetSchema.parse(req.body);
                 const updatedAssignment = await this.service.transferAsset(assetId, validatedData);
-                return res.status(200).json({
-                    success: true,
-                    message: 'Asset transferred successfully',
-                    data: updatedAssignment,
-                });
+                return res.status(200).json((0, api_1.successResponse)(updatedAssignment, null, 'Asset transferred successfully'));
             }
             catch (err) {
                 return this.handleError(res, err);
@@ -156,11 +127,7 @@ class AssignmentController {
                 const assetId = String(req.params.assetId);
                 const validatedData = assignment_validator_1.returnAssetSchema.parse(req.body);
                 const closedAssignment = await this.service.returnAsset(assetId, validatedData);
-                return res.status(200).json({
-                    success: true,
-                    message: 'Asset returned successfully',
-                    data: closedAssignment,
-                });
+                return res.status(200).json((0, api_1.successResponse)(closedAssignment, null, 'Asset returned successfully'));
             }
             catch (err) {
                 return this.handleError(res, err);
@@ -169,10 +136,7 @@ class AssignmentController {
         this.getStats = async (_req, res) => {
             try {
                 const stats = await this.service.getDashboardStats();
-                return res.status(200).json({
-                    success: true,
-                    data: stats,
-                });
+                return res.status(200).json((0, api_1.successResponse)(stats));
             }
             catch (err) {
                 return this.handleError(res, err);
@@ -181,28 +145,17 @@ class AssignmentController {
     }
     handleError(res, err) {
         if (err instanceof assignment_service_1.AppError) {
-            return res.status(err.statusCode).json({
-                success: false,
-                message: err.message,
-                errors: err.errors,
-            });
+            return res.status(err.statusCode).json((0, api_1.errorResponse)(err.message, err.statusCode, err.errors));
         }
         if (err?.name === 'ZodError') {
             const formattedErrors = err.issues?.map((issue) => ({
                 field: issue.path.join('.'),
                 message: issue.message,
             }));
-            return res.status(422).json({
-                success: false,
-                message: 'Validation failed',
-                errors: formattedErrors,
-            });
+            return res.status(422).json((0, api_1.errorResponse)('Validation failed', 422, formattedErrors));
         }
         console.error('Unhandled Assignment Error:', err);
-        return res.status(500).json({
-            success: false,
-            message: 'Internal server error',
-        });
+        return res.status(500).json((0, api_1.errorResponse)('Internal server error'));
     }
 }
 exports.AssignmentController = AssignmentController;

@@ -9,6 +9,7 @@ const asset_validator_1 = require("./asset.validator");
 const prisma_1 = __importDefault(require("../../lib/prisma"));
 const constants_1 = require("../../constants");
 const authorization_1 = require("../../lib/authorization");
+const api_1 = require("../../lib/api");
 class AssetController {
     constructor(service = asset_service_1.assetService) {
         this.service = service;
@@ -49,18 +50,10 @@ class AssetController {
                                     },
                                 });
                                 const userAssets = activeAssignments.map((a) => a.asset);
-                                return res.status(200).json({
-                                    success: true,
-                                    data: userAssets,
-                                    meta: { total: userAssets.length, page: 1, limit: 10, totalPages: 1 },
-                                });
+                                return res.status(200).json((0, api_1.paginatedResponse)(userAssets, (0, api_1.buildPagination)(1, 10, userAssets.length)));
                             }
                             else {
-                                return res.status(200).json({
-                                    success: true,
-                                    data: [],
-                                    meta: { total: 0, page: 1, limit: 10, totalPages: 0 },
-                                });
+                                return res.status(200).json((0, api_1.paginatedResponse)([], (0, api_1.buildPagination)(1, 10, 0)));
                             }
                         }
                         // DEPARTMENT_MANAGER: View only assets inside own department
@@ -70,11 +63,8 @@ class AssetController {
                     }
                 }
                 const { assets, meta } = await this.service.getAssets(parsedQuery);
-                return res.status(200).json({
-                    success: true,
-                    data: assets,
-                    meta,
-                });
+                const pagination = (0, api_1.buildPagination)(meta.page, meta.limit, meta.total);
+                return res.status(200).json((0, api_1.paginatedResponse)(assets, pagination));
             }
             catch (err) {
                 return this.handleError(res, err);
@@ -85,10 +75,7 @@ class AssetController {
                 const id = String(req.params.id);
                 const asset = await this.service.getAssetById(id);
                 if (!asset) {
-                    return res.status(404).json({
-                        success: false,
-                        message: 'Asset not found',
-                    });
+                    return res.status(404).json((0, api_1.errorResponse)('Asset not found'));
                 }
                 // Check ownership & department access
                 if (req.auth?.user) {
@@ -109,17 +96,11 @@ class AssetController {
                         };
                         const allowed = (0, authorization_1.canAccessAsset)(authContext, asset);
                         if (!allowed) {
-                            return res.status(403).json({
-                                success: false,
-                                message: 'Forbidden: You do not have permission to view this asset',
-                            });
+                            return res.status(403).json((0, api_1.errorResponse)('Forbidden: You do not have permission to view this asset'));
                         }
                     }
                 }
-                return res.status(200).json({
-                    success: true,
-                    data: asset,
-                });
+                return res.status(200).json((0, api_1.successResponse)(asset));
             }
             catch (err) {
                 return this.handleError(res, err);
@@ -129,11 +110,7 @@ class AssetController {
             try {
                 const validatedData = asset_validator_1.createAssetSchema.parse(req.body);
                 const newAsset = await this.service.createAsset(validatedData);
-                return res.status(201).json({
-                    success: true,
-                    message: 'Asset registered successfully',
-                    data: newAsset,
-                });
+                return res.status(201).json((0, api_1.createdResponse)(newAsset, null, 'Asset registered successfully'));
             }
             catch (err) {
                 return this.handleError(res, err);
@@ -144,11 +121,7 @@ class AssetController {
                 const id = String(req.params.id);
                 const validatedData = asset_validator_1.updateAssetSchema.parse(req.body);
                 const updated = await this.service.updateAsset(id, validatedData);
-                return res.status(200).json({
-                    success: true,
-                    message: 'Asset updated successfully',
-                    data: updated,
-                });
+                return res.status(200).json((0, api_1.successResponse)(updated, null, 'Asset updated successfully'));
             }
             catch (err) {
                 return this.handleError(res, err);
@@ -159,11 +132,7 @@ class AssetController {
                 const id = String(req.params.id);
                 const { status } = asset_validator_1.updateAssetStatusSchema.parse(req.body);
                 const updated = await this.service.updateStatus(id, status);
-                return res.status(200).json({
-                    success: true,
-                    message: `Asset status updated to '${status}'`,
-                    data: updated,
-                });
+                return res.status(200).json((0, api_1.successResponse)(updated, null, `Asset status updated to '${status}'`));
             }
             catch (err) {
                 return this.handleError(res, err);
@@ -172,28 +141,17 @@ class AssetController {
     }
     handleError(res, err) {
         if (err instanceof asset_service_1.AppError) {
-            return res.status(err.statusCode).json({
-                success: false,
-                message: err.message,
-                errors: err.errors,
-            });
+            return res.status(err.statusCode).json((0, api_1.errorResponse)(err.message, err.statusCode, err.errors));
         }
         if (err?.name === 'ZodError') {
             const formattedErrors = err.issues?.map((issue) => ({
                 field: issue.path.join('.'),
                 message: issue.message,
             }));
-            return res.status(422).json({
-                success: false,
-                message: 'Validation failed',
-                errors: formattedErrors,
-            });
+            return res.status(422).json((0, api_1.errorResponse)('Validation failed', 422, formattedErrors));
         }
         console.error('Unhandled Asset Error:', err);
-        return res.status(500).json({
-            success: false,
-            message: 'Internal server error',
-        });
+        return res.status(500).json((0, api_1.errorResponse)('Internal server error'));
     }
 }
 exports.AssetController = AssetController;

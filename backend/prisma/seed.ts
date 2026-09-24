@@ -733,6 +733,39 @@ async function main() {
     }
   }
 
+  // 9. Seed SystemSettings (Phase 10A)
+  console.log('⚙️ Seeding / Upserting EEC System Settings...');
+  await pool.query(`
+    INSERT INTO "SystemSettings" (
+      "id",
+      "organizationName",
+      "organizationShortName",
+      "supportEmail",
+      "supportPhone",
+      "headquartersAddress",
+      "logoUrl",
+      "defaultLanguage",
+      "timezone",
+      "dateFormat",
+      "createdAt",
+      "updatedAt"
+    ) VALUES (
+      'eec-system-settings-default',
+      'Ethiopian Engineering Corporation',
+      'EEC',
+      'support@eec.gov.et',
+      '+251 11 123 4567',
+      'Addis Ababa Head Office (Kazanchis), Ethiopia',
+      NULL,
+      'EN',
+      'Africa/Addis_Ababa',
+      'DD/MM/YYYY',
+      NOW(),
+      NOW()
+    )
+    ON CONFLICT ("id") DO NOTHING
+  `);
+
   console.log('\n================================================================================================================');
   console.log('                            ETHIOPIAN ENGINEERING CORPORATION (EEC)');
   console.log('                          ENTERPRISE ASSET MANAGEMENT SYSTEM (EAMS)');

@@ -11,7 +11,7 @@ import { toNodeHandler } from 'better-auth/node';
 import { auth } from './lib/auth';
 import prisma from './lib/prisma';
 import { requireAuth } from './middleware/auth.middleware';
-import { verifyEmailTransporter, transporter } from './lib/email';
+import { verifyEmailTransporter } from './lib/email';
 
 
 
@@ -24,6 +24,7 @@ import maintenanceRoutes from './modules/maintenance/maintenance.routes';
 import testingRoutes from './modules/testing/testing.routes';
 import searchRoutes from './modules/search/search.routes';
 import reportRoutes from './modules/reports/report.routes';
+import settingsRoutes from './modules/settings/settings.routes';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -111,50 +112,7 @@ app.use('/api/maintenance', maintenanceRoutes);
 app.use('/api/testing', testingRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/reports', reportRoutes);
-
-// ─── Temporary Email Testing Endpoint ─────────────────────────────────────────
-app.get('/api/debug/send-test-email', async (_req, res) => {
-  const recipient = 'ananserbesa2423@gmail.com';
-  const subject = 'EEC EAMS SMTP Test Email';
-  const body =
-    'This is a successful SMTP delivery test from the Ethiopian Engineering Corporation Enterprise Asset Management System.';
-  const from =
-    process.env.EMAIL_FROM ||
-    (process.env.SMTP_USER
-      ? `Ethiopian Engineering Corporation <${process.env.SMTP_USER}>`
-      : 'Ethiopian Engineering Corporation <no-reply@eec.gov.et>');
-
-  try {
-    const info = await transporter.sendMail({
-      from,
-      to: recipient,
-      subject,
-      text: body,
-      html: `<p>${body}</p>`,
-    });
-
-    console.log(`✅ [Debug Test Email] Delivered to ${recipient}: MessageId=${info.messageId}`);
-
-    return res.status(200).json({
-      success: true,
-      messageId: info.messageId,
-      accepted: info.accepted,
-      rejected: info.rejected,
-    });
-  } catch (error: any) {
-    console.error('❌ [Debug Test Email] Nodemailer SMTP Error:', error);
-
-    return res.status(500).json({
-      success: false,
-      error: error?.message || 'SMTP delivery failure',
-      code: error?.code,
-      command: error?.command,
-      response: error?.response,
-      responseCode: error?.responseCode,
-      stack: error?.stack,
-    });
-  }
-});
+app.use('/api/settings', settingsRoutes);
 
 // ─── Start Server ────────────────────────────────────────────────────────────
 app.listen(PORT, async () => {

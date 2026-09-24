@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AuthCard from '@/components/auth/AuthCard';
 import { authClient } from '@/lib/auth-client';
+import { useSystemSettings } from '@/hooks/useSystemSettings';
 import {
   KeyRound,
   Mail,
@@ -16,6 +17,7 @@ import {
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
+  const { branding } = useSystemSettings();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -43,7 +45,7 @@ export default function ForgotPasswordPage() {
   return (
     <AuthCard
       title="Recover Your Password"
-      subtitle="Enter your corporate email address to receive secure recovery instructions."
+      subtitle={`Enter your corporate email address to receive secure recovery instructions for ${branding.organizationName}.`}
       icon={<KeyRound size={28} className="text-eec-primary" />}
       className="max-w-lg"
     >
@@ -54,7 +56,7 @@ export default function ForgotPasswordPage() {
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-3 text-slate-700 text-xs sm:text-sm">
               <ShieldQuestion size={18} className="text-eec-primary flex-shrink-0 mt-0.5" />
               <span className="leading-relaxed">
-                For security reasons, password recovery tokens expire in <strong>30 minutes</strong> and can only be used once.
+                Password recovery tokens expire in <strong>30 minutes</strong>. For assistance, contact support at <a href={`mailto:${branding.supportEmail}`} className="text-eec-primary font-semibold hover:underline">{branding.supportEmail}</a>.
               </span>
             </div>
 

@@ -16,10 +16,12 @@ import {
   LogIn,
   RotateCw,
 } from 'lucide-react';
+import { useSystemSettings } from '@/hooks/useSystemSettings';
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
+  const { branding } = useSystemSettings();
 
   const [verifying, setVerifying] = useState(Boolean(token));
   const [success, setSuccess] = useState(false);
@@ -104,7 +106,7 @@ function VerifyEmailContent() {
                 Verifying Security Token...
               </h3>
               <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-xs mx-auto">
-                Authenticating your credentials with the EEC identity registry. Please wait.
+                Authenticating your credentials with the {branding.organizationShortName} identity registry. Please wait.
               </p>
             </div>
           </div>
@@ -125,7 +127,7 @@ function VerifyEmailContent() {
                 Email Address Confirmed
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 max-w-sm mx-auto leading-relaxed">
-                Your corporate email address has been verified. You now have full credentials registered in the EEC Enterprise Asset Management System.
+                Your corporate email address has been verified. You now have full credentials registered in the {branding.organizationName} Enterprise Asset Management System.
               </p>
             </div>
 

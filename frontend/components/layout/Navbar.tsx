@@ -6,6 +6,7 @@ import { Bell, LogOut, User, ShieldCheck } from 'lucide-react';
 import { navItems, bottomNavItems } from '@/lib/navigation';
 import { authClient } from '@/lib/auth-client';
 import clsx from 'clsx';
+import { useSystemSettings } from '@/hooks/useSystemSettings';
 import NavbarSearch from './NavbarSearch';
 import { UserAvatar } from '@/components/auth';
 
@@ -28,6 +29,7 @@ export default function Navbar(_: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const breadcrumb = getBreadcrumb(pathname);
+  const { branding, isLoading } = useSystemSettings();
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [userName, setUserName] = useState('Staff User');
@@ -87,27 +89,66 @@ export default function Navbar(_: NavbarProps) {
   return (
     <header className="sticky top-0 z-20 bg-white border-b border-slate-200 shadow-sm flex-shrink-0">
       <div className="flex items-center justify-between px-6 h-14">
-        {/* Breadcrumb */}
-        <nav aria-label="breadcrumb">
-          <ol className="flex items-center gap-1.5 text-sm">
-            {breadcrumb.map((crumb, idx) => (
-              <li key={crumb} className="flex items-center gap-1.5">
-                {idx > 0 && (
-                  <span className="text-slate-300 select-none">/</span>
-                )}
-                <span
-                  className={clsx(
-                    idx === breadcrumb.length - 1
-                      ? 'text-eec-primary font-semibold'
-                      : 'text-slate-400'
+        {/* Left Section: Organization Branding & Breadcrumb */}
+        <div className="flex items-center gap-3.5 min-w-0">
+          {isLoading ? (
+            <div className="flex items-center gap-2 pr-3 border-r border-slate-200">
+              <div className="w-7 h-7 rounded-lg bg-slate-200 animate-pulse" />
+              <div className="w-14 h-4 bg-slate-200 rounded animate-pulse hidden sm:block" />
+            </div>
+          ) : (
+            <div
+              className="flex items-center gap-2 pr-3 border-r border-slate-200 cursor-default select-none"
+              title={branding.organizationName}
+            >
+              {branding.logoUrl ? (
+                <div className="flex items-center gap-2">
+                  <div className="h-7 px-1.5 py-0.5 rounded-lg bg-[#083D4A] flex items-center justify-center shadow-2xs">
+                    <img
+                      src={branding.logoUrl}
+                      alt={branding.organizationName}
+                      className="h-5 w-auto max-w-[120px] object-contain"
+                    />
+                  </div>
+                  <span className="text-xs font-bold text-slate-800 tracking-tight hidden sm:inline">
+                    {branding.organizationShortName}
+                  </span>
+                </div>
+              ) : (
+                <>
+                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#083D4A] to-[#00A7D6] text-white font-bold text-[11px] flex items-center justify-center shadow-2xs">
+                    {branding.organizationShortName ? branding.organizationShortName.slice(0, 3) : 'EEC'}
+                  </div>
+                  <span className="text-xs font-bold text-slate-800 tracking-tight hidden sm:inline">
+                    {branding.organizationShortName}
+                  </span>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Breadcrumb */}
+          <nav aria-label="breadcrumb">
+            <ol className="flex items-center gap-1.5 text-sm">
+              {breadcrumb.map((crumb, idx) => (
+                <li key={crumb} className="flex items-center gap-1.5">
+                  {idx > 0 && (
+                    <span className="text-slate-300 select-none">/</span>
                   )}
-                >
-                  {crumb}
-                </span>
-              </li>
-            ))}
-          </ol>
-        </nav>
+                  <span
+                    className={clsx(
+                      idx === breadcrumb.length - 1
+                        ? 'text-eec-primary font-semibold'
+                        : 'text-slate-400'
+                    )}
+                  >
+                    {crumb}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </nav>
+        </div>
 
         {/* Right Controls */}
         <div className="flex items-center gap-3">

@@ -1,0 +1,41 @@
+/**
+ * Event Types — EEC EAMS (Phase 10A.2)
+ *
+ * Centralized enumeration of all domain and system event types.
+ * Used for standardized event logging, audit trails, and telemetry.
+ */
+export declare const EVENT_TYPES: {
+    readonly AUTH_LOGIN: 'AUTH_LOGIN';
+    readonly AUTH_LOGOUT: 'AUTH_LOGOUT';
+    readonly AUTH_REGISTER: 'AUTH_REGISTER';
+    readonly AUTH_APPROVED: 'AUTH_APPROVED';
+    readonly AUTH_REJECTED: 'AUTH_REJECTED';
+    readonly AUTH_PASSWORD_RESET: 'AUTH_PASSWORD_RESET';
+    readonly AUTH_EMAIL_VERIFIED: 'AUTH_EMAIL_VERIFIED';
+    readonly EMPLOYEE_CREATED: 'EMPLOYEE_CREATED';
+    readonly EMPLOYEE_UPDATED: 'EMPLOYEE_UPDATED';
+    readonly EMPLOYEE_DEACTIVATED: 'EMPLOYEE_DEACTIVATED';
+    readonly EMPLOYEE_ASSIGNED: 'EMPLOYEE_ASSIGNED';
+    readonly ASSET_CREATED: 'ASSET_CREATED';
+    readonly ASSET_UPDATED: 'ASSET_UPDATED';
+    readonly ASSET_ASSIGNED: 'ASSET_ASSIGNED';
+    readonly ASSET_TRANSFERRED: 'ASSET_TRANSFERRED';
+    readonly ASSET_RETURNED: 'ASSET_RETURNED';
+    readonly ASSET_DECOMMISSIONED: 'ASSET_DECOMMISSIONED';
+    readonly MAINTENANCE_CREATED: 'MAINTENANCE_CREATED';
+    readonly MAINTENANCE_STARTED: 'MAINTENANCE_STARTED';
+    readonly MAINTENANCE_TESTING: 'MAINTENANCE_TESTING';
+    readonly MAINTENANCE_COMPLETED: 'MAINTENANCE_COMPLETED';
+    readonly MAINTENANCE_CANCELLED: 'MAINTENANCE_CANCELLED';
+    readonly TESTING_PASS: 'TESTING_PASS';
+    readonly TESTING_FAIL: 'TESTING_FAIL';
+    readonly DEPARTMENT_CREATED: 'DEPARTMENT_CREATED';
+    readonly DEPARTMENT_UPDATED: 'DEPARTMENT_UPDATED';
+    readonly SETTINGS_UPDATED: 'SETTINGS_UPDATED';
+    readonly REPORT_EXPORTED: 'REPORT_EXPORTED';
+    readonly REPORT_GENERATED: 'REPORT_GENERATED';
+    readonly SYSTEM_STARTUP: 'SYSTEM_STARTUP';
+    readonly SYSTEM_ERROR: 'SYSTEM_ERROR';
+};
+export type EventType = (typeof EVENT_TYPES)[keyof typeof EVENT_TYPES];
+//# sourceMappingURL=eventTypes.d.ts.map

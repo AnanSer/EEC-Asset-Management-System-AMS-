@@ -5,6 +5,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.identityController = exports.IdentityController = void 0;
 const identity_service_1 = require("./identity.service");
 const identity_validator_1 = require("./identity.validator");
+const api_1 = require("../../lib/api");
 class IdentityController {
     constructor(service = identity_service_1.identityService) {
         this.service = service;
@@ -15,10 +16,7 @@ class IdentityController {
         this.getPublicDepartments = async (_req, res) => {
             try {
                 const departments = await this.service.getPublicDepartments();
-                return res.status(200).json({
-                    success: true,
-                    data: departments,
-                });
+                return res.status(200).json((0, api_1.successResponse)(departments));
             }
             catch (err) {
                 return this.handleError(res, err);
@@ -32,11 +30,7 @@ class IdentityController {
             try {
                 const validatedData = identity_validator_1.registrationSchema.parse(req.body);
                 const result = await this.service.register(validatedData);
-                return res.status(201).json({
-                    success: true,
-                    message: result.message,
-                    data: result.user,
-                });
+                return res.status(201).json((0, api_1.createdResponse)(result.user, undefined, result.message));
             }
             catch (err) {
                 return this.handleError(res, err);
@@ -50,11 +44,8 @@ class IdentityController {
             try {
                 const parsedQuery = identity_validator_1.pendingUserQuerySchema.parse(req.query);
                 const { users, meta } = await this.service.getPendingUsers(parsedQuery);
-                return res.status(200).json({
-                    success: true,
-                    data: users,
-                    meta,
-                });
+                const pagination = (0, api_1.buildPagination)(meta.page, meta.limit, meta.total);
+                return res.status(200).json((0, api_1.paginatedResponse)(users, pagination));
             }
             catch (err) {
                 return this.handleError(res, err);
@@ -69,11 +60,7 @@ class IdentityController {
                 const id = String(req.params.id);
                 const validatedData = identity_validator_1.approvalSchema.parse(req.body);
                 const result = await this.service.approveAccount(id, validatedData);
-                return res.status(200).json({
-                    success: true,
-                    message: result.message,
-                    data: result.user,
-                });
+                return res.status(200).json((0, api_1.successResponse)(result.user, undefined, result.message));
             }
             catch (err) {
                 return this.handleError(res, err);
@@ -89,10 +76,8 @@ class IdentityController {
                 const validatedData = identity_validator_1.rejectionSchema.parse(req.body);
                 const result = await this.service.rejectAccount(id, validatedData);
                 return res.status(200).json({
-                    success: true,
-                    message: result.message,
+                    ...(0, api_1.successResponse)(result.user, undefined, result.message),
                     reason: result.reason,
-                    data: result.user,
                 });
             }
             catch (err) {
@@ -107,11 +92,7 @@ class IdentityController {
             try {
                 const id = String(req.params.id);
                 const result = await this.service.suspendAccount(id);
-                return res.status(200).json({
-                    success: true,
-                    message: result.message,
-                    data: result.user,
-                });
+                return res.status(200).json((0, api_1.successResponse)(result.user, undefined, result.message));
             }
             catch (err) {
                 return this.handleError(res, err);
@@ -120,28 +101,17 @@ class IdentityController {
     }
     handleError(res, err) {
         if (err instanceof identity_service_1.AppError) {
-            return res.status(err.statusCode).json({
-                success: false,
-                message: err.message,
-                errors: err.errors,
-            });
+            return res.status(err.statusCode).json((0, api_1.errorResponse)(err.message, 'APP_ERROR', err.errors));
         }
         if (err?.name === 'ZodError') {
             const formattedErrors = err.issues?.map((issue) => ({
                 field: issue.path.join('.'),
                 message: issue.message,
             }));
-            return res.status(422).json({
-                success: false,
-                message: 'Validation failed',
-                errors: formattedErrors,
-            });
+            return res.status(422).json((0, api_1.errorResponse)('Validation failed', 'VALIDATION_ERROR', formattedErrors));
         }
         console.error('Unhandled Identity Error:', err);
-        return res.status(500).json({
-            success: false,
-            message: 'Internal server error',
-        });
+        return res.status(500).json((0, api_1.errorResponse)('Internal server error', 'INTERNAL_ERROR'));
     }
 }
 exports.IdentityController = IdentityController;

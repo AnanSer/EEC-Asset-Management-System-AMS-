@@ -4,16 +4,18 @@ import React, { Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import AuthCard from '@/components/auth/AuthCard';
+import { useSystemSettings } from '@/hooks/useSystemSettings';
 import { XCircle, ArrowLeft, Mail, AlertTriangle, PhoneCall } from 'lucide-react';
 
 function RejectedContent() {
   const searchParams = useSearchParams();
   const email = searchParams.get('email');
+  const { branding } = useSystemSettings();
 
   return (
     <AuthCard
       title="Request Not Approved"
-      subtitle="Your registration request was not approved by the system administration."
+      subtitle={`Your registration request was not approved by ${branding.organizationName} system administration.`}
       icon={<XCircle size={28} className="text-red-500" />}
       className="max-w-lg"
     >
@@ -27,7 +29,7 @@ function RejectedContent() {
                 Access Request Rejected
               </p>
               <p className="text-red-800/90">
-                Your account registration was reviewed and denied. Please contact the ICT Administration Office or your department lead if you believe this is an error.
+                Your account registration was reviewed and denied. Please contact the {branding.organizationShortName} ICT Administration Office or your department lead if you believe this is an error.
               </p>
             </div>
           </div>
@@ -36,7 +38,7 @@ function RejectedContent() {
         {/* Contact Information */}
         <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 space-y-3 text-left">
           <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-            ICT Directorate Contact
+            {branding.organizationShortName} ICT Directorate Contact
           </p>
 
           {email && (
@@ -48,16 +50,18 @@ function RejectedContent() {
 
           <div className="flex items-center justify-between text-xs sm:text-sm">
             <span className="text-slate-500 font-medium flex items-center gap-1.5">
-              <Mail size={14} className="text-slate-400" /> ICT Support Email:
+              <Mail size={14} className="text-slate-400" /> Support Email:
             </span>
-            <span className="font-medium text-slate-800">ict.support@eec.gov.et</span>
+            <a href={`mailto:${branding.supportEmail}`} className="font-medium text-eec-primary hover:underline">
+              {branding.supportEmail}
+            </a>
           </div>
 
           <div className="flex items-center justify-between text-xs sm:text-sm">
             <span className="text-slate-500 font-medium flex items-center gap-1.5">
-              <PhoneCall size={14} className="text-slate-400" /> Helpdesk Extension:
+              <PhoneCall size={14} className="text-slate-400" /> Helpdesk Phone:
             </span>
-            <span className="font-medium text-slate-800">+251 11 661 3355</span>
+            <span className="font-medium text-slate-800">{branding.supportPhone}</span>
           </div>
         </div>
 

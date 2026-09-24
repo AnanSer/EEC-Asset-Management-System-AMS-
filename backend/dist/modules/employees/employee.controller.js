@@ -9,6 +9,7 @@ const employee_validator_1 = require("./employee.validator");
 const prisma_1 = __importDefault(require("../../lib/prisma"));
 const constants_1 = require("../../constants");
 const authorization_1 = require("../../lib/authorization");
+const api_1 = require("../../lib/api");
 class EmployeeController {
     constructor(service = employee_service_1.employeeService) {
         this.service = service;
@@ -31,28 +32,17 @@ class EmployeeController {
                         if (role === constants_1.ROLES.EMPLOYEE) {
                             if (user.employeeProfile) {
                                 const single = await this.service.getEmployeeById(user.employeeProfile.id);
-                                return res.status(200).json({
-                                    success: true,
-                                    data: single ? [single] : [],
-                                    meta: { total: single ? 1 : 0, page: 1, limit: 10, totalPages: 1 },
-                                });
+                                return res.status(200).json((0, api_1.paginatedResponse)(single ? [single] : [], (0, api_1.buildPagination)(1, 10, single ? 1 : 0)));
                             }
                             else {
-                                return res.status(200).json({
-                                    success: true,
-                                    data: [],
-                                    meta: { total: 0, page: 1, limit: 10, totalPages: 0 },
-                                });
+                                return res.status(200).json((0, api_1.paginatedResponse)([], (0, api_1.buildPagination)(1, 10, 0)));
                             }
                         }
                     }
                 }
                 const { employees, meta } = await this.service.getEmployees(parsedQuery);
-                return res.status(200).json({
-                    success: true,
-                    data: employees,
-                    meta,
-                });
+                const pagination = (0, api_1.buildPagination)(meta.page, meta.limit, meta.total);
+                return res.status(200).json((0, api_1.paginatedResponse)(employees, pagination));
             }
             catch (err) {
                 return this.handleError(res, err);
@@ -63,10 +53,7 @@ class EmployeeController {
                 const id = String(req.params.id);
                 const employee = await this.service.getEmployeeById(id);
                 if (!employee) {
-                    return res.status(404).json({
-                        success: false,
-                        message: 'Employee not found',
-                    });
+                    return res.status(404).json((0, api_1.errorResponse)('Employee not found'));
                 }
                 // Check ownership & department access
                 if (req.auth?.user) {
@@ -89,17 +76,11 @@ class EmployeeController {
                             departmentId: employee.departmentId,
                         });
                         if (!allowed) {
-                            return res.status(403).json({
-                                success: false,
-                                message: 'Forbidden: You do not have permission to view this employee profile',
-                            });
+                            return res.status(403).json((0, api_1.errorResponse)('Forbidden: You do not have permission to view this employee profile'));
                         }
                     }
                 }
-                return res.status(200).json({
-                    success: true,
-                    data: employee,
-                });
+                return res.status(200).json((0, api_1.successResponse)(employee));
             }
             catch (err) {
                 return this.handleError(res, err);
@@ -109,11 +90,7 @@ class EmployeeController {
             try {
                 const validatedData = employee_validator_1.createEmployeeSchema.parse(req.body);
                 const newEmployee = await this.service.createEmployee(validatedData);
-                return res.status(201).json({
-                    success: true,
-                    message: 'Employee created successfully',
-                    data: newEmployee,
-                });
+                return res.status(201).json((0, api_1.createdResponse)(newEmployee, null, 'Employee created successfully'));
             }
             catch (err) {
                 return this.handleError(res, err);
@@ -124,11 +101,7 @@ class EmployeeController {
                 const id = String(req.params.id);
                 const validatedData = employee_validator_1.updateEmployeeSchema.parse(req.body);
                 const updated = await this.service.updateEmployee(id, validatedData);
-                return res.status(200).json({
-                    success: true,
-                    message: 'Employee updated successfully',
-                    data: updated,
-                });
+                return res.status(200).json((0, api_1.successResponse)(updated, null, 'Employee updated successfully'));
             }
             catch (err) {
                 return this.handleError(res, err);
@@ -139,11 +112,7 @@ class EmployeeController {
                 const id = String(req.params.id);
                 const { isActive } = employee_validator_1.updateEmployeeStatusSchema.parse(req.body);
                 const updated = await this.service.updateStatus(id, isActive);
-                return res.status(200).json({
-                    success: true,
-                    message: `Employee ${isActive ? 'activated' : 'deactivated'} successfully`,
-                    data: updated,
-                });
+                return res.status(200).json((0, api_1.successResponse)(updated, null, `Employee ${isActive ? 'activated' : 'deactivated'} successfully`));
             }
             catch (err) {
                 return this.handleError(res, err);
@@ -152,28 +121,17 @@ class EmployeeController {
     }
     handleError(res, err) {
         if (err instanceof employee_service_1.AppError) {
-            return res.status(err.statusCode).json({
-                success: false,
-                message: err.message,
-                errors: err.errors,
-            });
+            return res.status(err.statusCode).json((0, api_1.errorResponse)(err.message, err.statusCode, err.errors));
         }
         if (err?.name === 'ZodError') {
             const formattedErrors = err.issues?.map((issue) => ({
                 field: issue.path.join('.'),
                 message: issue.message,
             }));
-            return res.status(422).json({
-                success: false,
-                message: 'Validation failed',
-                errors: formattedErrors,
-            });
+            return res.status(422).json((0, api_1.errorResponse)('Validation failed', 422, formattedErrors));
         }
         console.error('Unhandled Employee Error:', err);
-        return res.status(500).json({
-            success: false,
-            message: 'Internal server error',
-        });
+        return res.status(500).json((0, api_1.errorResponse)('Internal server error'));
     }
 }
 exports.EmployeeController = EmployeeController;

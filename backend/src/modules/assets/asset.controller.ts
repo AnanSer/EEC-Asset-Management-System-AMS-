@@ -9,6 +9,13 @@ import {
 import prisma from '../../lib/prisma';
 import { ROLES, type Role } from '../../constants';
 import { canAccessAsset, AuthUserContext } from '../../lib/authorization';
+import {
+  successResponse,
+  createdResponse,
+  errorResponse,
+  paginatedResponse,
+  buildPagination,
+} from '../../lib/api';
 
 export class AssetController {
   constructor(private service: AssetService = assetService) {}
@@ -54,17 +61,13 @@ export class AssetController {
               });
 
               const userAssets = activeAssignments.map((a) => a.asset);
-              return res.status(200).json({
-                success: true,
-                data: userAssets,
-                meta: { total: userAssets.length, page: 1, limit: 10, totalPages: 1 },
-              });
+              return res.status(200).json(
+                paginatedResponse(userAssets, buildPagination(1, 10, userAssets.length))
+              );
             } else {
-              return res.status(200).json({
-                success: true,
-                data: [],
-                meta: { total: 0, page: 1, limit: 10, totalPages: 0 },
-              });
+              return res.status(200).json(
+                paginatedResponse([], buildPagination(1, 10, 0))
+              );
             }
           }
 
@@ -76,12 +79,11 @@ export class AssetController {
       }
 
       const { assets, meta } = await this.service.getAssets(parsedQuery);
+      const pagination = buildPagination(meta.page, meta.limit, meta.total);
 
-      return res.status(200).json({
-        success: true,
-        data: assets,
-        meta,
-      });
+      return res.status(200).json(
+        paginatedResponse(assets, pagination)
+      );
     } catch (err: any) {
       return this.handleError(res, err);
     }
@@ -93,10 +95,9 @@ export class AssetController {
       const asset = await this.service.getAssetById(id);
 
       if (!asset) {
-        return res.status(404).json({
-          success: false,
-          message: 'Asset not found',
-        });
+        return res.status(404).json(
+          errorResponse('Asset not found')
+        );
       }
 
       // Check ownership & department access
@@ -121,18 +122,16 @@ export class AssetController {
           const allowed = canAccessAsset(authContext, asset);
 
           if (!allowed) {
-            return res.status(403).json({
-              success: false,
-              message: 'Forbidden: You do not have permission to view this asset',
-            });
+            return res.status(403).json(
+              errorResponse('Forbidden: You do not have permission to view this asset')
+            );
           }
         }
       }
 
-      return res.status(200).json({
-        success: true,
-        data: asset,
-      });
+      return res.status(200).json(
+        successResponse(asset)
+      );
     } catch (err: any) {
       return this.handleError(res, err);
     }
@@ -143,11 +142,9 @@ export class AssetController {
       const validatedData = createAssetSchema.parse(req.body);
       const newAsset = await this.service.createAsset(validatedData);
 
-      return res.status(201).json({
-        success: true,
-        message: 'Asset registered successfully',
-        data: newAsset,
-      });
+      return res.status(201).json(
+        createdResponse(newAsset, null, 'Asset registered successfully')
+      );
     } catch (err: any) {
       return this.handleError(res, err);
     }
@@ -159,11 +156,9 @@ export class AssetController {
       const validatedData = updateAssetSchema.parse(req.body);
       const updated = await this.service.updateAsset(id, validatedData);
 
-      return res.status(200).json({
-        success: true,
-        message: 'Asset updated successfully',
-        data: updated,
-      });
+      return res.status(200).json(
+        successResponse(updated, null, 'Asset updated successfully')
+      );
     } catch (err: any) {
       return this.handleError(res, err);
     }
@@ -175,11 +170,9 @@ export class AssetController {
       const { status } = updateAssetStatusSchema.parse(req.body);
       const updated = await this.service.updateStatus(id, status);
 
-      return res.status(200).json({
-        success: true,
-        message: `Asset status updated to '${status}'`,
-        data: updated,
-      });
+      return res.status(200).json(
+        successResponse(updated, null, `Asset status updated to '${status}'`)
+      );
     } catch (err: any) {
       return this.handleError(res, err);
     }
@@ -187,11 +180,9 @@ export class AssetController {
 
   private handleError(res: Response, err: any) {
     if (err instanceof AppError) {
-      return res.status(err.statusCode).json({
-        success: false,
-        message: err.message,
-        errors: err.errors,
-      });
+      return res.status(err.statusCode).json(
+        errorResponse(err.message, err.statusCode, err.errors)
+      );
     }
 
     if (err?.name === 'ZodError') {
@@ -199,18 +190,15 @@ export class AssetController {
         field: issue.path.join('.'),
         message: issue.message,
       }));
-      return res.status(422).json({
-        success: false,
-        message: 'Validation failed',
-        errors: formattedErrors,
-      });
+      return res.status(422).json(
+        errorResponse('Validation failed', 422, formattedErrors)
+      );
     }
 
     console.error('Unhandled Asset Error:', err);
-    return res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-    });
+    return res.status(500).json(
+      errorResponse('Internal server error')
+    );
   }
 }
 
