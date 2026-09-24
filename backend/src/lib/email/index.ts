@@ -1,7 +1,7 @@
-// EEC EAMS – Email Service Entrypoint (Phase 9C)
-// High-level transactional email methods for Better Auth lifecycle and user notifications.
+// EEC EAMS – Email Service Entrypoint (Phase 9D.8)
+// High-level transactional email methods powered by Nodemailer Gmail SMTP.
 
-import { sendEmail } from './resend';
+import { sendEmail } from './transporter';
 import {
   renderEmailVerificationTemplate,
   renderPasswordResetTemplate,
@@ -9,8 +9,9 @@ import {
   renderWelcomeInvitationTemplate,
 } from './templates';
 
-export * from './resend';
+export * from './transporter';
 export * from './templates';
+
 
 export interface SendVerificationEmailInput {
   to: string;

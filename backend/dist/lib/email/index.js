@@ -1,6 +1,6 @@
 "use strict";
-// EEC EAMS – Email Service Entrypoint (Phase 9C)
-// High-level transactional email methods for Better Auth lifecycle and user notifications.
+// EEC EAMS – Email Service Entrypoint (Phase 9D.8)
+// High-level transactional email methods powered by Nodemailer Gmail SMTP.
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
@@ -20,9 +20,9 @@ exports.sendVerificationEmail = sendVerificationEmail;
 exports.sendPasswordResetEmail = sendPasswordResetEmail;
 exports.sendWelcomeApprovedEmail = sendWelcomeApprovedEmail;
 exports.sendWelcomeInvitationEmail = sendWelcomeInvitationEmail;
-const resend_1 = require("./resend");
+const transporter_1 = require("./transporter");
 const templates_1 = require("./templates");
-__exportStar(require("./resend"), exports);
+__exportStar(require("./transporter"), exports);
 __exportStar(require("./templates"), exports);
 /**
  * Dispatch an official EEC corporate email verification message.
@@ -33,7 +33,7 @@ async function sendVerificationEmail({ to, name, verificationUrl, token, }) {
         verificationUrl,
         token,
     });
-    return (0, resend_1.sendEmail)({
+    return (0, transporter_1.sendEmail)({
         to,
         subject,
         html,
@@ -49,7 +49,7 @@ async function sendPasswordResetEmail({ to, name, resetUrl, token, }) {
         resetUrl,
         token,
     });
-    return (0, resend_1.sendEmail)({
+    return (0, transporter_1.sendEmail)({
         to,
         subject,
         html,
@@ -67,7 +67,7 @@ async function sendWelcomeApprovedEmail({ to, name, employeeId, departmentName, 
         role,
         loginUrl,
     });
-    return (0, resend_1.sendEmail)({
+    return (0, transporter_1.sendEmail)({
         to,
         subject,
         html,
@@ -85,7 +85,7 @@ async function sendWelcomeInvitationEmail({ to, name, employeeId, departmentName
         role,
         resetUrl,
     });
-    return (0, resend_1.sendEmail)({
+    return (0, transporter_1.sendEmail)({
         to,
         subject,
         html,

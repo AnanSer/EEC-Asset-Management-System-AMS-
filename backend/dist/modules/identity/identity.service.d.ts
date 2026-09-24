@@ -42,6 +42,7 @@ export declare class IdentityService {
      */
     approveAccount(id: string, data: ApprovalRequestDTO): Promise<{
         message: string;
+        warning: string | undefined;
         user: PendingUserResponse;
     }>;
     /**

@@ -5,14 +5,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config();
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const helmet_1 = __importDefault(require("helmet"));
-const dotenv_1 = __importDefault(require("dotenv"));
 const node_1 = require("better-auth/node");
 const auth_1 = require("./lib/auth");
 const prisma_1 = __importDefault(require("./lib/prisma"));
 const auth_middleware_1 = require("./middleware/auth.middleware");
+const email_1 = require("./lib/email");
 const identity_routes_1 = __importDefault(require("./modules/identity/identity.routes"));
 const department_routes_1 = __importDefault(require("./modules/departments/department.routes"));
 const employee_routes_1 = __importDefault(require("./modules/employees/employee.routes"));
@@ -22,7 +24,6 @@ const maintenance_routes_1 = __importDefault(require("./modules/maintenance/main
 const testing_routes_1 = __importDefault(require("./modules/testing/testing.routes"));
 const search_routes_1 = __importDefault(require("./modules/search/search.routes"));
 const report_routes_1 = __importDefault(require("./modules/reports/report.routes"));
-dotenv_1.default.config();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 5000;
 // ─── Security & CORS Middleware ──────────────────────────────────────────────
@@ -102,10 +103,49 @@ app.use('/api/maintenance', maintenance_routes_1.default);
 app.use('/api/testing', testing_routes_1.default);
 app.use('/api/search', search_routes_1.default);
 app.use('/api/reports', report_routes_1.default);
+// ─── Temporary Email Testing Endpoint ─────────────────────────────────────────
+app.get('/api/debug/send-test-email', async (_req, res) => {
+    const recipient = 'ananserbesa2423@gmail.com';
+    const subject = 'EEC EAMS SMTP Test Email';
+    const body = 'This is a successful SMTP delivery test from the Ethiopian Engineering Corporation Enterprise Asset Management System.';
+    const from = process.env.EMAIL_FROM ||
+        (process.env.SMTP_USER
+            ? `Ethiopian Engineering Corporation <${process.env.SMTP_USER}>`
+            : 'Ethiopian Engineering Corporation <no-reply@eec.gov.et>');
+    try {
+        const info = await email_1.transporter.sendMail({
+            from,
+            to: recipient,
+            subject,
+            text: body,
+            html: `<p>${body}</p>`,
+        });
+        console.log(`✅ [Debug Test Email] Delivered to ${recipient}: MessageId=${info.messageId}`);
+        return res.status(200).json({
+            success: true,
+            messageId: info.messageId,
+            accepted: info.accepted,
+            rejected: info.rejected,
+        });
+    }
+    catch (error) {
+        console.error('❌ [Debug Test Email] Nodemailer SMTP Error:', error);
+        return res.status(500).json({
+            success: false,
+            error: error?.message || 'SMTP delivery failure',
+            code: error?.code,
+            command: error?.command,
+            response: error?.response,
+            responseCode: error?.responseCode,
+            stack: error?.stack,
+        });
+    }
+});
 // ─── Start Server ────────────────────────────────────────────────────────────
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
     console.log(`🚀 EEC EAMS API running on port ${PORT}`);
     console.log(`🔐 Better Auth ready at http://localhost:${PORT}/api/auth`);
+    await (0, email_1.verifyEmailTransporter)();
 });
 exports.default = app;
 //# sourceMappingURL=index.js.map

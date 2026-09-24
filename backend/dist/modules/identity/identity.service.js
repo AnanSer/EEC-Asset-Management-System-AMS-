@@ -163,8 +163,9 @@ class IdentityService {
         const fullName = updated.employeeProfile
             ? `${updated.employeeProfile.firstName} ${updated.employeeProfile.lastName}`.trim()
             : updated.email;
+        let warningMessage;
         try {
-            await (0, email_1.sendWelcomeApprovedEmail)({
+            const emailResult = await (0, email_1.sendWelcomeApprovedEmail)({
                 to: updated.email,
                 name: fullName,
                 employeeId: updated.employeeProfile?.employeeId || '',
@@ -172,12 +173,18 @@ class IdentityService {
                 role: updated.role,
                 loginUrl,
             });
+            if (!emailResult?.success) {
+                console.error('[approveAccount] SMTP error sending welcome email:', emailResult?.error);
+                warningMessage = 'Account approved successfully, but welcome email could not be delivered.';
+            }
         }
         catch (emailErr) {
-            console.error('[approveAccount] Error sending welcome email:', emailErr);
+            console.error('[approveAccount] SMTP error sending welcome email:', emailErr?.message || emailErr);
+            warningMessage = 'Account approved successfully, but welcome email could not be delivered.';
         }
         return {
-            message: 'Account approved successfully',
+            message: warningMessage || 'Account approved successfully',
+            warning: warningMessage,
             user: this.formatPendingUser(updated),
         };
     }

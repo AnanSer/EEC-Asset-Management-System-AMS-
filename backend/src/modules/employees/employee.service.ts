@@ -128,7 +128,7 @@ export class EmployeeService {
     const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
 
     try {
-      await sendWelcomeInvitationEmail({
+      const emailResult = await sendWelcomeInvitationEmail({
         to: data.email,
         name: data.fullName,
         employeeId: data.employeeId,
@@ -137,8 +137,12 @@ export class EmployeeService {
         resetUrl,
         token: resetToken,
       });
-    } catch (emailErr) {
-      console.error('[createEmployee] Error sending welcome invitation email:', emailErr);
+
+      if (!emailResult?.success) {
+        console.error('[createEmployee] SMTP error sending welcome invitation email:', emailResult?.error);
+      }
+    } catch (emailErr: any) {
+      console.error('[createEmployee] SMTP error sending welcome invitation email:', emailErr?.message || emailErr);
     }
 
     return this.formatEmployee(created);

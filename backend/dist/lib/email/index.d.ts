@@ -1,4 +1,4 @@
-export * from './resend';
+export * from './transporter';
 export * from './templates';
 export interface SendVerificationEmailInput {
     to: string;
@@ -35,6 +35,7 @@ export interface SendWelcomeInvitationEmailInput {
 export declare function sendVerificationEmail({ to, name, verificationUrl, token, }: SendVerificationEmailInput): Promise<{
     success: boolean;
     id?: string;
+    error?: string;
 }>;
 /**
  * Dispatch an official EEC password recovery message.
@@ -42,6 +43,7 @@ export declare function sendVerificationEmail({ to, name, verificationUrl, token
 export declare function sendPasswordResetEmail({ to, name, resetUrl, token, }: SendPasswordResetEmailInput): Promise<{
     success: boolean;
     id?: string;
+    error?: string;
 }>;
 /**
  * Dispatch Welcome Email when an ADMIN approves a pending self-registered employee.
@@ -49,6 +51,7 @@ export declare function sendPasswordResetEmail({ to, name, resetUrl, token, }: S
 export declare function sendWelcomeApprovedEmail({ to, name, employeeId, departmentName, role, loginUrl, }: SendWelcomeApprovedEmailInput): Promise<{
     success: boolean;
     id?: string;
+    error?: string;
 }>;
 /**
  * Dispatch Welcome Email when an ADMIN manually creates an employee, including password creation link.
@@ -56,5 +59,6 @@ export declare function sendWelcomeApprovedEmail({ to, name, employeeId, departm
 export declare function sendWelcomeInvitationEmail({ to, name, employeeId, departmentName, role, resetUrl, }: SendWelcomeInvitationEmailInput): Promise<{
     success: boolean;
     id?: string;
+    error?: string;
 }>;
 //# sourceMappingURL=index.d.ts.map
