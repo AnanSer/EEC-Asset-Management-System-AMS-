@@ -18,6 +18,8 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.sendVerificationEmail = sendVerificationEmail;
 exports.sendPasswordResetEmail = sendPasswordResetEmail;
+exports.sendWelcomeApprovedEmail = sendWelcomeApprovedEmail;
+exports.sendWelcomeInvitationEmail = sendWelcomeInvitationEmail;
 const resend_1 = require("./resend");
 const templates_1 = require("./templates");
 __exportStar(require("./resend"), exports);
@@ -46,6 +48,42 @@ async function sendPasswordResetEmail({ to, name, resetUrl, token, }) {
         name,
         resetUrl,
         token,
+    });
+    return (0, resend_1.sendEmail)({
+        to,
+        subject,
+        html,
+        text,
+    });
+}
+/**
+ * Dispatch Welcome Email when an ADMIN approves a pending self-registered employee.
+ */
+async function sendWelcomeApprovedEmail({ to, name, employeeId, departmentName, role, loginUrl, }) {
+    const { subject, html, text } = (0, templates_1.renderWelcomeApprovedTemplate)({
+        name,
+        employeeId,
+        departmentName,
+        role,
+        loginUrl,
+    });
+    return (0, resend_1.sendEmail)({
+        to,
+        subject,
+        html,
+        text,
+    });
+}
+/**
+ * Dispatch Welcome Email when an ADMIN manually creates an employee, including password creation link.
+ */
+async function sendWelcomeInvitationEmail({ to, name, employeeId, departmentName, role, resetUrl, }) {
+    const { subject, html, text } = (0, templates_1.renderWelcomeInvitationTemplate)({
+        name,
+        employeeId,
+        departmentName,
+        role,
+        resetUrl,
     });
     return (0, resend_1.sendEmail)({
         to,

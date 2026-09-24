@@ -4,6 +4,11 @@ export declare class IdentityController {
     private service;
     constructor(service?: IdentityService);
     /**
+     * GET /api/identity/departments
+     * Public list of active departments for registration dropdown.
+     */
+    getPublicDepartments: (_req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
+    /**
      * POST /api/identity/register
      * Submit an employee registration request.
      */

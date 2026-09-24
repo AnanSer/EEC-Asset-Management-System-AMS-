@@ -11,6 +11,8 @@ import {
 } from './identity.validator';
 import { AccountStatus, UserRole } from '@prisma/client';
 import { auth } from '../../lib/auth';
+import prisma from '../../lib/prisma';
+import { sendWelcomeApprovedEmail } from '../../lib/email';
 
 export class AppError extends Error {
   statusCode: number;
@@ -143,6 +145,13 @@ export class IdentityService {
   }
 
   /**
+   * Get active departments for public registration dropdown.
+   */
+  async getPublicDepartments() {
+    return this.repo.findActiveDepartments();
+  }
+
+  /**
    * Approve a pending user account.
    */
   async approveAccount(id: string, data: ApprovalRequestDTO) {
@@ -158,11 +167,43 @@ export class IdentityService {
     const role = (data.role || user.role) as UserRole;
     const updated = await this.repo.updateAccountStatus(id, AccountStatus.APPROVED, role);
 
+    // Synchronize email verification status on approval
+    await prisma.authUser.updateMany({
+      where: { email: user.email },
+      data: { emailVerified: true },
+    }).catch((err) => console.error('[approveAccount] authUser update error:', err));
+
+    await prisma.user.update({
+      where: { id },
+      data: { isEmailVerified: true },
+    }).catch((err) => console.error('[approveAccount] user isEmailVerified update error:', err));
+
+    // Send Welcome Email
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const loginUrl = `${frontendUrl}/login`;
+    const fullName = updated.employeeProfile
+      ? `${updated.employeeProfile.firstName} ${updated.employeeProfile.lastName}`.trim()
+      : updated.email;
+
+    try {
+      await sendWelcomeApprovedEmail({
+        to: updated.email,
+        name: fullName,
+        employeeId: updated.employeeProfile?.employeeId || '',
+        departmentName: updated.employeeProfile?.department?.name || '',
+        role: updated.role,
+        loginUrl,
+      });
+    } catch (emailErr) {
+      console.error('[approveAccount] Error sending welcome email:', emailErr);
+    }
+
     return {
       message: 'Account approved successfully',
       user: this.formatPendingUser(updated),
     };
   }
+
 
   /**
    * Reject a pending user account.

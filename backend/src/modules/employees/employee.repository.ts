@@ -1,6 +1,7 @@
 import prisma from '../../lib/prisma';
 import { CreateEmployeeDTO, UpdateEmployeeDTO } from './employee.validator';
 import { AccountStatus, UserRole } from '@prisma/client';
+import { randomUUID } from 'crypto';
 
 export class EmployeeRepository {
   async findMany(params: {
@@ -122,25 +123,51 @@ export class EmployeeRepository {
     });
   }
 
-  async createWithTransaction(data: CreateEmployeeDTO) {
+  async createAdminRegisteredEmployee(params: {
+    data: CreateEmployeeDTO;
+    resetToken: string;
+  }) {
+    const { data, resetToken } = params;
     // Split full name into first and last name
     const nameParts = data.fullName.trim().split(/\s+/);
     const firstName = nameParts[0] || '';
     const lastName = nameParts.slice(1).join(' ') || '-';
 
     return prisma.$transaction(async (tx) => {
-      // 1. Create User
+      // 1. Create Better Auth user without a password
+      const authUserId = randomUUID().replace(/-/g, '').slice(0, 32);
+      await tx.authUser.create({
+        data: {
+          id: authUserId,
+          name: data.fullName,
+          email: data.email,
+          emailVerified: true,
+        },
+      });
+
+      // 2. Generate a password setup token using existing Password Reset feature
+      const expiresAt = new Date(Date.now() + 1800 * 1000); // 30 minutes
+      await tx.authVerification.create({
+        data: {
+          id: randomUUID(),
+          identifier: `reset-password:${resetToken}`,
+          value: authUserId,
+          expiresAt,
+        },
+      });
+
+      // 3. Create Business User marked as APPROVED (Never placed into Pending Approvals)
       const user = await tx.user.create({
         data: {
           email: data.email,
           role: data.role as UserRole,
-          status: AccountStatus.PENDING,
-          isEmailVerified: false,
-          passwordHash: '$2b$10$placeholder.for.future.auth.module',
+          status: AccountStatus.APPROVED,
+          isEmailVerified: true,
+          passwordHash: 'BETTER_AUTH_MANAGED',
         },
       });
 
-      // 2. Create Employee Profile linked to User
+      // 4. Create Employee Profile linked to User
       const profile = await tx.employeeProfile.create({
         data: {
           userId: user.id,
@@ -176,6 +203,12 @@ export class EmployeeRepository {
       return profile;
     });
   }
+
+  async createWithTransaction(data: CreateEmployeeDTO) {
+    const defaultToken = randomUUID().replace(/-/g, '');
+    return this.createAdminRegisteredEmployee({ data, resetToken: defaultToken });
+  }
+
 
   async updateWithTransaction(id: string, currentProfile: any, data: UpdateEmployeeDTO) {
     let firstName: string | undefined = undefined;

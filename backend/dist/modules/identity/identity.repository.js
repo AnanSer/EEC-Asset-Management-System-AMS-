@@ -185,6 +185,21 @@ class IdentityRepository {
             return user;
         });
     }
+    /**
+     * Find active departments for public registration dropdown.
+     * Only id, name, and code are exposed.
+     */
+    async findActiveDepartments() {
+        return prisma_1.default.department.findMany({
+            where: { isActive: true },
+            select: {
+                id: true,
+                name: true,
+                code: true,
+            },
+            orderBy: { name: 'asc' },
+        });
+    }
 }
 exports.IdentityRepository = IdentityRepository;
 exports.identityRepository = new IdentityRepository();

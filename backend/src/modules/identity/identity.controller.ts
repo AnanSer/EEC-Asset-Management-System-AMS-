@@ -14,6 +14,22 @@ export class IdentityController {
   constructor(private service: IdentityService = identityService) {}
 
   /**
+   * GET /api/identity/departments
+   * Public list of active departments for registration dropdown.
+   */
+  getPublicDepartments = async (_req: Request, res: Response) => {
+    try {
+      const departments = await this.service.getPublicDepartments();
+      return res.status(200).json({
+        success: true,
+        data: departments,
+      });
+    } catch (err: any) {
+      return this.handleError(res, err);
+    }
+  };
+
+  /**
    * POST /api/identity/register
    * Submit an employee registration request.
    */
@@ -31,6 +47,7 @@ export class IdentityController {
       return this.handleError(res, err);
     }
   };
+
 
   /**
    * GET /api/identity/pending

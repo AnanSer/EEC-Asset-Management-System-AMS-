@@ -5,6 +5,8 @@ import { sendEmail } from './resend';
 import {
   renderEmailVerificationTemplate,
   renderPasswordResetTemplate,
+  renderWelcomeApprovedTemplate,
+  renderWelcomeInvitationTemplate,
 } from './templates';
 
 export * from './resend';
@@ -22,6 +24,25 @@ export interface SendPasswordResetEmailInput {
   name?: string | null;
   resetUrl: string;
   token: string;
+}
+
+export interface SendWelcomeApprovedEmailInput {
+  to: string;
+  name?: string | null;
+  employeeId?: string;
+  departmentName?: string;
+  role?: string;
+  loginUrl: string;
+}
+
+export interface SendWelcomeInvitationEmailInput {
+  to: string;
+  name?: string | null;
+  employeeId?: string;
+  departmentName?: string;
+  role?: string;
+  resetUrl: string;
+  token?: string;
 }
 
 /**
@@ -69,3 +90,58 @@ export async function sendPasswordResetEmail({
     text,
   });
 }
+
+/**
+ * Dispatch Welcome Email when an ADMIN approves a pending self-registered employee.
+ */
+export async function sendWelcomeApprovedEmail({
+  to,
+  name,
+  employeeId,
+  departmentName,
+  role,
+  loginUrl,
+}: SendWelcomeApprovedEmailInput) {
+  const { subject, html, text } = renderWelcomeApprovedTemplate({
+    name,
+    employeeId,
+    departmentName,
+    role,
+    loginUrl,
+  });
+
+  return sendEmail({
+    to,
+    subject,
+    html,
+    text,
+  });
+}
+
+/**
+ * Dispatch Welcome Email when an ADMIN manually creates an employee, including password creation link.
+ */
+export async function sendWelcomeInvitationEmail({
+  to,
+  name,
+  employeeId,
+  departmentName,
+  role,
+  resetUrl,
+}: SendWelcomeInvitationEmailInput) {
+  const { subject, html, text } = renderWelcomeInvitationTemplate({
+    name,
+    employeeId,
+    departmentName,
+    role,
+    resetUrl,
+  });
+
+  return sendEmail({
+    to,
+    subject,
+    html,
+    text,
+  });
+}
+

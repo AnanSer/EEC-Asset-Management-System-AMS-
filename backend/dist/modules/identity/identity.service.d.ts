@@ -30,6 +30,14 @@ export declare class IdentityService {
         user: PendingUserResponse;
     }>;
     /**
+     * Get active departments for public registration dropdown.
+     */
+    getPublicDepartments(): Promise<{
+        code: string;
+        id: string;
+        name: string;
+    }[]>;
+    /**
      * Approve a pending user account.
      */
     approveAccount(id: string, data: ApprovalRequestDTO): Promise<{

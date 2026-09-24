@@ -186,7 +186,7 @@ export default function EmployeeForm({
           {/* Email Address */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-              Official Email Address <span className="text-rose-500">*</span>
+              Email / Gmail Address <span className="text-rose-500">*</span>
             </label>
             <div className="relative">
               <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
@@ -194,8 +194,9 @@ export default function EmployeeForm({
               </span>
               <input
                 type="email"
-                placeholder="e.g. dawit.h@eec.gov.et"
+                placeholder="e.g. ananserbesa2423@gmail.com"
                 {...register('email')}
+
                 className={`w-full pl-9 pr-3.5 py-2.5 rounded-lg border text-sm transition-all focus:outline-none focus:ring-2 focus:ring-eec-accent/40 ${
                   errors.email
                     ? 'border-rose-400 focus:border-rose-500 bg-rose-50/20'

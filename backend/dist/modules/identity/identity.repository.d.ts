@@ -220,6 +220,15 @@ export declare class IdentityRepository {
         createdAt: Date;
         updatedAt: Date;
     }>;
+    /**
+     * Find active departments for public registration dropdown.
+     * Only id, name, and code are exposed.
+     */
+    findActiveDepartments(): Promise<{
+        code: string;
+        id: string;
+        name: string;
+    }[]>;
 }
 export declare const identityRepository: IdentityRepository;
 //# sourceMappingURL=identity.repository.d.ts.map

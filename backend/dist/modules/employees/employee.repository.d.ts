@@ -110,6 +110,49 @@ export declare class EmployeeRepository {
         createdAt: Date;
         updatedAt: Date;
     } | null>;
+    createAdminRegisteredEmployee(params: {
+        data: CreateEmployeeDTO;
+        resetToken: string;
+    }): Promise<{
+        _count: {
+            assetAssignments: number;
+        };
+        department: {
+            id: string;
+            name: string;
+            code: string;
+            description: string | null;
+            location: string | null;
+            officeLocation: string | null;
+            building: string | null;
+            floor: string | null;
+            headOfDepartment: string | null;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+        user: {
+            createdAt: Date;
+            email: string;
+            id: string;
+            isEmailVerified: boolean;
+            role: import(".prisma/client").$Enums.UserRole;
+            status: import(".prisma/client").$Enums.AccountStatus;
+        };
+    } & {
+        id: string;
+        userId: string;
+        employeeId: string;
+        firstName: string;
+        lastName: string;
+        phone: string | null;
+        jobTitle: string;
+        departmentId: string;
+        officeLocation: string | null;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+    }>;
     createWithTransaction(data: CreateEmployeeDTO): Promise<{
         _count: {
             assetAssignments: number;

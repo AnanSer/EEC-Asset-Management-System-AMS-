@@ -1,11 +1,16 @@
 "use strict";
 // EEC EAMS – Identity Module Service (Phase 9A.2 & 9B)
 // Authentication and account lifecycle business logic integrated with Better Auth.
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.identityService = exports.IdentityService = exports.AppError = void 0;
 const identity_repository_1 = require("./identity.repository");
 const client_1 = require("@prisma/client");
 const auth_1 = require("../../lib/auth");
+const prisma_1 = __importDefault(require("../../lib/prisma"));
+const email_1 = require("../../lib/email");
 class AppError extends Error {
     constructor(message, statusCode = 400, errors) {
         super(message);
@@ -125,6 +130,12 @@ class IdentityService {
         };
     }
     /**
+     * Get active departments for public registration dropdown.
+     */
+    async getPublicDepartments() {
+        return this.repo.findActiveDepartments();
+    }
+    /**
      * Approve a pending user account.
      */
     async approveAccount(id, data) {
@@ -137,6 +148,34 @@ class IdentityService {
         }
         const role = (data.role || user.role);
         const updated = await this.repo.updateAccountStatus(id, client_1.AccountStatus.APPROVED, role);
+        // Synchronize email verification status on approval
+        await prisma_1.default.authUser.updateMany({
+            where: { email: user.email },
+            data: { emailVerified: true },
+        }).catch((err) => console.error('[approveAccount] authUser update error:', err));
+        await prisma_1.default.user.update({
+            where: { id },
+            data: { isEmailVerified: true },
+        }).catch((err) => console.error('[approveAccount] user isEmailVerified update error:', err));
+        // Send Welcome Email
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const loginUrl = `${frontendUrl}/login`;
+        const fullName = updated.employeeProfile
+            ? `${updated.employeeProfile.firstName} ${updated.employeeProfile.lastName}`.trim()
+            : updated.email;
+        try {
+            await (0, email_1.sendWelcomeApprovedEmail)({
+                to: updated.email,
+                name: fullName,
+                employeeId: updated.employeeProfile?.employeeId || '',
+                departmentName: updated.employeeProfile?.department?.name || '',
+                role: updated.role,
+                loginUrl,
+            });
+        }
+        catch (emailErr) {
+            console.error('[approveAccount] Error sending welcome email:', emailErr);
+        }
         return {
             message: 'Account approved successfully',
             user: this.formatPendingUser(updated),

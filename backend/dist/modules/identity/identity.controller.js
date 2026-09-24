@@ -9,6 +9,22 @@ class IdentityController {
     constructor(service = identity_service_1.identityService) {
         this.service = service;
         /**
+         * GET /api/identity/departments
+         * Public list of active departments for registration dropdown.
+         */
+        this.getPublicDepartments = async (_req, res) => {
+            try {
+                const departments = await this.service.getPublicDepartments();
+                return res.status(200).json({
+                    success: true,
+                    data: departments,
+                });
+            }
+            catch (err) {
+                return this.handleError(res, err);
+            }
+        };
+        /**
          * POST /api/identity/register
          * Submit an employee registration request.
          */

@@ -1,6 +1,8 @@
 import prisma from '../../lib/prisma';
 import { employeeRepository, EmployeeRepository } from './employee.repository';
 import { CreateEmployeeDTO, UpdateEmployeeDTO, EmployeeQueryDTO } from './employee.validator';
+import { randomBytes } from 'crypto';
+import { sendWelcomeInvitationEmail } from '../../lib/email';
 
 export class AppError extends Error {
   statusCode: number;
@@ -90,13 +92,21 @@ export class EmployeeService {
       throw new AppError(`Employee ID '${data.employeeId}' is already in use`, 409);
     }
 
-    // 2. Verify unique Email
+    // 2. Verify unique Email in business user
     const existingEmail = await this.repo.findUserByEmail(data.email);
     if (existingEmail) {
       throw new AppError(`Email address '${data.email}' is already registered`, 409);
     }
 
-    // 3. Verify Department exists
+    // 3. Verify unique Email in Better Auth
+    const existingAuthUser = await prisma.authUser.findUnique({
+      where: { email: data.email },
+    });
+    if (existingAuthUser) {
+      throw new AppError(`Email address '${data.email}' is already registered in authentication system`, 409);
+    }
+
+    // 4. Verify Department exists
     const department = await prisma.department.findUnique({
       where: { id: data.departmentId },
     });
@@ -104,9 +114,36 @@ export class EmployeeService {
       throw new AppError(`Department with ID '${data.departmentId}' not found`, 404);
     }
 
-    const created = await this.repo.createWithTransaction(data);
+    // 5. Generate password setup token using existing Password Reset mechanism
+    const resetToken = randomBytes(24).toString('base64url');
+
+    // 6. Create employee with APPROVED status and auth verification token
+    const created = await this.repo.createAdminRegisteredEmployee({
+      data,
+      resetToken,
+    });
+
+    // 7. Dispatch Welcome Invitation Email with Create Your Password link
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
+
+    try {
+      await sendWelcomeInvitationEmail({
+        to: data.email,
+        name: data.fullName,
+        employeeId: data.employeeId,
+        departmentName: department.name,
+        role: data.role,
+        resetUrl,
+        token: resetToken,
+      });
+    } catch (emailErr) {
+      console.error('[createEmployee] Error sending welcome invitation email:', emailErr);
+    }
+
     return this.formatEmployee(created);
   }
+
 
   async updateEmployee(id: string, data: UpdateEmployeeDTO) {
     const current = await this.repo.findById(id);

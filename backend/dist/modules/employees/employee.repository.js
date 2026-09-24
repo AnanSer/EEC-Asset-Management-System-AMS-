@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.employeeRepository = exports.EmployeeRepository = void 0;
 const prisma_1 = __importDefault(require("../../lib/prisma"));
 const client_1 = require("@prisma/client");
+const crypto_1 = require("crypto");
 class EmployeeRepository {
     async findMany(params) {
         const { search, departmentId, role, isActive, skip, take } = params;
@@ -108,23 +109,44 @@ class EmployeeRepository {
             where: { email },
         });
     }
-    async createWithTransaction(data) {
+    async createAdminRegisteredEmployee(params) {
+        const { data, resetToken } = params;
         // Split full name into first and last name
         const nameParts = data.fullName.trim().split(/\s+/);
         const firstName = nameParts[0] || '';
         const lastName = nameParts.slice(1).join(' ') || '-';
         return prisma_1.default.$transaction(async (tx) => {
-            // 1. Create User
+            // 1. Create Better Auth user without a password
+            const authUserId = (0, crypto_1.randomUUID)().replace(/-/g, '').slice(0, 32);
+            await tx.authUser.create({
+                data: {
+                    id: authUserId,
+                    name: data.fullName,
+                    email: data.email,
+                    emailVerified: true,
+                },
+            });
+            // 2. Generate a password setup token using existing Password Reset feature
+            const expiresAt = new Date(Date.now() + 1800 * 1000); // 30 minutes
+            await tx.authVerification.create({
+                data: {
+                    id: (0, crypto_1.randomUUID)(),
+                    identifier: `reset-password:${resetToken}`,
+                    value: authUserId,
+                    expiresAt,
+                },
+            });
+            // 3. Create Business User marked as APPROVED (Never placed into Pending Approvals)
             const user = await tx.user.create({
                 data: {
                     email: data.email,
                     role: data.role,
-                    status: client_1.AccountStatus.PENDING,
-                    isEmailVerified: false,
-                    passwordHash: '$2b$10$placeholder.for.future.auth.module',
+                    status: client_1.AccountStatus.APPROVED,
+                    isEmailVerified: true,
+                    passwordHash: 'BETTER_AUTH_MANAGED',
                 },
             });
-            // 2. Create Employee Profile linked to User
+            // 4. Create Employee Profile linked to User
             const profile = await tx.employeeProfile.create({
                 data: {
                     userId: user.id,
@@ -158,6 +180,10 @@ class EmployeeRepository {
             });
             return profile;
         });
+    }
+    async createWithTransaction(data) {
+        const defaultToken = (0, crypto_1.randomUUID)().replace(/-/g, '');
+        return this.createAdminRegisteredEmployee({ data, resetToken: defaultToken });
     }
     async updateWithTransaction(id, currentProfile, data) {
         let firstName = undefined;

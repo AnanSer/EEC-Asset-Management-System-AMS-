@@ -8,8 +8,12 @@ import { ROLES } from '../../constants';
 
 const router = Router();
 
+// GET /api/identity/departments - Public active departments list for registration dropdown
+router.get('/departments', identityController.getPublicDepartments);
+
 // POST /api/identity/register - Submit employee registration request (Public)
 router.post('/register', identityController.register);
+
 
 // GET /api/identity/pending - List pending account requests (ADMIN only)
 router.get(

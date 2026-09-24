@@ -95,11 +95,12 @@ function PendingContent() {
           {email && (
             <div className="flex items-center justify-between text-xs sm:text-sm">
               <span className="text-slate-500 font-medium flex items-center gap-1.5">
-                <Mail size={14} className="text-slate-400" /> Corporate Email:
+                <Mail size={14} className="text-slate-400" /> Email Address:
               </span>
               <span className="font-semibold text-slate-800">{email}</span>
             </div>
           )}
+
 
           {dept && (
             <div className="flex items-center justify-between text-xs sm:text-sm">

@@ -27,7 +27,7 @@ const registerSchema = z
     email: z
       .string()
       .trim()
-      .min(1, 'Corporate email is required')
+      .min(1, 'Email is required')
       .email('Please enter a valid email address'),
     departmentId: z
       .string()
@@ -77,12 +77,12 @@ export const RegisterForm: React.FC = () => {
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Fetch departments dynamically on mount
+  // Fetch departments dynamically on mount using public endpoint
   useEffect(() => {
     async function fetchDepartments() {
       try {
         const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000').replace(/\/api\/?$/, '');
-        const res = await fetch(`${apiBase}/api/departments?limit=100`);
+        const res = await fetch(`${apiBase}/api/identity/departments`);
         if (res.ok) {
           const json = await res.json();
           const deptList = json.data || [];
@@ -97,6 +97,7 @@ export const RegisterForm: React.FC = () => {
 
     fetchDepartments();
   }, []);
+
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -249,20 +250,20 @@ export const RegisterForm: React.FC = () => {
         </div>
       </div>
 
-      {/* Corporate Email */}
+      {/* Gmail Address */}
       <div>
         <label
           htmlFor="email"
           className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5"
         >
-          Corporate Email <span className="text-red-500">*</span>
+          Gmail Address <span className="text-red-500">*</span>
         </label>
         <input
           id="email"
           name="email"
           type="email"
           autoComplete="email"
-          placeholder="e.g. a.kebede@eec.gov.et"
+          placeholder="e.g. ananserbesa2423@gmail.com"
           value={formData.email}
           onChange={handleChange}
           required
@@ -276,6 +277,7 @@ export const RegisterForm: React.FC = () => {
           <p className="mt-1 text-xs text-red-600 font-medium">{errors.email}</p>
         )}
       </div>
+
 
       {/* Department & Position */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -318,8 +320,9 @@ export const RegisterForm: React.FC = () => {
             htmlFor="position"
             className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5"
           >
-            Position / Role <span className="text-red-500">*</span>
+            Position <span className="text-red-500">*</span>
           </label>
+
           <input
             id="position"
             name="position"
