@@ -12,7 +12,6 @@ import {
   Wrench,
   FlaskConical,
   BarChart3,
-  Bell,
   Settings,
   UserCircle,
   UserCheck,
@@ -70,7 +69,6 @@ export const navItems: NavItem[] = [
     label: 'Maintenance',
     href: '/maintenance',
     icon: Wrench,
-    badge: 3,
     allowedRoles: [ROLES.ADMIN, ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER],
   },
   {
@@ -95,13 +93,6 @@ export const navItems: NavItem[] = [
     label: 'Reports',
     href: '/reports',
     icon: BarChart3,
-    allowedRoles: [ROLES.ADMIN, ROLES.DEPARTMENT_MANAGER],
-  },
-  {
-    label: 'Notifications',
-    href: '/notifications',
-    icon: Bell,
-    badge: 5,
     allowedRoles: [ROLES.ADMIN, ROLES.DEPARTMENT_MANAGER],
   },
 ];

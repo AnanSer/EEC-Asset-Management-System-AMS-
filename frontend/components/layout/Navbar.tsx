@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Bell, LogOut, User, ShieldCheck } from 'lucide-react';
+import { LogOut, User, ShieldCheck } from 'lucide-react';
 import { navItems, bottomNavItems } from '@/lib/navigation';
 import { authClient } from '@/lib/auth-client';
 import clsx from 'clsx';
@@ -15,6 +15,7 @@ interface NavbarProps {
 }
 
 function getBreadcrumb(pathname: string): string[] {
+  if (pathname.startsWith('/notifications')) return ['Home', 'Notifications'];
   const allItems = [...navItems, ...bottomNavItems];
   const match = allItems.find(
     (item) =>
@@ -154,15 +155,6 @@ export default function Navbar(_: NavbarProps) {
         <div className="flex items-center gap-3">
           {/* Global Search */}
           <NavbarSearch />
-
-          {/* Notification Bell */}
-          <button
-            className="relative p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-eec-primary transition-colors cursor-pointer"
-            aria-label="Notifications"
-          >
-            <Bell size={18} />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-eec-active" />
-          </button>
 
           {/* User Profile & Dropdown */}
           <div className="relative" ref={menuRef}>
