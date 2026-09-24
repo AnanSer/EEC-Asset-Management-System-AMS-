@@ -27,6 +27,10 @@ export const PERMISSIONS = {
   MAINTENANCE_CREATE: 'maintenance:create',
   MAINTENANCE_UPDATE: 'maintenance:update',
 
+  // testing: view, execute
+  TESTING_VIEW: 'testing:view',
+  TESTING_EXECUTE: 'testing:execute',
+
   // reports: view
   REPORTS_VIEW: 'reports:view',
 
@@ -56,6 +60,8 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     PERMISSIONS.MAINTENANCE_VIEW,
     PERMISSIONS.MAINTENANCE_CREATE,
     PERMISSIONS.MAINTENANCE_UPDATE,
+    PERMISSIONS.TESTING_VIEW,
+    PERMISSIONS.TESTING_EXECUTE,
     PERMISSIONS.REPORTS_VIEW,
     PERMISSIONS.SETTINGS_VIEW,
   ],

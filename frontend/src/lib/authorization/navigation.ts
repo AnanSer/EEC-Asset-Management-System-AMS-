@@ -74,6 +74,12 @@ export const navItems: NavItem[] = [
     allowedRoles: [ROLES.ADMIN, ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER],
   },
   {
+    label: 'Testing',
+    href: '/testing',
+    icon: FlaskConical,
+    allowedRoles: [ROLES.ADMIN, ROLES.IT_TECHNICIAN],
+  },
+  {
     label: 'My Assets',
     href: '/my-assets',
     icon: Laptop,
@@ -84,12 +90,6 @@ export const navItems: NavItem[] = [
     href: '/my-maintenance',
     icon: Wrench,
     allowedRoles: [ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER, ROLES.EMPLOYEE],
-  },
-  {
-    label: 'Testing',
-    href: '/testing',
-    icon: FlaskConical,
-    allowedRoles: [ROLES.ADMIN],
   },
   {
     label: 'Reports',
@@ -108,15 +108,15 @@ export const navItems: NavItem[] = [
 
 export const bottomNavItems: NavItem[] = [
   {
-    label: 'Settings',
-    href: '/settings',
-    icon: Settings,
-    allowedRoles: [ROLES.ADMIN, ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER, ROLES.EMPLOYEE],
-  },
-  {
     label: 'Profile',
     href: '/profile',
     icon: UserCircle,
+    allowedRoles: [ROLES.ADMIN, ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER, ROLES.EMPLOYEE],
+  },
+  {
+    label: 'Settings',
+    href: '/settings',
+    icon: Settings,
     allowedRoles: [ROLES.ADMIN, ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER, ROLES.EMPLOYEE],
   },
 ];

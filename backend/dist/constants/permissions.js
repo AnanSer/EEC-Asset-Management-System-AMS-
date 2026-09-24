@@ -24,6 +24,9 @@ exports.PERMISSIONS = {
     MAINTENANCE_VIEW: 'maintenance:view',
     MAINTENANCE_CREATE: 'maintenance:create',
     MAINTENANCE_UPDATE: 'maintenance:update',
+    // testing: view, execute
+    TESTING_VIEW: 'testing:view',
+    TESTING_EXECUTE: 'testing:execute',
     // reports: view
     REPORTS_VIEW: 'reports:view',
     // identity: approve, reject
@@ -48,6 +51,8 @@ exports.ROLE_PERMISSIONS = {
         exports.PERMISSIONS.MAINTENANCE_VIEW,
         exports.PERMISSIONS.MAINTENANCE_CREATE,
         exports.PERMISSIONS.MAINTENANCE_UPDATE,
+        exports.PERMISSIONS.TESTING_VIEW,
+        exports.PERMISSIONS.TESTING_EXECUTE,
         exports.PERMISSIONS.REPORTS_VIEW,
         exports.PERMISSIONS.SETTINGS_VIEW,
     ],

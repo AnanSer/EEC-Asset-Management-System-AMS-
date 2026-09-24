@@ -11,7 +11,7 @@ exports.createInspectionSchema = zod_1.z.object({
     testType: zod_1.z.string().trim().optional().default('QUALITY_AND_FUNCTIONALITY'),
     findings: zod_1.z.string().trim().optional().nullable(),
     recommendations: zod_1.z.string().trim().optional().nullable(),
-    autoComplete: zod_1.z.boolean().optional().default(false),
+    autoComplete: zod_1.z.boolean().optional().default(true),
 });
 exports.updateInspectionSchema = zod_1.z.object({
     testedBy: zod_1.z.string().trim().optional(),

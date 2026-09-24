@@ -17,6 +17,8 @@ export declare const PERMISSIONS: {
     readonly MAINTENANCE_VIEW: 'maintenance:view';
     readonly MAINTENANCE_CREATE: 'maintenance:create';
     readonly MAINTENANCE_UPDATE: 'maintenance:update';
+    readonly TESTING_VIEW: 'testing:view';
+    readonly TESTING_EXECUTE: 'testing:execute';
     readonly REPORTS_VIEW: 'reports:view';
     readonly IDENTITY_APPROVE: 'identity:approve';
     readonly IDENTITY_REJECT: 'identity:reject';

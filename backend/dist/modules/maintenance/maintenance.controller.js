@@ -73,10 +73,14 @@ class MaintenanceController {
                                     },
                                 });
                             }
+                            const whereClause = {
+                                OR: personalConditions,
+                            };
+                            if (validatedQuery.status) {
+                                whereClause.status = validatedQuery.status;
+                            }
                             const tickets = await prisma_1.default.maintenanceTicket.findMany({
-                                where: {
-                                    OR: personalConditions,
-                                },
+                                where: whereClause,
                                 include: {
                                     asset: {
                                         include: {

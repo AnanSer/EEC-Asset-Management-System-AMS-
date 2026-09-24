@@ -94,10 +94,15 @@ export class MaintenanceController {
                 );
               }
 
+              const whereClause: any = {
+                OR: personalConditions,
+              };
+              if (validatedQuery.status) {
+                whereClause.status = validatedQuery.status;
+              }
+
               const tickets = await prisma.maintenanceTicket.findMany({
-                where: {
-                  OR: personalConditions,
-                },
+                where: whereClause,
                 include: {
                   asset: {
                     include: {

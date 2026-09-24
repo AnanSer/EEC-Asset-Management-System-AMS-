@@ -115,8 +115,8 @@ export class TestingService {
           data: { status: 'MAINTENANCE' },
         });
       } else {
-        // PASS rule: Ticket can move to COMPLETED
-        if (data.autoComplete) {
+        // PASS rule: Ticket moves to COMPLETED and asset status is restored
+        if (data.autoComplete !== false) {
           const now = new Date();
           const activeAssignment = await tx.assetAssignment.findFirst({
             where: { assetId: ticket.assetId, isCurrent: true },

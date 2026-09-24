@@ -10,7 +10,7 @@ export const createInspectionSchema = z.object({
   testType: z.string().trim().optional().default('QUALITY_AND_FUNCTIONALITY'),
   findings: z.string().trim().optional().nullable(),
   recommendations: z.string().trim().optional().nullable(),
-  autoComplete: z.boolean().optional().default(false),
+  autoComplete: z.boolean().optional().default(true),
 });
 
 export const updateInspectionSchema = z.object({
