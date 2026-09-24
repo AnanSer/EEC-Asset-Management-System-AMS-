@@ -54,28 +54,49 @@ export class MaintenanceController {
           const role = user.role as Role;
           const isPersonal = validatedQuery.personal === 'true' || validatedQuery.personal === true || role === ROLES.EMPLOYEE;
 
-          // Personal view: View tickets reported by user OR for assets currently assigned to user
+          // Personal view: View tickets assigned to technician (IT_TECHNICIAN) OR reported by/assigned to user (EMPLOYEE, MANAGER)
           if (isPersonal) {
             if (user.employeeProfile) {
-              const tickets = await prisma.maintenanceTicket.findMany({
-                where: {
-                  OR: [
-                    { reportedBy: user.id },
-                    { reportedBy: user.employeeProfile.employeeId },
-                    { reportedBy: user.employeeProfile.id },
-                    { reportedBy: { contains: user.employeeProfile.firstName, mode: 'insensitive' } },
-                    { reportedBy: { contains: user.employeeProfile.lastName, mode: 'insensitive' } },
-                    {
-                      asset: {
-                        assignments: {
-                          some: {
-                            employeeId: user.employeeProfile.id,
-                            isCurrent: true,
-                          },
+              const personalConditions: any[] = [];
+
+              if (role === ROLES.IT_TECHNICIAN) {
+                // IT Technician personal view: tickets assigned to this technician
+                personalConditions.push(
+                  { assignedTechnician: user.id },
+                  { assignedTechnician: user.employeeProfile.employeeId },
+                  { assignedTechnician: user.employeeProfile.id },
+                  {
+                    AND: [
+                      { assignedTechnician: { contains: user.employeeProfile.firstName, mode: 'insensitive' as const } },
+                      { assignedTechnician: { contains: user.employeeProfile.lastName, mode: 'insensitive' as const } },
+                    ],
+                  },
+                  { assignedTechnician: { contains: user.employeeProfile.firstName, mode: 'insensitive' as const } }
+                );
+              } else {
+                // Employee & Department Manager personal view: reported by user OR assigned asset
+                personalConditions.push(
+                  { reportedBy: user.id },
+                  { reportedBy: user.employeeProfile.employeeId },
+                  { reportedBy: user.employeeProfile.id },
+                  { reportedBy: { contains: user.employeeProfile.firstName, mode: 'insensitive' as const } },
+                  { reportedBy: { contains: user.employeeProfile.lastName, mode: 'insensitive' as const } },
+                  {
+                    asset: {
+                      assignments: {
+                        some: {
+                          employeeId: user.employeeProfile.id,
+                          isCurrent: true,
                         },
                       },
                     },
-                  ],
+                  }
+                );
+              }
+
+              const tickets = await prisma.maintenanceTicket.findMany({
+                where: {
+                  OR: personalConditions,
                 },
                 include: {
                   asset: {

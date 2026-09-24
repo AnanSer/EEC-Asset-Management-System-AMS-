@@ -47,28 +47,35 @@ class MaintenanceController {
                 if (user) {
                     const role = user.role;
                     const isPersonal = validatedQuery.personal === 'true' || validatedQuery.personal === true || role === constants_1.ROLES.EMPLOYEE;
-                    // Personal view: View tickets reported by user OR for assets currently assigned to user
+                    // Personal view: View tickets assigned to technician (IT_TECHNICIAN) OR reported by/assigned to user (EMPLOYEE, MANAGER)
                     if (isPersonal) {
                         if (user.employeeProfile) {
-                            const tickets = await prisma_1.default.maintenanceTicket.findMany({
-                                where: {
-                                    OR: [
-                                        { reportedBy: user.id },
-                                        { reportedBy: user.employeeProfile.employeeId },
-                                        { reportedBy: user.employeeProfile.id },
-                                        { reportedBy: { contains: user.employeeProfile.firstName, mode: 'insensitive' } },
-                                        { reportedBy: { contains: user.employeeProfile.lastName, mode: 'insensitive' } },
-                                        {
-                                            asset: {
-                                                assignments: {
-                                                    some: {
-                                                        employeeId: user.employeeProfile.id,
-                                                        isCurrent: true,
-                                                    },
-                                                },
+                            const personalConditions = [];
+                            if (role === constants_1.ROLES.IT_TECHNICIAN) {
+                                // IT Technician personal view: tickets assigned to this technician
+                                personalConditions.push({ assignedTechnician: user.id }, { assignedTechnician: user.employeeProfile.employeeId }, { assignedTechnician: user.employeeProfile.id }, {
+                                    AND: [
+                                        { assignedTechnician: { contains: user.employeeProfile.firstName, mode: 'insensitive' } },
+                                        { assignedTechnician: { contains: user.employeeProfile.lastName, mode: 'insensitive' } },
+                                    ],
+                                }, { assignedTechnician: { contains: user.employeeProfile.firstName, mode: 'insensitive' } });
+                            }
+                            else {
+                                // Employee & Department Manager personal view: reported by user OR assigned asset
+                                personalConditions.push({ reportedBy: user.id }, { reportedBy: user.employeeProfile.employeeId }, { reportedBy: user.employeeProfile.id }, { reportedBy: { contains: user.employeeProfile.firstName, mode: 'insensitive' } }, { reportedBy: { contains: user.employeeProfile.lastName, mode: 'insensitive' } }, {
+                                    asset: {
+                                        assignments: {
+                                            some: {
+                                                employeeId: user.employeeProfile.id,
+                                                isCurrent: true,
                                             },
                                         },
-                                    ],
+                                    },
+                                });
+                            }
+                            const tickets = await prisma_1.default.maintenanceTicket.findMany({
+                                where: {
+                                    OR: personalConditions,
                                 },
                                 include: {
                                     asset: {
@@ -131,30 +138,39 @@ class MaintenanceController {
     }
     async getTechnicians(req, res) {
         try {
-            const technicians = await prisma_1.default.employeeProfile.findMany({
+            const techUsers = await prisma_1.default.user.findMany({
                 where: {
-                    isActive: true,
-                    user: {
-                        role: constants_1.ROLES.IT_TECHNICIAN,
-                        accountStatus: 'APPROVED',
+                    role: constants_1.ROLES.IT_TECHNICIAN,
+                    status: 'APPROVED',
+                    employeeProfile: {
+                        isActive: true,
                     },
                 },
                 include: {
-                    department: { select: { id: true, code: true, name: true } },
-                    user: { select: { id: true, email: true, name: true, role: true } },
+                    employeeProfile: {
+                        include: {
+                            department: { select: { id: true, code: true, name: true } },
+                        },
+                    },
                 },
-                orderBy: { firstName: 'asc' },
+            });
+            const technicians = techUsers
+                .filter((u) => u.employeeProfile !== null)
+                .map((u) => {
+                const ep = u.employeeProfile;
+                return {
+                    id: ep.id,
+                    employeeId: ep.employeeId,
+                    firstName: ep.firstName,
+                    lastName: ep.lastName,
+                    fullName: `${ep.firstName} ${ep.lastName}`.trim(),
+                    department: ep.department ? { id: ep.department.id, name: ep.department.name, code: ep.department.code } : null,
+                    user: { id: u.id, email: u.email, role: u.role },
+                };
             });
             return res.status(200).json({
                 success: true,
-                data: technicians.map((t) => ({
-                    id: t.id,
-                    employeeId: t.employeeId,
-                    firstName: t.firstName,
-                    lastName: t.lastName,
-                    fullName: `${t.firstName} ${t.lastName}`.trim(),
-                    department: t.department ? { id: t.department.id, name: t.department.name, code: t.department.code } : null,
-                })),
+                data: technicians,
             });
         }
         catch (error) {

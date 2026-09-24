@@ -40,13 +40,13 @@ export const navItems: NavItem[] = [
     label: 'Departments',
     href: '/departments',
     icon: Building2,
-    allowedRoles: [ROLES.ADMIN, ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER],
+    allowedRoles: [ROLES.ADMIN, ROLES.DEPARTMENT_MANAGER],
   },
   {
     label: 'Employees',
     href: '/employees',
     icon: Users,
-    allowedRoles: [ROLES.ADMIN, ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER],
+    allowedRoles: [ROLES.ADMIN, ROLES.DEPARTMENT_MANAGER],
   },
   {
     label: 'Pending Approvals',
@@ -59,12 +59,6 @@ export const navItems: NavItem[] = [
     href: '/assets',
     icon: Package,
     allowedRoles: [ROLES.ADMIN, ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER],
-  },
-  {
-    label: 'My Assets',
-    href: '/my-assets',
-    icon: Laptop,
-    allowedRoles: [ROLES.DEPARTMENT_MANAGER, ROLES.EMPLOYEE],
   },
   {
     label: 'Assignments',
@@ -80,29 +74,35 @@ export const navItems: NavItem[] = [
     allowedRoles: [ROLES.ADMIN, ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER],
   },
   {
+    label: 'My Assets',
+    href: '/my-assets',
+    icon: Laptop,
+    allowedRoles: [ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER, ROLES.EMPLOYEE],
+  },
+  {
     label: 'My Maintenance',
     href: '/my-maintenance',
     icon: Wrench,
-    allowedRoles: [ROLES.DEPARTMENT_MANAGER, ROLES.EMPLOYEE],
+    allowedRoles: [ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER, ROLES.EMPLOYEE],
   },
   {
     label: 'Testing',
     href: '/testing',
     icon: FlaskConical,
-    allowedRoles: [ROLES.ADMIN, ROLES.IT_TECHNICIAN],
+    allowedRoles: [ROLES.ADMIN],
   },
   {
     label: 'Reports',
     href: '/reports',
     icon: BarChart3,
-    allowedRoles: [ROLES.ADMIN, ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER],
+    allowedRoles: [ROLES.ADMIN, ROLES.DEPARTMENT_MANAGER],
   },
   {
     label: 'Notifications',
     href: '/notifications',
     icon: Bell,
     badge: 5,
-    allowedRoles: [ROLES.ADMIN, ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER],
+    allowedRoles: [ROLES.ADMIN, ROLES.DEPARTMENT_MANAGER],
   },
 ];
 

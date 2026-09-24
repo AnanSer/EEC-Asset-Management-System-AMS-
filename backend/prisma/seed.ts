@@ -623,19 +623,40 @@ async function main() {
     });
   }
 
-  // C. Ensure IT Technician has NO assigned assets
+  // Synchronize any legacy Tigist Worku account to avoid role conflicts
+  await prisma.user.updateMany({
+    where: { email: 'tigist.worku@eec.gov.et' },
+    data: { role: UserRole.IT_TECHNICIAN, status: AccountStatus.APPROVED },
+  });
+
+  // C. Assign Dedicated Systems Administration Desktop to IT Technician
   const technicianProfile = seededEmployees['technician@eec.gov.et'];
-  if (technicianProfile) {
-    await prisma.assetAssignment.updateMany({
+  const techAsset = createdAssets['EEC-AST-004'];
+  if (technicianProfile && techAsset) {
+    const existingTechAssignment = await prisma.assetAssignment.findFirst({
       where: {
+        assetId: techAsset.id,
         employeeId: technicianProfile.id,
         isCurrent: true,
       },
-      data: {
-        isCurrent: false,
-        returnedDate: new Date(),
-      },
     });
+
+    if (!existingTechAssignment) {
+      await prisma.assetAssignment.create({
+        data: {
+          assetId: techAsset.id,
+          employeeId: technicianProfile.id,
+          assignedDate: new Date('2024-01-15'),
+          isCurrent: true,
+          notes: 'Assigned to Senior IT Support Technician for systems administration and diagnostics.',
+        },
+      });
+
+      await prisma.asset.update({
+        where: { id: techAsset.id },
+        data: { status: AssetStatus.ASSIGNED },
+      });
+    }
   }
 
   // D. Ensure Admin has NO assigned assets

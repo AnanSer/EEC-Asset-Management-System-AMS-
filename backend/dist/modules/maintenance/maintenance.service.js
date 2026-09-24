@@ -112,29 +112,76 @@ class MaintenanceService {
         if (asset.status === 'RETIRED' || asset.status === 'DISPOSED') {
             throw new AppError(`Cannot create maintenance ticket for ${asset.status.toLowerCase()} asset`, 422);
         }
-        // 2. Validate Technician (if provided as employeeId or employee UUID)
+        // 2. Validate Technician (if provided as employeeId, employee UUID, email, or name)
         if (data.assignedTechnician) {
+            const parts = data.assignedTechnician.trim().split(/\s+/);
+            const firstNamePart = parts[0] || '';
+            const lastNamePart = parts.slice(1).join(' ') || '';
+            // Query for an active IT_TECHNICIAN profile
             const techProfile = await prisma_1.default.employeeProfile.findFirst({
                 where: {
+                    isActive: true,
+                    user: {
+                        role: 'IT_TECHNICIAN',
+                        status: 'APPROVED',
+                    },
                     OR: [
                         { id: data.assignedTechnician },
                         { employeeId: data.assignedTechnician },
                         {
                             user: {
-                                role: 'IT_TECHNICIAN',
                                 email: data.assignedTechnician,
                             },
                         },
-                        {
-                            firstName: { equals: data.assignedTechnician.split(' ')[0], mode: 'insensitive' },
-                            lastName: { equals: data.assignedTechnician.split(' ').slice(1).join(' '), mode: 'insensitive' },
-                        },
+                        ...(lastNamePart
+                            ? [
+                                {
+                                    AND: [
+                                        { firstName: { equals: firstNamePart, mode: 'insensitive' } },
+                                        { lastName: { equals: lastNamePart, mode: 'insensitive' } },
+                                    ],
+                                },
+                            ]
+                            : [
+                                { firstName: { equals: firstNamePart, mode: 'insensitive' } },
+                                { lastName: { equals: firstNamePart, mode: 'insensitive' } },
+                            ]),
                     ],
                 },
                 include: { user: true },
             });
-            if (techProfile && techProfile.user?.role !== 'IT_TECHNICIAN') {
-                throw new AppError('Assigned technician must hold the IT_TECHNICIAN role', 422);
+            if (!techProfile) {
+                // Check if an employee profile was matched but does not hold IT_TECHNICIAN role
+                const nonTechProfile = await prisma_1.default.employeeProfile.findFirst({
+                    where: {
+                        OR: [
+                            { id: data.assignedTechnician },
+                            { employeeId: data.assignedTechnician },
+                            {
+                                user: {
+                                    email: data.assignedTechnician,
+                                },
+                            },
+                            ...(lastNamePart
+                                ? [
+                                    {
+                                        AND: [
+                                            { firstName: { equals: firstNamePart, mode: 'insensitive' } },
+                                            { lastName: { equals: lastNamePart, mode: 'insensitive' } },
+                                        ],
+                                    },
+                                ]
+                                : [
+                                    { firstName: { equals: firstNamePart, mode: 'insensitive' } },
+                                    { lastName: { equals: firstNamePart, mode: 'insensitive' } },
+                                ]),
+                        ],
+                    },
+                    include: { user: true },
+                });
+                if (nonTechProfile && nonTechProfile.user?.role !== 'IT_TECHNICIAN') {
+                    throw new AppError('Assigned technician must hold the IT_TECHNICIAN role', 422);
+                }
             }
         }
         const ticketNumber = await this.repo.generateTicketNumber();
