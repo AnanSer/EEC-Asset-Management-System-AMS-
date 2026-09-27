@@ -25,7 +25,7 @@ const loginSchema = z.object({
     .string()
     .trim()
     .min(1, 'Email address is required')
-    .email('Please enter a valid corporate email address'),
+    .email('Please enter a valid email address'),
   password: z
     .string()
     .min(1, 'Password is required'),
@@ -145,14 +145,14 @@ export const LoginForm: React.FC = () => {
           setUnverifiedEmail(emailTarget);
           setBanner({
             type: 'email_not_verified',
-            title: 'Corporate Email Not Verified',
+            title: 'Email Not Verified',
             message: `Your email address (${emailTarget}) requires verification before full dashboard access can be granted.`,
           });
         } else {
           setBanner({
             type: 'invalid_credentials',
             title: 'Invalid Credentials',
-            message: error.message || 'The corporate email or password you entered is incorrect. Please verify your credentials and try again.',
+            message: error.message || 'The email or password you entered is incorrect. Please verify your credentials and try again.',
           });
         }
         setLoading(false);
@@ -197,8 +197,8 @@ export const LoginForm: React.FC = () => {
           setUnverifiedEmail(emailTarget);
           setBanner({
             type: 'email_not_verified',
-            title: 'Corporate Email Not Verified',
-            message: `Your corporate email (${emailTarget}) is pending verification. Please verify your email via the link in your inbox.`,
+            title: 'Email Not Verified',
+            message: `Your email (${emailTarget}) is pending verification. Please verify your email via the link in your inbox.`,
           });
         }
 
@@ -298,14 +298,14 @@ export const LoginForm: React.FC = () => {
           htmlFor="email"
           className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5"
         >
-          Corporate Email <span className="text-red-500">*</span>
+          Email Address <span className="text-red-500">*</span>
         </label>
         <input
           id="email"
           name="email"
           type="email"
           autoComplete="email"
-          placeholder="e.g. employee@eec.gov.et"
+          placeholder="e.g. employeetransport@gmail.com"
           value={formData.email}
           onChange={handleChange}
           required
@@ -392,3 +392,4 @@ export const LoginForm: React.FC = () => {
 };
 
 export default LoginForm;
+

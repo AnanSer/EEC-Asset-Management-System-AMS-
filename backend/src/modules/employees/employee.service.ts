@@ -3,6 +3,8 @@ import { employeeRepository, EmployeeRepository } from './employee.repository';
 import { CreateEmployeeDTO, UpdateEmployeeDTO, EmployeeQueryDTO } from './employee.validator';
 import { randomBytes } from 'crypto';
 import { sendWelcomeInvitationEmail } from '../../lib/email';
+import { NotificationType } from '@prisma/client';
+import { safeNotifyUser } from '../notifications';
 
 export class AppError extends Error {
   statusCode: number;
@@ -144,6 +146,15 @@ export class EmployeeService {
     } catch (emailErr: any) {
       console.error('[createEmployee] SMTP error sending welcome invitation email:', emailErr?.message || emailErr);
     }
+
+    // In-app Notification: Welcome to EEC EAMS (Phase 10B.2)
+    await safeNotifyUser({
+      userId: created.userId,
+      type: NotificationType.ACCOUNT,
+      title: 'Welcome to EEC EAMS',
+      message: 'Your employee account has been created. Complete password setup using the invitation email.',
+      link: '/login',
+    });
 
     return this.formatEmployee(created);
   }

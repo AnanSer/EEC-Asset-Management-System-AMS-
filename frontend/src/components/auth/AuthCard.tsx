@@ -28,9 +28,12 @@ export const AuthCard: React.FC<AuthCardProps> = ({
       )}
     >
       {/* Header */}
-      <div className="text-center mb-7">
+      <div className="text-center mb-6">
+        <div className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-eec-primary text-[10px] font-bold uppercase tracking-wider mb-4 leading-normal text-center">
+          ETHIOPIAN ENGINEERING CORPORATION ASSET MANAGEMENT SYSTEM (EEC EAMS)
+        </div>
         {icon && (
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-eec-background text-eec-primary mb-4 shadow-sm border border-slate-100">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-eec-background text-eec-primary mb-3.5 shadow-sm border border-slate-100">
             {icon}
           </div>
         )}

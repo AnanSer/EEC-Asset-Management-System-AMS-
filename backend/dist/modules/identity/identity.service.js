@@ -11,6 +11,7 @@ const client_1 = require("@prisma/client");
 const auth_1 = require("../../lib/auth");
 const prisma_1 = __importDefault(require("../../lib/prisma"));
 const email_1 = require("../../lib/email");
+const notifications_1 = require("../notifications");
 class AppError extends Error {
     constructor(message, statusCode = 400, errors) {
         super(message);
@@ -124,6 +125,14 @@ class IdentityService {
             phone: data.phone,
             officeLocation: data.officeLocation,
         });
+        // In-app Notification: Registration Request Submitted (Phase 10B.2)
+        await (0, notifications_1.safeNotifyUser)({
+            userId: created.id,
+            type: client_1.NotificationType.ACCOUNT,
+            title: 'Registration Request Submitted',
+            message: 'Your account request has been submitted and is awaiting ICT Administrator approval.',
+            link: '/pending',
+        });
         return {
             message: 'Registration request submitted successfully. Awaiting administrator approval.',
             user: this.formatPendingUser(created),
@@ -182,6 +191,14 @@ class IdentityService {
             console.error('[approveAccount] SMTP error sending welcome email:', emailErr?.message || emailErr);
             warningMessage = 'Account approved successfully, but welcome email could not be delivered.';
         }
+        // In-app Notification: Account Approved (Phase 10B.2)
+        await (0, notifications_1.safeNotifyUser)({
+            userId: updated.id,
+            type: client_1.NotificationType.ACCOUNT,
+            title: 'Account Approved',
+            message: 'Your EEC EAMS account has been approved. You can now sign in.',
+            link: '/login',
+        });
         return {
             message: warningMessage || 'Account approved successfully',
             warning: warningMessage,
@@ -200,6 +217,14 @@ class IdentityService {
             throw new AppError(`Cannot reject user with status '${user.status}'`, 400);
         }
         const updated = await this.repo.updateAccountStatus(id, client_1.AccountStatus.REJECTED);
+        // In-app Notification: Account Request Rejected (Phase 10B.2)
+        await (0, notifications_1.safeNotifyUser)({
+            userId: updated.id,
+            type: client_1.NotificationType.ACCOUNT,
+            title: 'Account Request Rejected',
+            message: 'Your registration request was not approved. Contact the ICT Directorate.',
+            link: '/rejected',
+        });
         return {
             message: 'Account request rejected',
             reason: data.reason,

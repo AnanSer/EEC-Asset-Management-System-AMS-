@@ -6,6 +6,8 @@ import {
   ReturnAssetDTO,
   AssignmentQueryDTO,
 } from './assignment.validator';
+import { NotificationType } from '@prisma/client';
+import { safeNotifyUser, safeNotifyUsers } from '../notifications';
 
 export class AppError extends Error {
   statusCode: number;
@@ -177,6 +179,18 @@ export class AssignmentService {
     });
 
     const populated = await this.repo.findById(createdAssignment.id);
+
+    // In-app Notification: Asset Assigned (Phase 10B.2)
+    if (employee.userId) {
+      await safeNotifyUser({
+        userId: employee.userId,
+        type: NotificationType.SUCCESS,
+        title: 'Asset Assigned',
+        message: `${asset.name} (${asset.assetCode}) has been assigned to you.`,
+        link: '/my-assets',
+      });
+    }
+
     return this.formatAssignment(populated);
   }
 
@@ -257,6 +271,33 @@ export class AssignmentService {
     });
 
     const populated = await this.repo.findById(newAssignment.id);
+
+    // In-app Notification: Asset Transfer (Phase 10B.2)
+    const oldEmployee = await prisma.employeeProfile.findUnique({
+      where: { id: activeAssignment.employeeId },
+    });
+
+    const transferNotifications = [];
+    if (oldEmployee?.userId) {
+      transferNotifications.push({
+        userId: oldEmployee.userId,
+        type: NotificationType.INFO,
+        title: 'Asset Transferred',
+        message: `${asset.name} (${asset.assetCode}) has been transferred to ${newEmployee.firstName} ${newEmployee.lastName}.`,
+        link: '/my-assets',
+      });
+    }
+    if (newEmployee?.userId) {
+      transferNotifications.push({
+        userId: newEmployee.userId,
+        type: NotificationType.SUCCESS,
+        title: 'Asset Assigned',
+        message: `${asset.name} (${asset.assetCode}) has been transferred to you from ${oldEmployee ? `${oldEmployee.firstName} ${oldEmployee.lastName}` : 'previous holder'}.`,
+        link: '/my-assets',
+      });
+    }
+    await safeNotifyUsers(transferNotifications);
+
     return this.formatAssignment(populated);
   }
 
@@ -301,6 +342,21 @@ export class AssignmentService {
     });
 
     const closed = await this.repo.findById(activeAssignment.id);
+
+    // In-app Notification: Asset Return (Phase 10B.2)
+    const returningEmployee = await prisma.employeeProfile.findUnique({
+      where: { id: activeAssignment.employeeId },
+    });
+    if (returningEmployee?.userId) {
+      await safeNotifyUser({
+        userId: returningEmployee.userId,
+        type: NotificationType.INFO,
+        title: 'Asset Returned',
+        message: `${asset.name} (${asset.assetCode}) has been successfully returned.`,
+        link: '/my-assets',
+      });
+    }
+
     return this.formatAssignment(closed);
   }
 

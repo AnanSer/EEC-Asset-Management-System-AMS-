@@ -6,6 +6,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.maintenanceService = exports.MaintenanceService = exports.AppError = void 0;
 const prisma_1 = __importDefault(require("../../lib/prisma"));
 const maintenance_repository_1 = require("./maintenance.repository");
+const client_1 = require("@prisma/client");
+const notifications_1 = require("../notifications");
 class AppError extends Error {
     constructor(message, statusCode = 400, errors) {
         super(message);
@@ -215,6 +217,29 @@ class MaintenanceService {
             return ticket;
         });
         const populated = await this.repo.findById(createdTicket.id);
+        // In-app Notifications: Maintenance Request Created (Phase 10B.2)
+        const creationNotifications = [];
+        const techUserId = await (0, notifications_1.getTechnicianUserId)(createdTicket.assignedTechnician);
+        if (techUserId) {
+            creationNotifications.push({
+                userId: techUserId,
+                type: client_1.NotificationType.MAINTENANCE,
+                title: 'New Maintenance Request Assigned',
+                message: `Maintenance request ${createdTicket.ticketNumber} for ${populated?.asset?.name || 'asset'} (${populated?.asset?.assetCode || ''}) has been assigned to you.`,
+                link: '/my-maintenance',
+            });
+        }
+        const deptManagerUserId = await (0, notifications_1.getDepartmentManagerUserId)(populated?.asset?.departmentId);
+        if (deptManagerUserId && deptManagerUserId !== techUserId) {
+            creationNotifications.push({
+                userId: deptManagerUserId,
+                type: client_1.NotificationType.MAINTENANCE,
+                title: 'Department Maintenance Request',
+                message: `New maintenance request ${createdTicket.ticketNumber} submitted for ${populated?.asset?.name || 'asset'} (${populated?.asset?.assetCode || ''}) in ${populated?.asset?.department?.name || 'department'}.`,
+                link: '/maintenance',
+            });
+        }
+        await (0, notifications_1.safeNotifyUsers)(creationNotifications);
         return this.formatTicket(populated);
     }
     async updateTicket(id, data) {
@@ -301,6 +326,59 @@ class MaintenanceService {
             return updated;
         });
         const populated = await this.repo.findById(updatedTicket.id);
+        // In-app Notifications: Maintenance Workflow Status Changes (Phase 10B.2)
+        if (newStatus === 'IN_PROGRESS') {
+            // Event 9: Technician Starts Work -> notify asset owner
+            let ownerUserId = await (0, notifications_1.getAssetOwnerUserId)(ticket.assetId);
+            if (!ownerUserId && ticket.reportedBy) {
+                const reporterUser = await prisma_1.default.user.findFirst({
+                    where: {
+                        OR: [
+                            { email: ticket.reportedBy },
+                            { employeeProfile: { employeeId: ticket.reportedBy } },
+                        ],
+                    },
+                    select: { id: true },
+                });
+                ownerUserId = reporterUser?.id || null;
+            }
+            if (ownerUserId) {
+                await (0, notifications_1.safeNotifyUser)({
+                    userId: ownerUserId,
+                    type: client_1.NotificationType.MAINTENANCE,
+                    title: 'Maintenance Work Started',
+                    message: `Maintenance work has started on ${populated?.asset?.name || 'asset'} (${populated?.asset?.assetCode || ''}) under ticket ${populated?.ticketNumber}.`,
+                    link: '/my-maintenance',
+                });
+            }
+        }
+        else if (newStatus === 'TESTING') {
+            // Event 10: Ticket Moved To Testing -> notify assigned technician & admins
+            const testingNotifications = [];
+            const techUserId = await (0, notifications_1.getTechnicianUserId)(ticket.assignedTechnician);
+            if (techUserId) {
+                testingNotifications.push({
+                    userId: techUserId,
+                    type: client_1.NotificationType.TESTING,
+                    title: 'Maintenance Ready For Testing',
+                    message: `Maintenance ticket ${populated?.ticketNumber} for ${populated?.asset?.name || 'asset'} (${populated?.asset?.assetCode || ''}) has been moved to the testing queue.`,
+                    link: '/testing',
+                });
+            }
+            const adminUserIds = await (0, notifications_1.getAdminUserIds)();
+            for (const adminId of adminUserIds) {
+                if (adminId !== techUserId) {
+                    testingNotifications.push({
+                        userId: adminId,
+                        type: client_1.NotificationType.TESTING,
+                        title: 'Maintenance Ready For Testing',
+                        message: `Maintenance ticket ${populated?.ticketNumber} for ${populated?.asset?.name || 'asset'} (${populated?.asset?.assetCode || ''}) has been moved to the testing queue.`,
+                        link: '/testing',
+                    });
+                }
+            }
+            await (0, notifications_1.safeNotifyUsers)(testingNotifications);
+        }
         return this.formatTicket(populated);
     }
     async getDashboardStats() {

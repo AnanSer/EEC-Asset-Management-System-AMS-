@@ -8,6 +8,8 @@ const prisma_1 = __importDefault(require("../../lib/prisma"));
 const employee_repository_1 = require("./employee.repository");
 const crypto_1 = require("crypto");
 const email_1 = require("../../lib/email");
+const client_1 = require("@prisma/client");
+const notifications_1 = require("../notifications");
 class AppError extends Error {
     constructor(message, statusCode = 400, errors) {
         super(message);
@@ -135,6 +137,14 @@ class EmployeeService {
         catch (emailErr) {
             console.error('[createEmployee] SMTP error sending welcome invitation email:', emailErr?.message || emailErr);
         }
+        // In-app Notification: Welcome to EEC EAMS (Phase 10B.2)
+        await (0, notifications_1.safeNotifyUser)({
+            userId: created.userId,
+            type: client_1.NotificationType.ACCOUNT,
+            title: 'Welcome to EEC EAMS',
+            message: 'Your employee account has been created. Complete password setup using the invitation email.',
+            link: '/login',
+        });
         return this.formatEmployee(created);
     }
     async updateEmployee(id, data) {

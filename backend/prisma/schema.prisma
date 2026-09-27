@@ -82,6 +82,17 @@ enum InspectionStatus {
   NEEDS_REPAIR
 }
 
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+  MAINTENANCE
+  TESTING
+  ACCOUNT
+  WARRANTY
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // MODELS
 // ─────────────────────────────────────────────────────────────────────────────
@@ -122,6 +133,7 @@ model User {
   emailVerificationTokens EmailVerificationToken[]
   passwordResetTokens     PasswordResetToken[]
   auditLogs               AuditLog[]
+  notifications           Notification[]
 
   @@index([email])
   @@index([role])
@@ -306,6 +318,27 @@ model SystemSettings {
   dateFormat            String   @default("DD/MM/YYYY")
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NOTIFICATIONS (Phase 10B.1)
+// Enterprise Notification Center Foundation
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      NotificationType
+  link      String?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@index([userId])
+  @@index([userId, isRead])
+  @@index([createdAt])
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

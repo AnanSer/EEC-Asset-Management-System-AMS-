@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { settingsService, SettingsService } from './settings.service';
 import { updateSettingsSchema } from './settings.validator';
 import { successResponse, errorResponse } from '../../lib/api';
+import prisma from '../../lib/prisma';
 
 export class SettingsController {
   constructor(private service: SettingsService = settingsService) {}
@@ -31,7 +32,16 @@ export class SettingsController {
   updateSettings = async (req: Request, res: Response) => {
     try {
       const validatedData = updateSettingsSchema.parse(req.body);
-      const updated = await this.service.updateSettings(validatedData);
+
+      let adminUserId: string | undefined = undefined;
+      if (req.auth?.user) {
+        const adminUser = await prisma.user.findFirst({
+          where: { OR: [{ id: req.auth.user.id }, { email: req.auth.user.email }] },
+        });
+        adminUserId = adminUser?.id || req.auth.user.id;
+      }
+
+      const updated = await this.service.updateSettings(validatedData, adminUserId);
 
       return res.status(200).json(
         successResponse(updated, undefined, 'System settings updated successfully')

@@ -25,6 +25,7 @@ import testingRoutes from './modules/testing/testing.routes';
 import searchRoutes from './modules/search/search.routes';
 import reportRoutes from './modules/reports/report.routes';
 import settingsRoutes from './modules/settings/settings.routes';
+import notificationRoutes from './modules/notifications/notification.routes';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -113,6 +114,7 @@ app.use('/api/testing', testingRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // ─── Start Server ────────────────────────────────────────────────────────────
 app.listen(PORT, async () => {

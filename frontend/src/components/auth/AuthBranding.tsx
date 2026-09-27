@@ -82,7 +82,7 @@ export const AuthBranding: React.FC = () => {
       <div className="relative z-10 my-auto py-6 max-w-xl space-y-5">
         {/* Small Badge */}
         <div>
-          <span className="inline-flex items-center px-3 py-1 rounded-md bg-[#0EA5C6]/15 border border-[#0EA5C6]/30 text-[#0EA5C6] text-[11px] sm:text-xs font-semibold tracking-wider uppercase leading-snug">
+          <span className="inline-flex items-center px-3.5 py-1.5 rounded-md bg-[#0EA5C6]/25 border border-[#0EA5C6]/60 text-white text-[11px] sm:text-xs font-bold tracking-wider uppercase leading-snug shadow-sm">
             ETHIOPIAN ENGINEERING CORPORATION ASSET MANAGEMENT SYSTEM (EEC EAMS)
           </span>
         </div>

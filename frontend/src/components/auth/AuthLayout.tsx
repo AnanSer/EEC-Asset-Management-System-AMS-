@@ -35,8 +35,8 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
             <p className="text-[11px] font-medium text-slate-500 font-sans">
               የኢትዮጵያ ኢንጂነሪንግ ኮርፖሬሽን
             </p>
-            <p className="text-[10px] font-mono font-semibold text-cyan-700 tracking-wider uppercase mt-0.5">
-              Enterprise Asset Management Portal
+            <p className="text-[10px] font-mono font-bold text-cyan-800 tracking-wider uppercase mt-0.5 max-w-[280px] mx-auto">
+              Ethiopian Engineering Corporation Asset Management System (EEC EAMS)
             </p>
           </div>
         </div>

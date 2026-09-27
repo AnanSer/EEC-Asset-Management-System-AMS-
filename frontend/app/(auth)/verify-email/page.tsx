@@ -163,7 +163,7 @@ function VerifyEmailContent() {
                   Request New Verification Link
                 </h4>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Enter your corporate email address to receive a fresh verification link.
+                  Enter your email address to receive a fresh verification link.
                 </p>
               </div>
 
@@ -178,7 +178,7 @@ function VerifyEmailContent() {
                   <input
                     type="email"
                     required
-                    placeholder="e.g. employee@eec.gov.et"
+                    placeholder="e.g. employee.transport@gmail.com"
                     value={resendEmail}
                     onChange={(e) => setResendEmail(e.target.value)}
                     className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm text-slate-800 placeholder-slate-400 bg-white focus:outline-none focus:border-eec-accent focus:ring-2 focus:ring-eec-accent/20"

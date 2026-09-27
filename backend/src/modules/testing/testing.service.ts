@@ -1,7 +1,14 @@
 import prisma from '../../lib/prisma';
 import { testingRepository, TestingRepository } from './testing.repository';
 import { CreateInspectionDTO, UpdateInspectionDTO } from './testing.validator';
-import { InspectionStatus } from '@prisma/client';
+import { InspectionStatus, NotificationType } from '@prisma/client';
+import {
+  safeNotifyUser,
+  safeNotifyUsers,
+  getTechnicianUserId,
+  getAssetOwnerUserId,
+  getAdminUserIds,
+} from '../notifications';
 
 export class AppError extends Error {
   statusCode: number;
@@ -158,6 +165,74 @@ export class TestingService {
     });
 
     const populated = await this.repo.findById(created.id);
+
+    // In-app Notifications: Inspection Results (Phase 10B.2)
+    if (passed) {
+      // Event 11: Inspection PASS -> notify asset owner, admin users, assigned technician
+      const passNotifications = [];
+      const techUserId = await getTechnicianUserId(ticket.assignedTechnician);
+      if (techUserId) {
+        passNotifications.push({
+          userId: techUserId,
+          type: NotificationType.SUCCESS,
+          title: 'Maintenance Completed Successfully',
+          message: `Maintenance and quality inspection passed for ${ticket.asset?.name || 'asset'} (${ticket.asset?.assetCode || ''}) under ticket ${ticket.ticketNumber}. Equipment is ready.`,
+          link: '/my-maintenance',
+        });
+      }
+
+      let ownerUserId = await getAssetOwnerUserId(ticket.assetId);
+      if (!ownerUserId && ticket.reportedBy) {
+        const reporterUser = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { email: ticket.reportedBy },
+              { employeeProfile: { employeeId: ticket.reportedBy } },
+            ],
+          },
+          select: { id: true },
+        });
+        ownerUserId = reporterUser?.id || null;
+      }
+
+      if (ownerUserId && ownerUserId !== techUserId) {
+        passNotifications.push({
+          userId: ownerUserId,
+          type: NotificationType.SUCCESS,
+          title: 'Maintenance Completed Successfully',
+          message: `Maintenance and quality inspection passed for ${ticket.asset?.name || 'asset'} (${ticket.asset?.assetCode || ''}) under ticket ${ticket.ticketNumber}. Equipment is ready.`,
+          link: '/my-maintenance',
+        });
+      }
+
+      const adminUserIds = await getAdminUserIds();
+      for (const adminId of adminUserIds) {
+        if (adminId !== techUserId && adminId !== ownerUserId) {
+          passNotifications.push({
+            userId: adminId,
+            type: NotificationType.SUCCESS,
+            title: 'Maintenance Completed Successfully',
+            message: `Maintenance and quality inspection passed for ${ticket.asset?.name || 'asset'} (${ticket.asset?.assetCode || ''}) under ticket ${ticket.ticketNumber}. Equipment is ready.`,
+            link: '/my-maintenance',
+          });
+        }
+      }
+
+      await safeNotifyUsers(passNotifications);
+    } else {
+      // Event 12: Inspection FAIL -> notify assigned technician
+      const techUserId = await getTechnicianUserId(ticket.assignedTechnician);
+      if (techUserId) {
+        await safeNotifyUser({
+          userId: techUserId,
+          type: NotificationType.WARNING,
+          title: 'Inspection Failed — Repair Required',
+          message: `Inspection failed for ${ticket.asset?.name || 'asset'} (${ticket.asset?.assetCode || ''}) under ticket ${ticket.ticketNumber}. Rework is required.`,
+          link: '/my-maintenance',
+        });
+      }
+    }
+
     return this.formatInspection(populated);
   }
 

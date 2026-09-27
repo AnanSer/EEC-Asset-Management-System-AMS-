@@ -9,6 +9,7 @@ import clsx from 'clsx';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
 import NavbarSearch from './NavbarSearch';
 import { UserAvatar } from '@/components/auth';
+import { NotificationBell } from '@/components/notifications';
 
 interface NavbarProps {
   collapsed?: boolean;
@@ -152,9 +153,12 @@ export default function Navbar(_: NavbarProps) {
         </div>
 
         {/* Right Controls */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           {/* Global Search */}
           <NavbarSearch />
+
+          {/* Enterprise Notification Bell */}
+          <NotificationBell />
 
           {/* User Profile & Dropdown */}
           <div className="relative" ref={menuRef}>

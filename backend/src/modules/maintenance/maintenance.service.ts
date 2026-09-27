@@ -6,7 +6,15 @@ import {
   UpdateMaintenanceStatusDTO,
   MaintenanceQueryDTO,
 } from './maintenance.validator';
-import { MaintenancePriority, MaintenanceStatus } from '@prisma/client';
+import { MaintenancePriority, MaintenanceStatus, NotificationType } from '@prisma/client';
+import {
+  safeNotifyUser,
+  safeNotifyUsers,
+  getTechnicianUserId,
+  getDepartmentManagerUserId,
+  getAssetOwnerUserId,
+  getAdminUserIds,
+} from '../notifications';
 
 export class AppError extends Error {
   statusCode: number;
@@ -237,6 +245,33 @@ export class MaintenanceService {
     });
 
     const populated = await this.repo.findById(createdTicket.id);
+
+    // In-app Notifications: Maintenance Request Created (Phase 10B.2)
+    const creationNotifications = [];
+    const techUserId = await getTechnicianUserId(createdTicket.assignedTechnician);
+    if (techUserId) {
+      creationNotifications.push({
+        userId: techUserId,
+        type: NotificationType.MAINTENANCE,
+        title: 'New Maintenance Request Assigned',
+        message: `Maintenance request ${createdTicket.ticketNumber} for ${populated?.asset?.name || 'asset'} (${populated?.asset?.assetCode || ''}) has been assigned to you.`,
+        link: '/my-maintenance',
+      });
+    }
+
+    const deptManagerUserId = await getDepartmentManagerUserId(populated?.asset?.departmentId);
+    if (deptManagerUserId && deptManagerUserId !== techUserId) {
+      creationNotifications.push({
+        userId: deptManagerUserId,
+        type: NotificationType.MAINTENANCE,
+        title: 'Department Maintenance Request',
+        message: `New maintenance request ${createdTicket.ticketNumber} submitted for ${populated?.asset?.name || 'asset'} (${populated?.asset?.assetCode || ''}) in ${populated?.asset?.department?.name || 'department'}.`,
+        link: '/maintenance',
+      });
+    }
+
+    await safeNotifyUsers(creationNotifications);
+
     return this.formatTicket(populated);
   }
 
@@ -338,6 +373,63 @@ export class MaintenanceService {
     });
 
     const populated = await this.repo.findById(updatedTicket.id);
+
+    // In-app Notifications: Maintenance Workflow Status Changes (Phase 10B.2)
+    if (newStatus === 'IN_PROGRESS') {
+      // Event 9: Technician Starts Work -> notify asset owner
+      let ownerUserId = await getAssetOwnerUserId(ticket.assetId);
+      if (!ownerUserId && ticket.reportedBy) {
+        const reporterUser = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { email: ticket.reportedBy },
+              { employeeProfile: { employeeId: ticket.reportedBy } },
+            ],
+          },
+          select: { id: true },
+        });
+        ownerUserId = reporterUser?.id || null;
+      }
+
+      if (ownerUserId) {
+        await safeNotifyUser({
+          userId: ownerUserId,
+          type: NotificationType.MAINTENANCE,
+          title: 'Maintenance Work Started',
+          message: `Maintenance work has started on ${populated?.asset?.name || 'asset'} (${populated?.asset?.assetCode || ''}) under ticket ${populated?.ticketNumber}.`,
+          link: '/my-maintenance',
+        });
+      }
+    } else if (newStatus === 'TESTING') {
+      // Event 10: Ticket Moved To Testing -> notify assigned technician & admins
+      const testingNotifications = [];
+      const techUserId = await getTechnicianUserId(ticket.assignedTechnician);
+      if (techUserId) {
+        testingNotifications.push({
+          userId: techUserId,
+          type: NotificationType.TESTING,
+          title: 'Maintenance Ready For Testing',
+          message: `Maintenance ticket ${populated?.ticketNumber} for ${populated?.asset?.name || 'asset'} (${populated?.asset?.assetCode || ''}) has been moved to the testing queue.`,
+          link: '/testing',
+        });
+      }
+
+      const adminUserIds = await getAdminUserIds();
+      for (const adminId of adminUserIds) {
+        if (adminId !== techUserId) {
+          testingNotifications.push({
+            userId: adminId,
+            type: NotificationType.TESTING,
+            title: 'Maintenance Ready For Testing',
+            message: `Maintenance ticket ${populated?.ticketNumber} for ${populated?.asset?.name || 'asset'} (${populated?.asset?.assetCode || ''}) has been moved to the testing queue.`,
+            link: '/testing',
+          });
+        }
+      }
+
+      await safeNotifyUsers(testingNotifications);
+    }
+
     return this.formatTicket(populated);
   }
 

@@ -9,10 +9,11 @@ import {
   PendingUserQueryDTO,
   PendingUserResponse,
 } from './identity.validator';
-import { AccountStatus, UserRole } from '@prisma/client';
+import { AccountStatus, UserRole, NotificationType } from '@prisma/client';
 import { auth } from '../../lib/auth';
 import prisma from '../../lib/prisma';
 import { sendWelcomeApprovedEmail } from '../../lib/email';
+import { safeNotifyUser } from '../notifications';
 
 export class AppError extends Error {
   statusCode: number;
@@ -138,6 +139,15 @@ export class IdentityService {
       officeLocation: data.officeLocation,
     });
 
+    // In-app Notification: Registration Request Submitted (Phase 10B.2)
+    await safeNotifyUser({
+      userId: created.id,
+      type: NotificationType.ACCOUNT,
+      title: 'Registration Request Submitted',
+      message: 'Your account request has been submitted and is awaiting ICT Administrator approval.',
+      link: '/pending',
+    });
+
     return {
       message: 'Registration request submitted successfully. Awaiting administrator approval.',
       user: this.formatPendingUser(created),
@@ -206,6 +216,15 @@ export class IdentityService {
       warningMessage = 'Account approved successfully, but welcome email could not be delivered.';
     }
 
+    // In-app Notification: Account Approved (Phase 10B.2)
+    await safeNotifyUser({
+      userId: updated.id,
+      type: NotificationType.ACCOUNT,
+      title: 'Account Approved',
+      message: 'Your EEC EAMS account has been approved. You can now sign in.',
+      link: '/login',
+    });
+
     return {
       message: warningMessage || 'Account approved successfully',
       warning: warningMessage,
@@ -228,6 +247,15 @@ export class IdentityService {
     }
 
     const updated = await this.repo.updateAccountStatus(id, AccountStatus.REJECTED);
+
+    // In-app Notification: Account Request Rejected (Phase 10B.2)
+    await safeNotifyUser({
+      userId: updated.id,
+      type: NotificationType.ACCOUNT,
+      title: 'Account Request Rejected',
+      message: 'Your registration request was not approved. Contact the ICT Directorate.',
+      link: '/rejected',
+    });
 
     return {
       message: 'Account request rejected',

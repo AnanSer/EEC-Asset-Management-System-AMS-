@@ -10,3 +10,5 @@ export { default as reportService }      from './report.service';
 export { default as searchService }      from './search.service';
 export { default as settingsService }    from './settings.service';
 export * from './settings.service';
+export { default as notificationService } from './notification.service';
+export * from './notification.service';

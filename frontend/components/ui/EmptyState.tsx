@@ -13,6 +13,7 @@ interface EmptyStateProps {
   description?: string;
   icon?: LucideIcon;
   action?: React.ReactNode | EmptyStateActionConfig;
+  className?: string;
 }
 
 export default function EmptyState({
@@ -20,6 +21,7 @@ export default function EmptyState({
   description = 'There is nothing to display here yet.',
   icon: Icon = Inbox,
   action,
+  className,
 }: EmptyStateProps) {
   const renderAction = () => {
     if (!action) return null;
@@ -55,7 +57,9 @@ export default function EmptyState({
   };
 
   return (
-    <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+    <div
+      className={`flex flex-col items-center justify-center py-16 px-6 text-center ${className || ''}`}
+    >
       <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
         <Icon className="w-8 h-8 text-slate-400" />
       </div>

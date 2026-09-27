@@ -1,5 +1,7 @@
 import { settingsRepository, SettingsRepository, SystemSettingsRecord } from './settings.repository';
 import { UpdateSettingsDTO } from './settings.validator';
+import { NotificationType } from '@prisma/client';
+import { safeNotifyUser, getAdminUserIds } from '../notifications';
 
 export interface SystemInfoDTO {
   systemVersion: string;
@@ -20,8 +22,27 @@ export class SettingsService {
     return this.repo.getSettings();
   }
 
-  async updateSettings(data: UpdateSettingsDTO): Promise<SystemSettingsRecord> {
-    return this.repo.updateSettings(data);
+  async updateSettings(data: UpdateSettingsDTO, adminUserId?: string): Promise<SystemSettingsRecord> {
+    const updated = await this.repo.updateSettings(data);
+
+    // In-app Notification: Settings Updated (Phase 10B.2)
+    let targetAdminId = adminUserId;
+    if (!targetAdminId) {
+      const adminIds = await getAdminUserIds();
+      targetAdminId = adminIds[0];
+    }
+
+    if (targetAdminId) {
+      await safeNotifyUser({
+        userId: targetAdminId,
+        type: NotificationType.SUCCESS,
+        title: 'Settings Updated',
+        message: 'Organization settings updated successfully.',
+        link: '/settings',
+      });
+    }
+
+    return updated;
   }
 
   async getSystemInfo(): Promise<SystemInfoDTO> {

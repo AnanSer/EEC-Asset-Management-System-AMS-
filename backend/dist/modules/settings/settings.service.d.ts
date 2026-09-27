@@ -15,7 +15,7 @@ export declare class SettingsService {
     private repo;
     constructor(repo?: SettingsRepository);
     getSettings(): Promise<SystemSettingsRecord>;
-    updateSettings(data: UpdateSettingsDTO): Promise<SystemSettingsRecord>;
+    updateSettings(data: UpdateSettingsDTO, adminUserId?: string): Promise<SystemSettingsRecord>;
     getSystemInfo(): Promise<SystemInfoDTO>;
 }
 export declare const settingsService: SettingsService;

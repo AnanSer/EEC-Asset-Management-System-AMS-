@@ -15,6 +15,7 @@ import {
   MaintenanceStatus,
   MaintenancePriority,
   InspectionStatus,
+  NotificationType,
 } from '@prisma/client';
 
 const DEMO_PASSWORD = 'EEC@12345';
@@ -765,6 +766,162 @@ async function main() {
     )
     ON CONFLICT ("id") DO NOTHING
   `);
+
+  // 10. Seed Sample Notifications for Demo Accounts (Phase 10B.1)
+  console.log('🔔 Seeding Sample Notifications for Demo Accounts (Phase 10B.1)...');
+  const now = new Date();
+  const hoursAgo = (h: number) => new Date(now.getTime() - h * 60 * 60 * 1000);
+  const daysAgo = (d: number) => new Date(now.getTime() - d * 24 * 60 * 60 * 1000);
+
+  const notificationTemplates = [
+    // ADMIN notifications
+    {
+      userEmail: 'admin@eec.gov.et',
+      notifications: [
+        {
+          title: 'Employee registration pending approval',
+          message: 'Dawit Hailu has submitted an account registration request for the Energy & Power Sector awaiting administrator review.',
+          type: NotificationType.ACCOUNT,
+          link: '/employees',
+          isRead: false,
+          createdAt: hoursAgo(2),
+        },
+        {
+          title: 'Warranty expires in 12 days',
+          message: 'Dell PowerEdge R750 Server (EEC-AST-006) hardware warranty coverage expires on October 9, 2026. Contact vendor for renewal.',
+          type: NotificationType.WARRANTY,
+          link: '/assets',
+          isRead: false,
+          createdAt: daysAgo(1),
+        },
+        {
+          title: 'System Security Audit Completed',
+          message: 'Weekly system audit log completed with zero authorization anomalies or policy violations detected.',
+          type: NotificationType.SUCCESS,
+          link: '/reports',
+          isRead: true,
+          createdAt: daysAgo(3),
+        },
+      ],
+    },
+    // IT_TECHNICIAN notifications
+    {
+      userEmail: 'technician@eec.gov.et',
+      notifications: [
+        {
+          title: 'New maintenance ticket assigned',
+          message: 'Laptop EEC-AST-001 assigned for maintenance. Reported issue: display backlight flickering intermittently.',
+          type: NotificationType.MAINTENANCE,
+          link: '/maintenance',
+          isRead: false,
+          createdAt: hoursAgo(4),
+        },
+        {
+          title: 'Asset Inspection Required',
+          message: 'Quality testing and post-repair inspection required for Cisco Catalyst Switch (EEC-AST-005).',
+          type: NotificationType.TESTING,
+          link: '/testing',
+          isRead: false,
+          createdAt: daysAgo(1),
+        },
+        {
+          title: 'Spare parts requisition approved',
+          message: 'Requisition for Kingston 16GB DDR4 RAM module approved by ICT Directorate procurement.',
+          type: NotificationType.INFO,
+          link: '/maintenance',
+          isRead: true,
+          createdAt: daysAgo(2),
+        },
+      ],
+    },
+    // DEPARTMENT_MANAGER notifications
+    {
+      userEmail: 'manager.transport@eec.gov.et',
+      notifications: [
+        {
+          title: 'New maintenance request inside department',
+          message: 'New maintenance request submitted from Meron Alemu for Dell Latitude 5540 Laptop (EEC-AST-001).',
+          type: NotificationType.MAINTENANCE,
+          link: '/maintenance',
+          isRead: false,
+          createdAt: hoursAgo(5),
+        },
+        {
+          title: 'Quarterly Department Asset Report Ready',
+          message: 'Q3 Transport Infrastructure Services asset utilization and health audit report has been compiled.',
+          type: NotificationType.INFO,
+          link: '/reports',
+          isRead: false,
+          createdAt: daysAgo(2),
+        },
+        {
+          title: 'Asset allocation approved',
+          message: '2 new Lenovo ThinkPad engineering workstations assigned to Transport Infrastructure staff in Suite 304.',
+          type: NotificationType.SUCCESS,
+          link: '/assets',
+          isRead: true,
+          createdAt: daysAgo(4),
+        },
+      ],
+    },
+    // EMPLOYEE notifications
+    {
+      userEmail: 'employee.transport@eec.gov.et',
+      notifications: [
+        {
+          title: 'Maintenance request received',
+          message: 'Maintenance request submitted successfully for Dell Latitude 5540 (EEC-AST-001). Ticket opened.',
+          type: NotificationType.SUCCESS,
+          link: '/my-maintenance',
+          isRead: false,
+          createdAt: hoursAgo(5),
+        },
+        {
+          title: 'Annual Asset Physical Verification',
+          message: 'Please confirm physical possession of all your assigned corporate IT equipment before October 15, 2026.',
+          type: NotificationType.WARNING,
+          link: '/my-assets',
+          isRead: false,
+          createdAt: daysAgo(2),
+        },
+        {
+          title: 'EEC Corporate Credentials Verified',
+          message: 'Your EEC corporate intranet email and Single Sign-On credentials have been verified.',
+          type: NotificationType.ACCOUNT,
+          link: '/profile',
+          isRead: true,
+          createdAt: daysAgo(5),
+        },
+      ],
+    },
+  ];
+
+  for (const group of notificationTemplates) {
+    const targetUser = await prisma.user.findUnique({
+      where: { email: group.userEmail },
+    });
+
+    if (targetUser) {
+      // Clear previous sample notifications for idempotency
+      await prisma.notification.deleteMany({
+        where: { userId: targetUser.id },
+      });
+
+      for (const item of group.notifications) {
+        await prisma.notification.create({
+          data: {
+            userId: targetUser.id,
+            title: item.title,
+            message: item.message,
+            type: item.type,
+            link: item.link,
+            isRead: item.isRead,
+            createdAt: item.createdAt,
+          },
+        });
+      }
+    }
+  }
 
   console.log('\n================================================================================================================');
   console.log('                            ETHIOPIAN ENGINEERING CORPORATION (EEC)');

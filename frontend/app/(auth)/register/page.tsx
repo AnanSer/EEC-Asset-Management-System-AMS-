@@ -4,15 +4,15 @@ import RegisterForm from '@/components/auth/RegisterForm';
 import { UserCheck } from 'lucide-react';
 
 export const metadata = {
-  title: 'Request Access — EEC EAMS',
-  description: 'Submit an employee registration request for the EEC Enterprise Asset Management System',
+  title: 'Request Access — Ethiopian Engineering Corporation Asset Management System (EEC EAMS)',
+  description: 'Submit an employee registration request for the Ethiopian Engineering Corporation Asset Management System (EEC EAMS)',
 };
 
 export default function RegisterPage() {
   return (
     <AuthCard
-      title="Request EAMS Access"
-      subtitle="Submit your employee details for administrative review and corporate account activation"
+      title="Request Access"
+      subtitle="Submit your employee details to request access to the Ethiopian Engineering Corporation Asset Management System (EEC EAMS)"
       icon={<UserCheck size={24} className="text-eec-primary" />}
       className="max-w-xl"
     >

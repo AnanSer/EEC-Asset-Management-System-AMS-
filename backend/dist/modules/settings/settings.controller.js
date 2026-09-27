@@ -1,9 +1,13 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.settingsController = exports.SettingsController = void 0;
 const settings_service_1 = require("./settings.service");
 const settings_validator_1 = require("./settings.validator");
 const api_1 = require("../../lib/api");
+const prisma_1 = __importDefault(require("../../lib/prisma"));
 class SettingsController {
     constructor(service = settings_service_1.settingsService) {
         this.service = service;
@@ -30,7 +34,14 @@ class SettingsController {
         this.updateSettings = async (req, res) => {
             try {
                 const validatedData = settings_validator_1.updateSettingsSchema.parse(req.body);
-                const updated = await this.service.updateSettings(validatedData);
+                let adminUserId = undefined;
+                if (req.auth?.user) {
+                    const adminUser = await prisma_1.default.user.findFirst({
+                        where: { OR: [{ id: req.auth.user.id }, { email: req.auth.user.email }] },
+                    });
+                    adminUserId = adminUser?.id || req.auth.user.id;
+                }
+                const updated = await this.service.updateSettings(validatedData, adminUserId);
                 return res.status(200).json((0, api_1.successResponse)(updated, undefined, 'System settings updated successfully'));
             }
             catch (err) {

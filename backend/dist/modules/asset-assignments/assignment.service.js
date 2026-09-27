@@ -6,6 +6,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.assignmentService = exports.AssignmentService = exports.AppError = void 0;
 const prisma_1 = __importDefault(require("../../lib/prisma"));
 const assignment_repository_1 = require("./assignment.repository");
+const client_1 = require("@prisma/client");
+const notifications_1 = require("../notifications");
 class AppError extends Error {
     constructor(message, statusCode = 400, errors) {
         super(message);
@@ -154,6 +156,16 @@ class AssignmentService {
             return assignment;
         });
         const populated = await this.repo.findById(createdAssignment.id);
+        // In-app Notification: Asset Assigned (Phase 10B.2)
+        if (employee.userId) {
+            await (0, notifications_1.safeNotifyUser)({
+                userId: employee.userId,
+                type: client_1.NotificationType.SUCCESS,
+                title: 'Asset Assigned',
+                message: `${asset.name} (${asset.assetCode}) has been assigned to you.`,
+                link: '/my-assets',
+            });
+        }
         return this.formatAssignment(populated);
     }
     async transferAsset(assetId, data) {
@@ -219,6 +231,30 @@ class AssignmentService {
             return created;
         });
         const populated = await this.repo.findById(newAssignment.id);
+        // In-app Notification: Asset Transfer (Phase 10B.2)
+        const oldEmployee = await prisma_1.default.employeeProfile.findUnique({
+            where: { id: activeAssignment.employeeId },
+        });
+        const transferNotifications = [];
+        if (oldEmployee?.userId) {
+            transferNotifications.push({
+                userId: oldEmployee.userId,
+                type: client_1.NotificationType.INFO,
+                title: 'Asset Transferred',
+                message: `${asset.name} (${asset.assetCode}) has been transferred to ${newEmployee.firstName} ${newEmployee.lastName}.`,
+                link: '/my-assets',
+            });
+        }
+        if (newEmployee?.userId) {
+            transferNotifications.push({
+                userId: newEmployee.userId,
+                type: client_1.NotificationType.SUCCESS,
+                title: 'Asset Assigned',
+                message: `${asset.name} (${asset.assetCode}) has been transferred to you from ${oldEmployee ? `${oldEmployee.firstName} ${oldEmployee.lastName}` : 'previous holder'}.`,
+                link: '/my-assets',
+            });
+        }
+        await (0, notifications_1.safeNotifyUsers)(transferNotifications);
         return this.formatAssignment(populated);
     }
     async returnAsset(assetId, data) {
@@ -257,6 +293,19 @@ class AssignmentService {
             });
         });
         const closed = await this.repo.findById(activeAssignment.id);
+        // In-app Notification: Asset Return (Phase 10B.2)
+        const returningEmployee = await prisma_1.default.employeeProfile.findUnique({
+            where: { id: activeAssignment.employeeId },
+        });
+        if (returningEmployee?.userId) {
+            await (0, notifications_1.safeNotifyUser)({
+                userId: returningEmployee.userId,
+                type: client_1.NotificationType.INFO,
+                title: 'Asset Returned',
+                message: `${asset.name} (${asset.assetCode}) has been successfully returned.`,
+                link: '/my-assets',
+            });
+        }
         return this.formatAssignment(closed);
     }
     async getDashboardStats() {

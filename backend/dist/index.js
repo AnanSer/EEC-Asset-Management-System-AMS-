@@ -25,6 +25,7 @@ const testing_routes_1 = __importDefault(require("./modules/testing/testing.rout
 const search_routes_1 = __importDefault(require("./modules/search/search.routes"));
 const report_routes_1 = __importDefault(require("./modules/reports/report.routes"));
 const settings_routes_1 = __importDefault(require("./modules/settings/settings.routes"));
+const notification_routes_1 = __importDefault(require("./modules/notifications/notification.routes"));
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 5000;
 // ─── Security & CORS Middleware ──────────────────────────────────────────────
@@ -105,6 +106,7 @@ app.use('/api/testing', testing_routes_1.default);
 app.use('/api/search', search_routes_1.default);
 app.use('/api/reports', report_routes_1.default);
 app.use('/api/settings', settings_routes_1.default);
+app.use('/api/notifications', notification_routes_1.default);
 // ─── Start Server ────────────────────────────────────────────────────────────
 app.listen(PORT, async () => {
     console.log(`🚀 EEC EAMS API running on port ${PORT}`);

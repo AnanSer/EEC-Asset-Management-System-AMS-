@@ -7,6 +7,7 @@ exports.testingService = exports.TestingService = exports.AppError = void 0;
 const prisma_1 = __importDefault(require("../../lib/prisma"));
 const testing_repository_1 = require("./testing.repository");
 const client_1 = require("@prisma/client");
+const notifications_1 = require("../notifications");
 class AppError extends Error {
     constructor(message, statusCode = 400, errors) {
         super(message);
@@ -151,6 +152,69 @@ class TestingService {
             return inspection;
         });
         const populated = await this.repo.findById(created.id);
+        // In-app Notifications: Inspection Results (Phase 10B.2)
+        if (passed) {
+            // Event 11: Inspection PASS -> notify asset owner, admin users, assigned technician
+            const passNotifications = [];
+            const techUserId = await (0, notifications_1.getTechnicianUserId)(ticket.assignedTechnician);
+            if (techUserId) {
+                passNotifications.push({
+                    userId: techUserId,
+                    type: client_1.NotificationType.SUCCESS,
+                    title: 'Maintenance Completed Successfully',
+                    message: `Maintenance and quality inspection passed for ${ticket.asset?.name || 'asset'} (${ticket.asset?.assetCode || ''}) under ticket ${ticket.ticketNumber}. Equipment is ready.`,
+                    link: '/my-maintenance',
+                });
+            }
+            let ownerUserId = await (0, notifications_1.getAssetOwnerUserId)(ticket.assetId);
+            if (!ownerUserId && ticket.reportedBy) {
+                const reporterUser = await prisma_1.default.user.findFirst({
+                    where: {
+                        OR: [
+                            { email: ticket.reportedBy },
+                            { employeeProfile: { employeeId: ticket.reportedBy } },
+                        ],
+                    },
+                    select: { id: true },
+                });
+                ownerUserId = reporterUser?.id || null;
+            }
+            if (ownerUserId && ownerUserId !== techUserId) {
+                passNotifications.push({
+                    userId: ownerUserId,
+                    type: client_1.NotificationType.SUCCESS,
+                    title: 'Maintenance Completed Successfully',
+                    message: `Maintenance and quality inspection passed for ${ticket.asset?.name || 'asset'} (${ticket.asset?.assetCode || ''}) under ticket ${ticket.ticketNumber}. Equipment is ready.`,
+                    link: '/my-maintenance',
+                });
+            }
+            const adminUserIds = await (0, notifications_1.getAdminUserIds)();
+            for (const adminId of adminUserIds) {
+                if (adminId !== techUserId && adminId !== ownerUserId) {
+                    passNotifications.push({
+                        userId: adminId,
+                        type: client_1.NotificationType.SUCCESS,
+                        title: 'Maintenance Completed Successfully',
+                        message: `Maintenance and quality inspection passed for ${ticket.asset?.name || 'asset'} (${ticket.asset?.assetCode || ''}) under ticket ${ticket.ticketNumber}. Equipment is ready.`,
+                        link: '/my-maintenance',
+                    });
+                }
+            }
+            await (0, notifications_1.safeNotifyUsers)(passNotifications);
+        }
+        else {
+            // Event 12: Inspection FAIL -> notify assigned technician
+            const techUserId = await (0, notifications_1.getTechnicianUserId)(ticket.assignedTechnician);
+            if (techUserId) {
+                await (0, notifications_1.safeNotifyUser)({
+                    userId: techUserId,
+                    type: client_1.NotificationType.WARNING,
+                    title: 'Inspection Failed — Repair Required',
+                    message: `Inspection failed for ${ticket.asset?.name || 'asset'} (${ticket.asset?.assetCode || ''}) under ticket ${ticket.ticketNumber}. Rework is required.`,
+                    link: '/my-maintenance',
+                });
+            }
+        }
         return this.formatInspection(populated);
     }
     async updateInspection(id, data) {
