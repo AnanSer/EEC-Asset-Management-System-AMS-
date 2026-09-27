@@ -32,10 +32,12 @@ import {
   MonthlyMaintenanceChart,
 } from '@/src/components/reports/ReportCharts';
 import { printReport } from '@/src/utils/export';
+import LoadingButton from '@/components/ui/LoadingButton';
 
 export default function ReportsDashboardPage() {
   const [data, setData] = useState<DashboardReportMetrics | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   useEffect(() => {
     reportService
@@ -73,14 +75,24 @@ export default function ReportsDashboardPage() {
         </div>
 
         <div className="flex items-center gap-2.5">
-          <button
-            onClick={printReport}
-            className="eec-btn-secondary flex items-center gap-1.5 text-xs py-2 px-3 bg-white"
+          <LoadingButton
+            onClick={async () => {
+              setIsPrinting(true);
+              try {
+                printReport();
+              } finally {
+                setTimeout(() => setIsPrinting(false), 500);
+              }
+            }}
+            isLoading={isPrinting}
+            loadingText="Printing..."
+            variant="secondary"
+            size="sm"
+            icon={<Printer size={15} />}
             title="Print Executive Dashboard"
           >
-            <Printer size={15} />
-            <span>Print Dashboard</span>
-          </button>
+            Print Dashboard
+          </LoadingButton>
         </div>
       </div>
 

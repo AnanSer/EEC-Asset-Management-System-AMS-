@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import { Loader2, Building2, Hash, MapPin, CheckCircle2 } from 'lucide-react';
+import LoadingButton from '@/components/ui/LoadingButton';
 import { Department, CreateDepartmentInput } from '@/constants/departments';
 
 export const departmentFormSchema = z.object({
@@ -277,20 +278,15 @@ export default function DepartmentForm({
         >
           Cancel
         </button>
-        <button
+        <LoadingButton
           type="submit"
-          disabled={isSubmitting}
-          className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-eec-primary hover:bg-eec-primary-dark text-white text-sm font-medium shadow-sm transition-all duration-200 hover:shadow disabled:opacity-50"
+          isLoading={isSubmitting}
+          loadingText={isEdit ? 'Saving Department...' : 'Creating Department...'}
+          variant="primary"
+          size="md"
         >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              {isEdit ? 'Saving Changes...' : 'Creating Department...'}
-            </>
-          ) : (
-            <>{isEdit ? 'Save Changes' : 'Create Department'}</>
-          )}
-        </button>
+          {isEdit ? 'Save Department' : 'Create Department'}
+        </LoadingButton>
       </div>
     </form>
   );

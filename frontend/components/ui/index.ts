@@ -13,3 +13,4 @@ export { default as InfoCard } from './InfoCard';
 export { default as AccessDenied } from './AccessDenied';
 export type { AccessDeniedProps } from './AccessDenied';
 export { ToastProvider, useToast } from './Toast';
+export { default as LoadingButton } from '@/components/ui/LoadingButton';

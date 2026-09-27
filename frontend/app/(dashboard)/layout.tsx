@@ -6,6 +6,11 @@ import Sidebar from '@/components/layout/Sidebar';
 import Navbar from '@/components/layout/Navbar';
 import { ToastProvider, useToast } from '@/components/ui/Toast';
 import { authClient } from '@/lib/auth-client';
+import {
+  AuthSessionProvider,
+  fetchAuthSession,
+  clearAuthSessionCache,
+} from '@/context/AuthSessionContext';
 
 function DashboardAuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -13,33 +18,31 @@ function DashboardAuthGuard({ children }: { children: React.ReactNode }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
-  // Authentication & Account Status Route Protection
+  // Authentication & Account Status Route Protection with Cached Session
   useEffect(() => {
     let isMounted = true;
 
     async function verifySession(isHeartbeat = false) {
       try {
-        const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000').replace(/\/api\/?$/, '');
-        const res = await fetch(`${apiBase}/api/auth/me`, {
-          credentials: 'include',
-        });
+        const session = await fetchAuthSession(isHeartbeat);
 
-        if (!res.ok) {
+        if (!session || !session.businessUser) {
           if (isMounted) {
             if (isHeartbeat) {
               error('Session expired. Please sign in again.');
             }
+            clearAuthSessionCache();
             router.push('/login');
           }
           return;
         }
 
-        const json = await res.json();
-        const businessUser = json?.data?.businessUser;
+        const businessUser = session.businessUser;
         const status = businessUser?.status;
 
         if (status === 'SUSPENDED') {
           if (isMounted) {
+            clearAuthSessionCache();
             try {
               await authClient.signOut();
             } catch (signOutErr) {
@@ -70,12 +73,13 @@ function DashboardAuthGuard({ children }: { children: React.ReactNode }) {
           if (isHeartbeat) {
             error('Session expired. Please sign in again.');
           }
+          clearAuthSessionCache();
           router.push('/login');
         }
       }
     }
 
-    // Initial session verification on route access
+    // Initial session verification (uses instant cache if available)
     verifySession(false);
 
     // Periodic session heartbeat (every 60 seconds)
@@ -139,7 +143,9 @@ export default function DashboardLayout({
 }) {
   return (
     <ToastProvider>
-      <DashboardAuthGuard>{children}</DashboardAuthGuard>
+      <AuthSessionProvider>
+        <DashboardAuthGuard>{children}</DashboardAuthGuard>
+      </AuthSessionProvider>
     </ToastProvider>
   );
 }

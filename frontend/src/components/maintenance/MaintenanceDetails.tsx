@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import StatusBadge from '@/components/ui/StatusBadge';
 import { useToast } from '@/components/ui/Toast';
+import LoadingButton from '@/components/ui/LoadingButton';
 import maintenanceService from '@/services/maintenance.service';
 import {
   MaintenanceTicket,
@@ -131,35 +132,32 @@ export default function MaintenanceDetails({
               </Link>
 
               {ticket.status === 'OPEN' && (
-                <button
+                <LoadingButton
                   type="button"
                   onClick={() => handleStatusChange('IN_PROGRESS')}
-                  disabled={isUpdatingStatus}
-                  className="px-4 py-2 rounded-lg bg-amber-600 text-white text-xs font-semibold hover:bg-amber-700 transition-colors flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+                  isLoading={isUpdatingStatus}
+                  loadingText="Starting Work..."
+                  variant="warning"
+                  size="sm"
+                  icon={<Play className="w-3.5 h-3.5" />}
                 >
-                  {isUpdatingStatus ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Play className="w-3.5 h-3.5" />
-                  )}
                   Start Work
-                </button>
+                </LoadingButton>
               )}
 
               {ticket.status === 'IN_PROGRESS' && (
-                <button
+                <LoadingButton
                   type="button"
                   onClick={() => handleStatusChange('TESTING')}
-                  disabled={isUpdatingStatus}
-                  className="px-4 py-2 rounded-lg bg-purple-600 text-white text-xs font-semibold hover:bg-purple-700 transition-colors flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+                  isLoading={isUpdatingStatus}
+                  loadingText="Moving to Testing..."
+                  variant="primary"
+                  size="sm"
+                  className="!bg-purple-600 hover:!bg-purple-700"
+                  icon={<FlaskConical className="w-3.5 h-3.5" />}
                 >
-                  {isUpdatingStatus ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <FlaskConical className="w-3.5 h-3.5" />
-                  )}
                   Move to Testing
-                </button>
+                </LoadingButton>
               )}
 
               {ticket.status === 'TESTING' && (
@@ -173,19 +171,17 @@ export default function MaintenanceDetails({
               )}
 
               {(ticket.status === 'TESTING' || ticket.status === 'IN_PROGRESS') && (
-                <button
+                <LoadingButton
                   type="button"
                   onClick={() => handleStatusChange('COMPLETED')}
-                  disabled={isUpdatingStatus}
-                  className="px-4 py-2 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+                  isLoading={isUpdatingStatus}
+                  loadingText="Completing..."
+                  variant="success"
+                  size="sm"
+                  icon={<CheckCircle2 className="w-3.5 h-3.5" />}
                 >
-                  {isUpdatingStatus ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                  )}
                   Mark Completed
-                </button>
+                </LoadingButton>
               )}
             </div>
           )}

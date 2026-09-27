@@ -33,6 +33,7 @@ import InfoCard from '@/components/ui/InfoCard';
 import StatusBadge from '@/components/ui/StatusBadge';
 import { CardSkeleton } from '@/components/ui/LoadingSkeleton';
 import { useToast } from '@/components/ui/Toast';
+import LoadingButton from '@/components/ui/LoadingButton';
 import { usePermissions } from '@/hooks/usePermissions';
 import { invalidateSystemSettings } from '@/hooks/useSystemSettings';
 import { PERMISSIONS } from '@/lib/authorization';
@@ -565,23 +566,17 @@ export default function SettingsPage() {
                       Reset
                     </button>
 
-                    <button
+                    <LoadingButton
                       type="submit"
-                      disabled={isSubmitting || !isDirty}
-                      className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-2 rounded-lg bg-eec-primary hover:bg-eec-primary-dark text-white text-xs font-semibold shadow-xs disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      isLoading={isSubmitting}
+                      disabled={!isDirty}
+                      loadingText="Saving Settings..."
+                      variant="primary"
+                      size="sm"
+                      icon={<Save className="w-3.5 h-3.5" />}
                     >
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          Saving Changes...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="w-3.5 h-3.5" />
-                          Save System Settings
-                        </>
-                      )}
-                    </button>
+                      Save Settings
+                    </LoadingButton>
                   </div>
                 </div>
               ) : (

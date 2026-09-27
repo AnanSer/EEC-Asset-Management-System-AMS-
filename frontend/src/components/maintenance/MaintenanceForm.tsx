@@ -6,6 +6,7 @@ import {
   Loader2,
   Wrench,
 } from 'lucide-react';
+import LoadingButton from '@/components/ui/LoadingButton';
 import { useToast } from '@/components/ui/Toast';
 import assetService from '@/services/asset.service';
 import employeeService from '@/services/employee.service';
@@ -438,14 +439,15 @@ export default function MaintenanceForm({
             Cancel
           </button>
 
-          <button
+          <LoadingButton
             type="submit"
-            disabled={isSubmitting}
-            className="px-6 py-2.5 rounded-lg bg-eec-primary text-white text-sm font-medium hover:bg-eec-primary/90 transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50"
+            isLoading={isSubmitting}
+            loadingText={mode === 'create' ? 'Submitting Request...' : 'Updating Ticket...'}
+            variant="primary"
+            size="md"
           >
-            {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-            {mode === 'create' ? 'Create Ticket' : 'Save Changes'}
-          </button>
+            {mode === 'create' ? 'Submit Request' : 'Update Ticket'}
+          </LoadingButton>
         </div>
       </div>
     </form>

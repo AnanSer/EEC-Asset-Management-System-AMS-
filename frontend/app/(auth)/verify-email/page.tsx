@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import AuthCard from '@/components/auth/AuthCard';
 import StatusBadge from '@/components/ui/StatusBadge';
+import LoadingButton from '@/components/ui/LoadingButton';
 import { authClient } from '@/lib/auth-client';
 import {
   ShieldCheck,
@@ -184,23 +185,19 @@ function VerifyEmailContent() {
                     className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm text-slate-800 placeholder-slate-400 bg-white focus:outline-none focus:border-eec-accent focus:ring-2 focus:ring-eec-accent/20"
                   />
                 </div>
-                <button
+                <LoadingButton
                   type="submit"
-                  disabled={resending || !resendEmail.trim()}
-                  className="w-full py-2.5 px-4 rounded-lg bg-slate-800 hover:bg-slate-900 text-white font-semibold text-xs transition-colors flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
+                  disabled={!resendEmail.trim()}
+                  isLoading={resending}
+                  loadingText="Dispatching..."
+                  icon={Mail}
+                  variant="secondary"
+                  fullWidth
+                  size="sm"
+                  className="mt-1"
                 >
-                  {resending ? (
-                    <>
-                      <Loader2 size={14} className="animate-spin" />
-                      <span>Dispatching...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Mail size={14} />
-                      <span>Resend Verification Email</span>
-                    </>
-                  )}
-                </button>
+                  Resend Verification Email
+                </LoadingButton>
               </form>
             </div>
 
@@ -248,14 +245,16 @@ function VerifyEmailContent() {
                 />
               </div>
 
-              <button
+              <LoadingButton
                 type="submit"
                 disabled={!manualToken.trim()}
-                className="w-full py-3 px-4 rounded-xl bg-eec-primary hover:bg-[#06313b] text-white font-semibold text-sm shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
+                icon={RotateCw}
+                fullWidth
+                size="lg"
+                className="mt-2 py-3 rounded-xl shadow-md hover:shadow-lg"
               >
-                <RotateCw size={16} />
-                <span>Verify Token</span>
-              </button>
+                Verify Token
+              </LoadingButton>
             </form>
 
             <div className="text-center pt-2">

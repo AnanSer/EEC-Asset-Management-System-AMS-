@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import './globals.css';
 import { ToastProvider } from '@/components/ui/Toast';
+import SplashScreen from '@/components/loading/SplashScreen';
+import RouteLoadingBar from '@/components/loading/RouteLoadingBar';
 
 export const metadata: Metadata = {
   title: 'EEC EAMS – Ethiopian Engineering Corporation',
@@ -17,7 +20,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="font-sans antialiased">
-        <ToastProvider>{children}</ToastProvider>
+        <ToastProvider>
+          <SplashScreen />
+          <Suspense fallback={null}>
+            <RouteLoadingBar />
+          </Suspense>
+          {children}
+        </ToastProvider>
       </body>
     </html>
   );

@@ -10,6 +10,7 @@ import {
   Calendar,
   User,
 } from 'lucide-react';
+import LoadingButton from '@/components/ui/LoadingButton';
 import { useToast } from '@/components/ui/Toast';
 import testingService from '@/services/testing.service';
 import {
@@ -267,18 +268,15 @@ export default function TestingForm({ ticket, onSuccess }: TestingFormProps) {
             Cancel
           </button>
 
-          <button
+          <LoadingButton
             type="submit"
-            disabled={isSubmitting}
-            className={`px-6 py-2.5 rounded-lg text-white text-sm font-medium transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50 ${
-              result === 'PASS'
-                ? 'bg-emerald-600 hover:bg-emerald-700'
-                : 'bg-rose-600 hover:bg-rose-700'
-            }`}
+            isLoading={isSubmitting}
+            loadingText="Submitting Inspection..."
+            variant={result === 'PASS' ? 'success' : 'danger'}
+            size="md"
           >
-            {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
             Submit {result === 'PASS' ? 'Passed' : 'Failed'} Inspection
-          </button>
+          </LoadingButton>
         </div>
       </div>
     </form>

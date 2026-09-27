@@ -6,13 +6,13 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import AuthCard from '@/components/auth/AuthCard';
 import PasswordInput from '@/components/auth/PasswordInput';
 import PasswordStrengthIndicator from '@/components/auth/PasswordStrengthIndicator';
+import LoadingButton from '@/components/ui/LoadingButton';
 import { authClient } from '@/lib/auth-client';
 import {
   KeyRound,
   ShieldCheck,
   CheckCircle2,
   AlertCircle,
-  Loader2,
   ArrowLeft,
   Check,
   X,
@@ -217,23 +217,18 @@ function ResetPasswordContent() {
               </div>
 
               {/* Submit Button */}
-              <button
+              <LoadingButton
                 type="submit"
-                disabled={loading || password.length < 8 || !passwordsMatch}
-                className="w-full mt-2 py-3 px-4 rounded-xl bg-eec-primary hover:bg-[#06313b] text-white font-semibold text-sm shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+                disabled={password.length < 8 || !passwordsMatch}
+                isLoading={loading}
+                loadingText="Updating credentials..."
+                icon={ShieldCheck}
+                fullWidth
+                size="lg"
+                className="mt-2 py-3 rounded-xl shadow-md hover:shadow-lg"
               >
-                {loading ? (
-                  <>
-                    <Loader2 size={18} className="animate-spin" />
-                    <span>Updating credentials...</span>
-                  </>
-                ) : (
-                  <>
-                    <ShieldCheck size={18} />
-                    <span>Save New Password</span>
-                  </>
-                )}
-              </button>
+                Save New Password
+              </LoadingButton>
 
               {/* Back to Login */}
               <div className="text-center pt-2">

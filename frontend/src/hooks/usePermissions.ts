@@ -12,6 +12,7 @@ import {
   type Permission,
   can as checkPermission,
 } from '@/lib/authorization';
+import { fetchAuthSession } from '@/context/AuthSessionContext';
 
 export interface UsePermissionsReturn {
   role: Role | null;
@@ -28,20 +29,12 @@ export function usePermissions(): UsePermissionsReturn {
   const [role, setRole] = useState<Role | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  const fetchRole = useCallback(async () => {
+  const fetchRole = useCallback(async (force = false) => {
     try {
-      const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000').replace(/\/api\/?$/, '');
-      const res = await fetch(`${apiBase}/api/auth/me`, {
-        credentials: 'include',
-      });
-      if (res.ok) {
-        const json = await res.json();
-        const businessRole = json?.data?.businessUser?.role as Role | undefined;
-        if (businessRole && (Object.values(ROLES) as Role[]).includes(businessRole)) {
-          setRole(businessRole);
-        } else {
-          setRole(null);
-        }
+      const session = await fetchAuthSession(force);
+      const businessRole = session?.businessUser?.role as Role | undefined;
+      if (businessRole && (Object.values(ROLES) as Role[]).includes(businessRole)) {
+        setRole(businessRole);
       } else {
         setRole(null);
       }
@@ -54,7 +47,7 @@ export function usePermissions(): UsePermissionsReturn {
   }, []);
 
   useEffect(() => {
-    fetchRole();
+    fetchRole(false);
   }, [fetchRole]);
 
   const can = useCallback(

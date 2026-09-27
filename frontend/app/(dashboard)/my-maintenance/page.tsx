@@ -20,6 +20,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import StatusBadge from '@/components/ui/StatusBadge';
 import { useToast } from '@/components/ui/Toast';
+import LoadingButton from '@/components/ui/LoadingButton';
 import maintenanceService from '@/services/maintenance.service';
 import {
   MaintenanceTicket,
@@ -283,52 +284,49 @@ export default function MyMaintenancePage() {
                             {canPerformTechActions && (
                               <>
                                 {ticket.status === 'OPEN' && (
-                                  <button
+                                  <LoadingButton
                                     type="button"
                                     onClick={() => handleStatusUpdate(ticket.id, 'IN_PROGRESS')}
-                                    disabled={isUpdating}
-                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-amber-600 text-white hover:bg-amber-700 transition-colors shadow-2xs disabled:opacity-50"
+                                    isLoading={isUpdating}
+                                    loadingText="Starting..."
+                                    variant="warning"
+                                    size="sm"
+                                    className="!px-2.5 !py-1.5 text-xs shadow-2xs"
+                                    icon={<Play className="w-3 h-3" />}
                                     title="Start Work"
                                   >
-                                    {isUpdating ? (
-                                      <Loader2 className="w-3 h-3 animate-spin" />
-                                    ) : (
-                                      <Play className="w-3 h-3" />
-                                    )}
-                                    <span>Start Work</span>
-                                  </button>
+                                    Start Work
+                                  </LoadingButton>
                                 )}
 
                                 {ticket.status === 'IN_PROGRESS' && (
                                   <>
-                                    <button
+                                    <LoadingButton
                                       type="button"
                                       onClick={() => handleStatusUpdate(ticket.id, 'TESTING')}
-                                      disabled={isUpdating}
-                                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-purple-600 text-white hover:bg-purple-700 transition-colors shadow-2xs disabled:opacity-50"
+                                      isLoading={isUpdating}
+                                      loadingText="Testing..."
+                                      variant="primary"
+                                      size="sm"
+                                      className="!bg-purple-600 hover:!bg-purple-700 !px-2.5 !py-1.5 text-xs shadow-2xs"
+                                      icon={<FlaskConical className="w-3 h-3" />}
                                       title="Move to Testing"
                                     >
-                                      {isUpdating ? (
-                                        <Loader2 className="w-3 h-3 animate-spin" />
-                                      ) : (
-                                        <FlaskConical className="w-3 h-3" />
-                                      )}
-                                      <span>Move to Testing</span>
-                                    </button>
-                                    <button
+                                      Move to Testing
+                                    </LoadingButton>
+                                    <LoadingButton
                                       type="button"
                                       onClick={() => handleStatusUpdate(ticket.id, 'COMPLETED')}
-                                      disabled={isUpdating}
-                                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-2xs disabled:opacity-50"
+                                      isLoading={isUpdating}
+                                      loadingText="Completing..."
+                                      variant="success"
+                                      size="sm"
+                                      className="!px-2.5 !py-1.5 text-xs shadow-2xs"
+                                      icon={<CheckCircle2 className="w-3 h-3" />}
                                       title="Mark Completed"
                                     >
-                                      {isUpdating ? (
-                                        <Loader2 className="w-3 h-3 animate-spin" />
-                                      ) : (
-                                        <CheckCircle2 className="w-3 h-3" />
-                                      )}
-                                      <span>Complete</span>
-                                    </button>
+                                      Complete
+                                    </LoadingButton>
                                   </>
                                 )}
 

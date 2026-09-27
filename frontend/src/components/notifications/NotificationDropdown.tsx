@@ -17,6 +17,7 @@ import {
 import clsx from 'clsx';
 import NotificationItem from './NotificationItem';
 import EmptyState from '@/components/ui/EmptyState';
+import LoadingButton from '@/components/ui/LoadingButton';
 import { NotificationItemData } from '@/services/notification.service';
 import { groupNotifications } from '@/utils/notification.utils';
 
@@ -67,6 +68,8 @@ export default function NotificationDropdown({
 }: NotificationDropdownProps) {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<DropdownFilterType>('ALL');
+  const [isClearing, setIsClearing] = useState(false);
+  const [isMarkingAll, setIsMarkingAll] = useState(false);
 
   // Filter items in-memory for instant feedback
   const filteredNotifications = useMemo(() => {
@@ -178,14 +181,25 @@ export default function NotificationDropdown({
         </div>
 
         {unreadCount > 0 && (
-          <button
+          <LoadingButton
             type="button"
-            onClick={onMarkAllAsRead}
-            className="inline-flex items-center gap-1 text-[11px] font-medium text-eec-primary hover:text-eec-primary-dark transition-colors cursor-pointer"
+            onClick={async () => {
+              setIsMarkingAll(true);
+              try {
+                await onMarkAllAsRead();
+              } finally {
+                setIsMarkingAll(false);
+              }
+            }}
+            isLoading={isMarkingAll}
+            loadingText="Marking..."
+            variant="ghost"
+            size="sm"
+            className="!px-2 !py-1 text-xs text-eec-primary hover:text-eec-primary-dark"
+            icon={<CheckCheck className="w-3.5 h-3.5" />}
           >
-            <CheckCheck className="w-3.5 h-3.5" />
-            <span>Mark all read</span>
-          </button>
+            Mark all read
+          </LoadingButton>
         )}
       </div>
 
@@ -267,16 +281,27 @@ export default function NotificationDropdown({
 
       {/* Dropdown Footer Actions */}
       <div className="p-2.5 border-t border-slate-100 bg-slate-50/70 flex items-center justify-between gap-2">
-        <button
+        <LoadingButton
           type="button"
-          onClick={onClearRead}
+          onClick={async () => {
+            setIsClearing(true);
+            try {
+              await onClearRead();
+            } finally {
+              setIsClearing(false);
+            }
+          }}
           disabled={!hasReadNotifications}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+          isLoading={isClearing}
+          loadingText="Clearing..."
+          variant="ghost"
+          size="sm"
+          className="!px-2.5 !py-1.5 text-xs text-slate-600 hover:text-rose-600 hover:bg-rose-50"
+          icon={<Trash2 className="w-3.5 h-3.5" />}
           title="Clear all read notifications"
         >
-          <Trash2 className="w-3.5 h-3.5" />
           <span>Clear Read<span className="hidden sm:inline"> Notifications</span></span>
-        </button>
+        </LoadingButton>
 
         <Link
           href="/notifications"

@@ -18,6 +18,7 @@ import Breadcrumb from '@/components/ui/Breadcrumb';
 import StatusBadge from '@/components/ui/StatusBadge';
 import EmptyState from '@/components/ui/EmptyState';
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton';
+import LoadingButton from '@/components/ui/LoadingButton';
 import reportService, { AssetReportItem } from '@/services/report.service';
 import { exportToCSV, exportToExcel, printReport } from '@/src/utils/export';
 
@@ -28,6 +29,9 @@ export default function AssetsReportPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [isExportingCsv, setIsExportingCsv] = useState(false);
+  const [isExportingExcel, setIsExportingExcel] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   // Filters
   const [search, setSearch] = useState('');
@@ -149,30 +153,61 @@ export default function AssetsReportPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={handleExportCSV}
-            className="eec-btn-secondary flex items-center gap-1.5 text-xs py-2 px-3 bg-white"
+          <LoadingButton
+            onClick={async () => {
+              setIsExportingCsv(true);
+              try {
+                handleExportCSV();
+              } finally {
+                setTimeout(() => setIsExportingCsv(false), 500);
+              }
+            }}
+            isLoading={isExportingCsv}
+            loadingText="Exporting..."
+            variant="secondary"
+            size="sm"
+            icon={<Download size={14} />}
             title="Export CSV"
           >
-            <Download size={14} />
-            <span>Export CSV</span>
-          </button>
-          <button
-            onClick={handleExportExcel}
-            className="eec-btn-secondary flex items-center gap-1.5 text-xs py-2 px-3 bg-white text-emerald-700 hover:text-emerald-800"
+            Export CSV
+          </LoadingButton>
+          <LoadingButton
+            onClick={async () => {
+              setIsExportingExcel(true);
+              try {
+                handleExportExcel();
+              } finally {
+                setTimeout(() => setIsExportingExcel(false), 500);
+              }
+            }}
+            isLoading={isExportingExcel}
+            loadingText="Exporting..."
+            variant="secondary"
+            size="sm"
+            className="text-emerald-700 hover:text-emerald-800"
+            icon={<FileSpreadsheet size={14} />}
             title="Export Excel"
           >
-            <FileSpreadsheet size={14} />
-            <span>Export Excel</span>
-          </button>
-          <button
-            onClick={printReport}
-            className="eec-btn-secondary flex items-center gap-1.5 text-xs py-2 px-3 bg-white"
+            Export Excel
+          </LoadingButton>
+          <LoadingButton
+            onClick={async () => {
+              setIsPrinting(true);
+              try {
+                printReport();
+              } finally {
+                setTimeout(() => setIsPrinting(false), 500);
+              }
+            }}
+            isLoading={isPrinting}
+            loadingText="Printing..."
+            variant="secondary"
+            size="sm"
+            icon={<Printer size={14} />}
             title="Print Report"
           >
-            <Printer size={14} />
-            <span>Print</span>
-          </button>
+            Print
+          </LoadingButton>
         </div>
       </div>
 

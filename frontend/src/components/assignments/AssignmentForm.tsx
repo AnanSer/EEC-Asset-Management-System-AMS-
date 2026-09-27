@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, Package, User, Building2, Calendar, FileText } from 'lucide-react';
+import LoadingButton from '@/components/ui/LoadingButton';
 import { useToast } from '@/components/ui/Toast';
 import assetService from '@/services/asset.service';
 import employeeService from '@/services/employee.service';
@@ -239,20 +240,16 @@ export default function AssignmentForm({
         >
           Cancel
         </button>
-        <button
+        <LoadingButton
           type="submit"
-          disabled={isSubmitting || assets.length === 0}
-          className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-eec-primary text-white text-sm font-semibold hover:bg-eec-primary/90 transition shadow-sm disabled:opacity-50"
+          isLoading={isSubmitting}
+          disabled={assets.length === 0}
+          loadingText="Recording Assignment..."
+          variant="primary"
+          size="md"
         >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Recording Assignment...
-            </>
-          ) : (
-            'Complete Assignment'
-          )}
-        </button>
+          Assign Asset
+        </LoadingButton>
       </div>
     </form>
   );

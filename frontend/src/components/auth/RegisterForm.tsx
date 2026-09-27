@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import PasswordInput from './PasswordInput';
 import PasswordStrengthIndicator from './PasswordStrengthIndicator';
-import { UserPlus, Loader2, AlertCircle } from 'lucide-react';
+import LoadingButton from '@/components/ui/LoadingButton';
+import { UserPlus, AlertCircle } from 'lucide-react';
 
 const registerSchema = z
   .object({
@@ -376,23 +377,17 @@ export const RegisterForm: React.FC = () => {
       <PasswordStrengthIndicator password={formData.password} />
 
       {/* Submit Button */}
-      <button
+      <LoadingButton
         type="submit"
-        disabled={loading}
-        className="w-full mt-3 py-3 px-4 rounded-xl bg-eec-primary hover:bg-[#06313b] text-white font-semibold text-sm shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+        isLoading={loading}
+        loadingText="Submitting registration request..."
+        icon={UserPlus}
+        fullWidth
+        size="lg"
+        className="mt-3 py-3 rounded-xl shadow-md hover:shadow-lg"
       >
-        {loading ? (
-          <>
-            <Loader2 size={18} className="animate-spin" />
-            <span>Submitting registration request...</span>
-          </>
-        ) : (
-          <>
-            <UserPlus size={18} />
-            <span>Submit Registration Request</span>
-          </>
-        )}
-      </button>
+        Submit Registration Request
+      </LoadingButton>
 
       {/* Link to Login */}
       <div className="text-center pt-2">

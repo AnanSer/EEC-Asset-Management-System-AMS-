@@ -21,6 +21,7 @@ import { CardSkeleton } from '@/components/ui/LoadingSkeleton';
 import InfoCard from '@/components/ui/InfoCard';
 import StatusBadge from '@/components/ui/StatusBadge';
 import { useToast } from '@/components/ui/Toast';
+import LoadingButton from '@/components/ui/LoadingButton';
 import {
   notificationService,
   NotificationItemData,
@@ -74,6 +75,8 @@ export default function NotificationsPage() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
+  const [isMarkingAll, setIsMarkingAll] = useState(false);
   const [, startTransition] = useTransition();
 
   // Debounce search input
@@ -188,6 +191,7 @@ export default function NotificationsPage() {
   const handleMarkAllAsRead = async () => {
     if (unreadCount === 0) return;
 
+    setIsMarkingAll(true);
     // Optimistic update
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
     setUnreadCount(0);
@@ -203,11 +207,14 @@ export default function NotificationsPage() {
       error('Failed to mark all notifications as read');
       fetchNotifications();
       loadUnreadCount();
+    } finally {
+      setIsMarkingAll(false);
     }
   };
 
   // Clear all read notifications
   const handleClearRead = async () => {
+    setIsClearing(true);
     // Optimistic update: filter out read notifications
     setNotifications((prev) => prev.filter((n) => !n.isRead));
 
@@ -223,6 +230,8 @@ export default function NotificationsPage() {
       error('Failed to clear read notifications');
       fetchNotifications();
       loadUnreadCount();
+    } finally {
+      setIsClearing(false);
     }
   };
 
@@ -366,26 +375,33 @@ export default function NotificationsPage() {
             </button>
 
             {hasReadNotifications && (
-              <button
+              <LoadingButton
                 type="button"
                 onClick={handleClearRead}
-                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-colors shadow-2xs cursor-pointer"
+                isLoading={isClearing}
+                loadingText="Clearing..."
+                variant="secondary"
+                size="sm"
+                className="hover:!bg-rose-50 hover:!text-rose-600 hover:!border-rose-200"
+                icon={<Trash2 className="w-3.5 h-3.5" />}
                 title="Clear read notifications"
               >
-                <Trash2 className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Clear Read</span>
-              </button>
+              </LoadingButton>
             )}
 
             {unreadCount > 0 && (
-              <button
+              <LoadingButton
                 type="button"
                 onClick={handleMarkAllAsRead}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-eec-primary hover:bg-eec-primary-dark rounded-lg transition-colors shadow-xs cursor-pointer"
+                isLoading={isMarkingAll}
+                loadingText="Marking..."
+                variant="primary"
+                size="sm"
+                icon={<CheckCheck className="w-4 h-4" />}
               >
-                <CheckCheck className="w-4 h-4" />
-                <span>Mark All Read</span>
-              </button>
+                Mark All Read
+              </LoadingButton>
             )}
           </div>
         }

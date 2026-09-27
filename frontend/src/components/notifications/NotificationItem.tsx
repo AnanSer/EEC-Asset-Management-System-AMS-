@@ -1,7 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
+import LoadingButton from '@/components/ui/LoadingButton';
 import {
   CheckCircle2,
   AlertTriangle,
@@ -115,6 +116,8 @@ export default function NotificationItem({
   const IconComponent = config.icon;
   const isUnread = !notification.isRead;
 
+  const [isMarking, setIsMarking] = useState(false);
+
   const handleClick = () => {
     if (onClick) {
       onClick(notification);
@@ -123,10 +126,15 @@ export default function NotificationItem({
     }
   };
 
-  const handleMarkRead = (e: React.MouseEvent) => {
+  const handleMarkRead = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (onMarkRead) {
-      onMarkRead(notification.id, e);
+      setIsMarking(true);
+      try {
+        await onMarkRead(notification.id, e);
+      } finally {
+        setIsMarking(false);
+      }
     }
   };
 
@@ -216,15 +224,17 @@ export default function NotificationItem({
       {/* Actions (Mark Read & Delete) */}
       <div className="absolute right-3 top-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
         {isUnread && onMarkRead && (
-          <button
+          <LoadingButton
             type="button"
             onClick={handleMarkRead}
+            isLoading={isMarking}
+            variant="ghost"
+            size="sm"
+            className="!p-1 text-slate-400 hover:text-eec-primary hover:bg-slate-200/60"
+            icon={<Check className="w-3.5 h-3.5" />}
             title="Mark as read"
             aria-label="Mark notification as read"
-            className="p-1 rounded-md text-slate-400 hover:text-eec-primary hover:bg-slate-200/60 transition-colors"
-          >
-            <Check className="w-3.5 h-3.5" />
-          </button>
+          />
         )}
 
         {onDelete && (

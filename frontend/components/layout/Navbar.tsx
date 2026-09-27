@@ -10,6 +10,7 @@ import { useSystemSettings } from '@/hooks/useSystemSettings';
 import NavbarSearch from './NavbarSearch';
 import { UserAvatar } from '@/components/auth';
 import { NotificationBell } from '@/components/notifications';
+import { fetchAuthSession, clearAuthSessionCache } from '@/context/AuthSessionContext';
 
 interface NavbarProps {
   collapsed?: boolean;
@@ -39,24 +40,24 @@ export default function Navbar(_: NavbarProps) {
   const [userEmail, setUserEmail] = useState('');
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Load active user info from /api/auth/me
+  // Load active user info from cached session
   useEffect(() => {
     async function loadUser() {
       try {
-        const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000').replace(/\/api\/?$/, '');
-        const res = await fetch(`${apiBase}/api/auth/me`, {
-          credentials: 'include',
-        });
-        if (res.ok) {
-          const json = await res.json();
-          const user = json?.data?.user;
-          const businessUser = json?.data?.businessUser;
-          if (user) {
-            setUserName(user.name || businessUser?.employeeProfile?.fullName || 'Staff User');
-            setUserEmail(user.email || '');
-            if (businessUser?.role) {
-              setUserRole(businessUser.role.replace('_', ' '));
-            }
+        const session = await fetchAuthSession(false);
+        const user = session?.user;
+        const businessUser = session?.businessUser;
+        if (user || businessUser) {
+          setUserName(
+            user?.name ||
+            businessUser?.employeeProfile?.fullName ||
+            (businessUser?.employeeProfile
+              ? `${businessUser.employeeProfile.firstName} ${businessUser.employeeProfile.lastName}`.trim()
+              : 'Staff User')
+          );
+          setUserEmail(user?.email || businessUser?.email || '');
+          if (businessUser?.role) {
+            setUserRole(businessUser.role.replace('_', ' '));
           }
         }
       } catch (err) {
@@ -80,6 +81,7 @@ export default function Navbar(_: NavbarProps) {
 
   const handleSignOut = async () => {
     try {
+      clearAuthSessionCache();
       await authClient.signOut();
       router.push('/login');
     } catch (err) {

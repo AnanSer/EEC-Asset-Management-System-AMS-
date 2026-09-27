@@ -7,6 +7,8 @@ import { z } from 'zod';
 import { authClient } from '@/lib/auth-client';
 import { useToast } from '@/components/ui/Toast';
 import PasswordInput from './PasswordInput';
+import LoadingButton from '@/components/ui/LoadingButton';
+import { fetchAuthSession } from '@/context/AuthSessionContext';
 import {
   LogIn,
   Loader2,
@@ -251,29 +253,18 @@ export const LoginForm: React.FC = () => {
           {/* Action Button for Unverified Email */}
           {banner.type === 'email_not_verified' && (
             <div className="pt-1">
-              <button
+              <LoadingButton
                 type="button"
                 onClick={handleResendVerification}
-                disabled={resendCooldown > 0 || resending}
-                className="py-2 px-3.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-xs"
+                disabled={resendCooldown > 0}
+                isLoading={resending}
+                loadingText="Dispatching..."
+                variant="warning"
+                size="sm"
+                icon={resendCooldown > 0 ? <Clock size={13} /> : <Mail size={13} />}
               >
-                {resending ? (
-                  <>
-                    <Loader2 size={13} className="animate-spin" />
-                    <span>Dispatching...</span>
-                  </>
-                ) : resendCooldown > 0 ? (
-                  <>
-                    <Clock size={13} />
-                    <span>Resend link in {resendCooldown}s</span>
-                  </>
-                ) : (
-                  <>
-                    <Mail size={13} />
-                    <span>Resend Verification Email</span>
-                  </>
-                )}
-              </button>
+                {resendCooldown > 0 ? `Resend link in ${resendCooldown}s` : 'Resend Verification Email'}
+              </LoadingButton>
             </div>
           )}
 
@@ -357,23 +348,17 @@ export const LoginForm: React.FC = () => {
       </div>
 
       {/* Sign In Button */}
-      <button
+      <LoadingButton
         type="submit"
-        disabled={loading}
-        className="w-full mt-2 py-3 px-4 rounded-xl bg-eec-primary hover:bg-[#06313b] text-white font-semibold text-sm shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+        isLoading={loading}
+        loadingText="Signing in..."
+        icon={LogIn}
+        fullWidth
+        size="lg"
+        className="mt-2 py-3 rounded-xl shadow-md hover:shadow-lg"
       >
-        {loading ? (
-          <>
-            <Loader2 size={18} className="animate-spin" />
-            <span>Signing in...</span>
-          </>
-        ) : (
-          <>
-            <LogIn size={18} />
-            <span>Sign In to EAMS</span>
-          </>
-        )}
-      </button>
+        Sign In to EAMS
+      </LoadingButton>
 
       {/* Create Account Link */}
       <div className="text-center pt-2">

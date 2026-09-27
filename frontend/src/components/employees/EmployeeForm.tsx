@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Loader2, User, Mail, Phone, Briefcase, Building2, Shield, MapPin, Hash } from 'lucide-react';
+import LoadingButton from '@/components/ui/LoadingButton';
 import { Employee, CreateEmployeeInput } from '@/constants/employees';
 import departmentService from '@/services/department.service';
 import { Department } from '@/constants/departments';
@@ -356,14 +357,15 @@ export default function EmployeeForm({
         >
           Cancel
         </button>
-        <button
+        <LoadingButton
           type="submit"
-          disabled={isSubmitting}
-          className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-eec-primary hover:bg-eec-primary-dark text-white text-xs font-semibold shadow-xs transition-colors disabled:opacity-50"
+          isLoading={isSubmitting}
+          loadingText={isEdit ? 'Saving Employee...' : 'Registering Employee...'}
+          variant="primary"
+          size="md"
         >
-          {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-          {isEdit ? 'Save Employee Changes' : 'Register Employee'}
-        </button>
+          {isEdit ? 'Save Employee' : 'Register Employee'}
+        </LoadingButton>
       </div>
     </form>
   );

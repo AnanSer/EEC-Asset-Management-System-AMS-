@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Loader2, Tag, Hash, Monitor, Building2, DollarSign, FileText, Lock } from 'lucide-react';
+import LoadingButton from '@/components/ui/LoadingButton';
 import {
   Asset,
   CreateAssetInput,
@@ -359,14 +360,15 @@ export default function AssetForm({
         >
           Cancel
         </button>
-        <button
+        <LoadingButton
           type="submit"
-          disabled={isSubmitting}
-          className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-eec-primary text-white text-sm font-semibold hover:bg-eec-primary/90 transition-colors disabled:opacity-60"
+          isLoading={isSubmitting}
+          loadingText={isEdit ? 'Updating Asset...' : 'Registering Asset...'}
+          variant="primary"
+          size="md"
         >
-          {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-          {isEdit ? 'Save Changes' : 'Register Asset'}
-        </button>
+          {isEdit ? 'Update Asset' : 'Register Asset'}
+        </LoadingButton>
       </div>
     </form>
   );

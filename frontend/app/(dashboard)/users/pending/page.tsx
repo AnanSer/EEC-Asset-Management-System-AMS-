@@ -9,6 +9,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import { useToast } from '@/components/ui/Toast';
 import { UserAvatar } from '@/components/auth';
 import PermissionGuard from '@/components/auth/PermissionGuard';
+import LoadingButton from '@/components/ui/LoadingButton';
 import { PERMISSIONS } from '@/lib/authorization';
 import {
   UserCheck,
@@ -486,15 +487,17 @@ export default function PendingUsersPage() {
               >
                 Cancel
               </button>
-              <button
+              <LoadingButton
                 type="button"
                 onClick={handleConfirmApprove}
-                disabled={isApproving}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
+                isLoading={isApproving}
+                loadingText="Activating..."
+                variant="success"
+                size="sm"
+                icon={<CheckCircle2 className="w-3.5 h-3.5" />}
               >
-                {isApproving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                <span>Confirm & Activate Account</span>
-              </button>
+                Confirm & Activate Account
+              </LoadingButton>
             </div>
           </div>
         </div>
@@ -550,15 +553,18 @@ export default function PendingUsersPage() {
               >
                 Cancel
               </button>
-              <button
+              <LoadingButton
                 type="button"
                 onClick={handleConfirmReject}
-                disabled={isRejecting || !rejectionReason.trim()}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
+                isLoading={isRejecting}
+                disabled={!rejectionReason.trim()}
+                loadingText="Rejecting..."
+                variant="danger"
+                size="sm"
+                icon={<AlertTriangle className="w-3.5 h-3.5" />}
               >
-                {isRejecting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                <span>Confirm Rejection</span>
-              </button>
+                Confirm Rejection
+              </LoadingButton>
             </div>
           </div>
         </div>

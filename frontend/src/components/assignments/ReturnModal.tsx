@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { RotateCcw, Loader2, X } from 'lucide-react';
+import LoadingButton from '@/components/ui/LoadingButton';
 import { useToast } from '@/components/ui/Toast';
 import assignmentService from '@/services/assignment.service';
 import { ASSET_CONDITION_LABELS } from '@/constants/assets';
@@ -156,14 +157,15 @@ export default function ReturnModal({
             >
               Cancel
             </button>
-            <button
+            <LoadingButton
               type="submit"
-              disabled={isSubmitting}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-600 text-white text-xs font-semibold hover:bg-amber-700 transition shadow-xs disabled:opacity-50"
+              isLoading={isSubmitting}
+              loadingText="Returning Asset..."
+              variant="warning"
+              size="sm"
             >
-              {isSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              Confirm Return to Inventory
-            </button>
+              Return Asset
+            </LoadingButton>
           </div>
         </form>
       </div>

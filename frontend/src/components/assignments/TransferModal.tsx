@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ArrowRightLeft, Loader2, X } from 'lucide-react';
+import LoadingButton from '@/components/ui/LoadingButton';
 import { useToast } from '@/components/ui/Toast';
 import employeeService from '@/services/employee.service';
 import assignmentService from '@/services/assignment.service';
@@ -193,14 +194,16 @@ export default function TransferModal({
             >
               Cancel
             </button>
-            <button
+            <LoadingButton
               type="submit"
-              disabled={isSubmitting || loadingEmployees}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-eec-primary text-white text-xs font-semibold hover:bg-eec-primary/90 transition shadow-xs disabled:opacity-50"
+              isLoading={isSubmitting}
+              disabled={loadingEmployees}
+              loadingText="Transferring Asset..."
+              variant="primary"
+              size="sm"
             >
-              {isSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              Confirm Transfer
-            </button>
+              Transfer Asset
+            </LoadingButton>
           </div>
         </form>
       </div>
