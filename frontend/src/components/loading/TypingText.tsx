@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import clsx from 'clsx';
 
 interface TypingTextProps {
   text: string;
   speed?: number;
   delay?: number;
+  active?: boolean;
   onComplete?: () => void;
   className?: string;
   showCursor?: boolean;
@@ -14,16 +15,33 @@ interface TypingTextProps {
 
 export default function TypingText({
   text,
-  speed = 30,
+  speed = 22,
   delay = 0,
+  active = true,
   onComplete,
   className,
   showCursor = true,
 }: TypingTextProps) {
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
+
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
 
   useEffect(() => {
+    if (!active) {
+      setDisplayedText('');
+      setIsTyping(false);
+      setIsCompleted(false);
+      return;
+    }
+
+    if (isCompleted) {
+      setDisplayedText(text);
+      return;
+    }
+
     let timeoutId: NodeJS.Timeout;
     let intervalId: NodeJS.Timeout;
 
@@ -38,9 +56,8 @@ export default function TypingText({
         } else {
           clearInterval(intervalId);
           setIsTyping(false);
-          if (onComplete) {
-            onComplete();
-          }
+          setIsCompleted(true);
+          onCompleteRef.current?.();
         }
       }, speed);
     }, delay);
@@ -49,7 +66,7 @@ export default function TypingText({
       clearTimeout(timeoutId);
       clearInterval(intervalId);
     };
-  }, [text, speed, delay, onComplete]);
+  }, [text, speed, delay, active, isCompleted]);
 
   return (
     <span className={clsx('inline-block', className)}>

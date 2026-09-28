@@ -111,6 +111,13 @@ export async function fetchAuthSession(forceRefresh = false): Promise<AuthSessio
 }
 
 /**
+ * Synchronously read current cached session (if already loaded)
+ */
+export function getCachedAuthSession(): AuthSessionData | null {
+  return cachedSession;
+}
+
+/**
  * Clear the in-memory session cache (e.g. on sign out)
  */
 export function clearAuthSessionCache(): void {

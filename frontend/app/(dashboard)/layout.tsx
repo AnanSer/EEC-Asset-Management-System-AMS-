@@ -10,13 +10,17 @@ import {
   AuthSessionProvider,
   fetchAuthSession,
   clearAuthSessionCache,
+  getCachedAuthSession,
 } from '@/context/AuthSessionContext';
 
 function DashboardAuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { error } = useToast();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(() => {
+    const cached = getCachedAuthSession();
+    return !cached?.businessUser;
+  });
 
   // Authentication & Account Status Route Protection with Cached Session
   useEffect(() => {
@@ -95,6 +99,15 @@ function DashboardAuthGuard({ children }: { children: React.ReactNode }) {
 
   // Loading state while verifying authentication
   if (isCheckingAuth) {
+    const isSplashActive =
+      typeof window !== 'undefined' &&
+      sessionStorage.getItem('eec_splash_shown') !== 'true';
+
+    // Suppress competing loading card if the corporate splash screen is currently active
+    if (isSplashActive) {
+      return <div className="min-h-screen bg-[#052831]" />;
+    }
+
     return (
       <div className="flex h-screen bg-eec-background items-center justify-center p-6">
         <div className="w-full max-w-sm bg-white rounded-2xl p-8 shadow-xl border border-slate-100 text-center space-y-4 animate-in fade-in duration-200">
