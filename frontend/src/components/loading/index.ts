@@ -1,4 +1,5 @@
 export { default as SplashScreen } from './SplashScreen';
+export { default as LogoPreloader } from './LogoPreloader';
 export { default as ProgressLoader } from './ProgressLoader';
 export { default as TypingText } from './TypingText';
 export { default as RouteLoadingBar } from './RouteLoadingBar';

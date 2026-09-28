@@ -6,6 +6,7 @@ import Sidebar from '@/components/layout/Sidebar';
 import Navbar from '@/components/layout/Navbar';
 import { ToastProvider, useToast } from '@/components/ui/Toast';
 import { authClient } from '@/lib/auth-client';
+import LogoPreloader from '@/components/loading/LogoPreloader';
 import {
   AuthSessionProvider,
   fetchAuthSession,
@@ -108,25 +109,7 @@ function DashboardAuthGuard({ children }: { children: React.ReactNode }) {
       return <div className="min-h-screen bg-[#052831]" />;
     }
 
-    return (
-      <div className="flex h-screen bg-eec-background items-center justify-center p-6">
-        <div className="w-full max-w-sm bg-white rounded-2xl p-8 shadow-xl border border-slate-100 text-center space-y-4 animate-in fade-in duration-200">
-          <div className="w-10 h-10 border-3 border-eec-primary border-t-transparent rounded-full animate-spin mx-auto" />
-          <div>
-            <h3 className="text-sm font-bold text-slate-800">
-              Verifying Session & Authorization
-            </h3>
-            <p className="text-xs text-slate-500 mt-1">
-              Securing corporate access to EEC EAMS...
-            </p>
-          </div>
-          <div className="pt-2 space-y-2">
-            <div className="h-3 w-3/4 bg-slate-200 rounded animate-pulse mx-auto" />
-            <div className="h-3 w-1/2 bg-slate-200 rounded animate-pulse mx-auto" />
-          </div>
-        </div>
-      </div>
-    );
+    return <LogoPreloader />;
   }
 
   return (

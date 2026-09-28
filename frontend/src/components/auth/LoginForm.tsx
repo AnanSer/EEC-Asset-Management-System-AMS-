@@ -9,6 +9,7 @@ import { useToast } from '@/components/ui/Toast';
 import PasswordInput from './PasswordInput';
 import LoadingButton from '@/components/ui/LoadingButton';
 import { fetchAuthSession } from '@/context/AuthSessionContext';
+import LogoPreloader from '@/components/loading/LogoPreloader';
 import {
   LogIn,
   Loader2,
@@ -67,6 +68,7 @@ export const LoginForm: React.FC = () => {
   const [banner, setBanner] = useState<AuthBannerState | null>(null);
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   // Resend state for unverified email
   const [resendCooldown, setResendCooldown] = useState(0);
@@ -204,13 +206,20 @@ export const LoginForm: React.FC = () => {
           });
         }
 
-        // Default or APPROVED: Redirect to dashboard
+        // Default or APPROVED: Redirect to dashboard with LogoPreloader
+        setIsRedirecting(true);
+        fetchAuthSession(true).catch(() => {});
         router.push('/dashboard');
+        return;
       } else {
         // Default fallback to dashboard if session established
+        setIsRedirecting(true);
+        fetchAuthSession(true).catch(() => {});
         router.push('/dashboard');
+        return;
       }
     } catch (err: unknown) {
+      setIsRedirecting(false);
       console.error('Login error:', err);
       setBanner({
         type: 'generic',
@@ -223,7 +232,9 @@ export const LoginForm: React.FC = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+    <>
+      {isRedirecting && <LogoPreloader />}
+      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
       {/* Enterprise Status & Error Banners */}
       {banner && (
         <div
@@ -373,6 +384,7 @@ export const LoginForm: React.FC = () => {
         </p>
       </div>
     </form>
+    </>
   );
 };
 
