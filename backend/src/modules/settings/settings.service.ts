@@ -1,7 +1,7 @@
 import { settingsRepository, SettingsRepository, SystemSettingsRecord } from './settings.repository';
 import { UpdateSettingsDTO } from './settings.validator';
 import { NotificationType } from '@prisma/client';
-import { safeNotifyUser, getAdminUserIds } from '../notifications';
+import { safeNotifyUsers, getAdminUserIds, logNotificationDispatch } from '../notifications';
 
 export interface SystemInfoDTO {
   systemVersion: string;
@@ -25,22 +25,24 @@ export class SettingsService {
   async updateSettings(data: UpdateSettingsDTO, adminUserId?: string): Promise<SystemSettingsRecord> {
     const updated = await this.repo.updateSettings(data);
 
-    // In-app Notification: Settings Updated (Phase 10B.2)
-    let targetAdminId = adminUserId;
-    if (!targetAdminId) {
-      const adminIds = await getAdminUserIds();
-      targetAdminId = adminIds[0];
-    }
+    // In-app Notification: Settings Updated (Phase 10B.2 & 10B.4 Audit) -> Notify all active Admin users
+    const adminUserIds = await getAdminUserIds();
+    const adminNotifications = adminUserIds.map((adminId) => ({
+      userId: adminId,
+      type: NotificationType.SUCCESS,
+      title: 'Settings Updated',
+      message: 'Organization settings updated successfully.',
+      link: '/settings',
+    }));
 
-    if (targetAdminId) {
-      await safeNotifyUser({
-        userId: targetAdminId,
-        type: NotificationType.SUCCESS,
-        title: 'Settings Updated',
-        message: 'Organization settings updated successfully.',
-        link: '/settings',
-      });
-    }
+    await safeNotifyUsers(adminNotifications);
+
+    logNotificationDispatch({
+      event: 'SYSTEM_SETTINGS_UPDATED',
+      requester: adminUserId || undefined,
+      resolvedAdmins: adminUserIds,
+      notifiedUsers: adminUserIds,
+    });
 
     return updated;
   }

@@ -31,6 +31,9 @@ import NotificationItem from '@/components/notifications/NotificationItem';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
 import { groupNotifications } from '@/utils/notification.utils';
 import clsx from 'clsx';
+import { appDataCache } from '@/context/AppDataCacheContext';
+
+const DEFAULT_NOTIFS_QUERY_KEY = 'notifications:list:{"page":1,"limit":10}';
 
 const NOTIFICATION_TYPES: Array<{ value: string; label: string }> = [
   { value: 'ALL', label: 'All Types' },
@@ -56,14 +59,22 @@ export default function NotificationsPage() {
   const { branding } = useSystemSettings();
   const timeZone = branding?.timezone || 'Africa/Addis_Ababa';
 
-  const [notifications, setNotifications] = useState<NotificationItemData[]>([]);
-  const [pagination, setPagination] = useState<NotificationPaginationMeta>({
-    page: 1,
-    limit: 10,
-    total: 0,
-    totalPages: 1,
-    hasNext: false,
-    hasPrevious: false,
+  const [notifications, setNotifications] = useState<NotificationItemData[]>(() => {
+    const cached = appDataCache.getCached<any>(DEFAULT_NOTIFS_QUERY_KEY);
+    return cached?.data || [];
+  });
+  const [pagination, setPagination] = useState<NotificationPaginationMeta>(() => {
+    const cached = appDataCache.getCached<any>(DEFAULT_NOTIFS_QUERY_KEY);
+    return (
+      cached?.meta || {
+        page: 1,
+        limit: 10,
+        total: 0,
+        totalPages: 1,
+        hasNext: false,
+        hasPrevious: false,
+      }
+    );
   });
   const [unreadCount, setUnreadCount] = useState<number>(0);
 
@@ -73,7 +84,9 @@ export default function NotificationsPage() {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [currentPage, setCurrentPage] = useState(1);
 
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(() => {
+    return !appDataCache.getCached<any>(DEFAULT_NOTIFS_QUERY_KEY);
+  });
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [isMarkingAll, setIsMarkingAll] = useState(false);
@@ -358,6 +371,7 @@ export default function NotificationsPage() {
       <PageHeader
         title="Enterprise Notification Center"
         description="Monitor system alerts, warranty expiries, maintenance updates, and personal activities."
+        isUpdating={isRefreshing}
         breadcrumbs={breadcrumbs}
         actions={
           <div className="flex items-center gap-2">

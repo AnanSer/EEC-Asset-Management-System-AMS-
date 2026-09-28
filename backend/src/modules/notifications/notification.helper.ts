@@ -1,6 +1,6 @@
 /**
- * Notification Helper Functions — EEC EAMS (Phase 10B.2)
- * Safe dispatchers and recipient resolvers for Enterprise Notification Center.
+ * Notification Helper Functions — EEC EAMS (Phase 10B.2 & 10B.4 Audit)
+ * Safe dispatchers, recipient resolvers, and diagnostic logging for Enterprise Notification Center.
  */
 
 import prisma from '../../lib/prisma';
@@ -13,6 +13,44 @@ export interface NotificationPayload {
   message: string;
   type: NotificationType;
   link?: string | null;
+}
+
+export interface DiagnosticLogParams {
+  event: string;
+  ticket?: string;
+  requester?: string;
+  assetOwner?: string;
+  department?: string;
+  resolvedTechnicians?: string[];
+  resolvedManagers?: string[];
+  resolvedAdmins?: string[];
+  notifiedUsers: string[];
+}
+
+/**
+ * Diagnostic logger for notification dispatch in development.
+ * Never logs credentials, passwords, or sensitive authentication secrets.
+ */
+export function logNotificationDispatch(params: DiagnosticLogParams): void {
+  if (process.env.NODE_ENV !== 'production' || process.env.ENABLE_NOTIFICATION_LOGS === 'true') {
+    console.log(`\n[NOTIFICATION_DISPATCH] ═════════════════════════════════════`);
+    console.log(`EVENT: ${params.event}`);
+    if (params.ticket) console.log(`TICKET: ${params.ticket}`);
+    if (params.requester) console.log(`REQUESTER: ${params.requester}`);
+    if (params.assetOwner) console.log(`ASSET_OWNER: ${params.assetOwner}`);
+    if (params.department) console.log(`DEPARTMENT: ${params.department}`);
+    if (params.resolvedTechnicians && params.resolvedTechnicians.length > 0) {
+      console.log(`RESOLVED TECHNICIANS: [${params.resolvedTechnicians.join(', ')}]`);
+    }
+    if (params.resolvedManagers && params.resolvedManagers.length > 0) {
+      console.log(`RESOLVED MANAGERS: [${params.resolvedManagers.join(', ')}]`);
+    }
+    if (params.resolvedAdmins && params.resolvedAdmins.length > 0) {
+      console.log(`RESOLVED ADMINS: [${params.resolvedAdmins.join(', ')}]`);
+    }
+    console.log(`NOTIFIED USERS: [${params.notifiedUsers.join(', ')}]`);
+    console.log(`═════════════════════════════════════════════════════════════\n`);
+  }
 }
 
 /**
@@ -53,12 +91,15 @@ export async function safeNotifyUsers(payloads: NotificationPayload[]): Promise<
 }
 
 /**
- * Helper to retrieve all active Admin user IDs.
+ * Helper to retrieve all active, approved Admin user IDs.
  */
 export async function getAdminUserIds(): Promise<string[]> {
   try {
     const admins = await prisma.user.findMany({
-      where: { role: 'ADMIN', status: 'APPROVED' },
+      where: {
+        role: 'ADMIN',
+        status: 'APPROVED',
+      },
       select: { id: true },
     });
     return admins.map((a) => a.id);
@@ -69,7 +110,7 @@ export async function getAdminUserIds(): Promise<string[]> {
 }
 
 /**
- * Helper to retrieve the Department Manager user ID for a specific department.
+ * Helper to retrieve the active Department Manager user ID for a specific department.
  */
 export async function getDepartmentManagerUserId(departmentId?: string | null): Promise<string | null> {
   if (!departmentId) return null;
@@ -78,7 +119,10 @@ export async function getDepartmentManagerUserId(departmentId?: string | null): 
       where: {
         role: 'DEPARTMENT_MANAGER',
         status: 'APPROVED',
-        employeeProfile: { departmentId },
+        employeeProfile: {
+          departmentId,
+          isActive: true,
+        },
       },
       select: { id: true },
     });
@@ -90,49 +134,81 @@ export async function getDepartmentManagerUserId(departmentId?: string | null): 
 }
 
 /**
- * Helper to resolve an IT Technician's user ID from name, employeeId, email, or profileId.
+ * Helper to resolve an active IT Technician's user ID from name, employeeId, email, or profileId.
+ * Strips formatting annotations (such as department name or parentheses) and verifies role and active status.
  */
 export async function getTechnicianUserId(identifier?: string | null): Promise<string | null> {
   if (!identifier) return null;
   try {
-    const trimmed = identifier.trim();
-    const nameParts = trimmed.split(' ');
+    const raw = identifier.trim();
+    // Remove parenthesized content (e.g., "Biruk Tadesse (EMP-003 - ICT Directorate)" -> "Biruk Tadesse")
+    const cleaned = raw.replace(/\(.*?\)/g, '').trim();
+    const parts = cleaned.split(/\s+/).filter(Boolean);
 
-    const tech = await prisma.user.findFirst({
+    // 1. Direct match on user.id, email, employeeProfile.id, or employeeProfile.employeeId
+    const directMatch = await prisma.user.findFirst({
       where: {
         role: 'IT_TECHNICIAN',
+        status: 'APPROVED',
+        employeeProfile: { isActive: true },
         OR: [
-          { id: trimmed },
-          { email: trimmed },
-          { employeeProfile: { id: trimmed } },
-          { employeeProfile: { employeeId: trimmed } },
-          ...(nameParts.length >= 2
-            ? [
-                {
-                  employeeProfile: {
-                    firstName: { equals: nameParts[0], mode: 'insensitive' as const },
-                    lastName: { equals: nameParts.slice(1).join(' '), mode: 'insensitive' as const },
-                  },
-                },
-              ]
-            : [
-                {
-                  employeeProfile: {
-                    firstName: { equals: trimmed, mode: 'insensitive' as const },
-                  },
-                },
-                {
-                  employeeProfile: {
-                    lastName: { equals: trimmed, mode: 'insensitive' as const },
-                  },
-                },
-              ]),
+          { id: raw },
+          { email: raw },
+          { employeeProfile: { id: raw } },
+          { employeeProfile: { employeeId: raw } },
+          { employeeProfile: { employeeId: cleaned } },
         ],
       },
       select: { id: true },
     });
 
-    return tech?.id || null;
+    if (directMatch) {
+      return directMatch.id;
+    }
+
+    // 2. Name-based match (case-insensitive)
+    if (parts.length >= 2) {
+      const firstNamePart = parts[0];
+      const lastNamePart = parts.slice(1).join(' ');
+
+      const nameMatch = await prisma.user.findFirst({
+        where: {
+          role: 'IT_TECHNICIAN',
+          status: 'APPROVED',
+          employeeProfile: {
+            isActive: true,
+            firstName: { equals: firstNamePart, mode: 'insensitive' },
+            lastName: { equals: lastNamePart, mode: 'insensitive' },
+          },
+        },
+        select: { id: true },
+      });
+
+      if (nameMatch) {
+        return nameMatch.id;
+      }
+    } else if (parts.length === 1) {
+      const singleMatch = await prisma.user.findFirst({
+        where: {
+          role: 'IT_TECHNICIAN',
+          status: 'APPROVED',
+          employeeProfile: {
+            isActive: true,
+            OR: [
+              { firstName: { equals: parts[0], mode: 'insensitive' } },
+              { lastName: { equals: parts[0], mode: 'insensitive' } },
+            ],
+          },
+        },
+        select: { id: true },
+      });
+
+      if (singleMatch) {
+        return singleMatch.id;
+      }
+    }
+
+    return null;
   } catch (err) {
     console.error(`[getTechnicianUserId] Failed for identifier ${identifier}:`, err);
     return null;
@@ -140,18 +216,91 @@ export async function getTechnicianUserId(identifier?: string | null): Promise<s
 }
 
 /**
- * Helper to retrieve the active owner User ID of an asset.
+ * Helper to retrieve eligible active IT Technicians for a maintenance request.
+ * If departmentId is provided and technicians belong to that department, prioritizes department technicians.
+ * Otherwise returns all active approved IT technicians.
  */
-export async function getAssetOwnerUserId(assetId?: string | null): Promise<string | null> {
-  if (!assetId) return null;
+export async function getEligibleTechnicianUserIds(departmentId?: string | null): Promise<string[]> {
   try {
-    const activeAssignment = await prisma.assetAssignment.findFirst({
-      where: { assetId, isCurrent: true },
-      include: { employee: true },
+    if (departmentId) {
+      const deptTechnicians = await prisma.user.findMany({
+        where: {
+          role: 'IT_TECHNICIAN',
+          status: 'APPROVED',
+          employeeProfile: {
+            departmentId,
+            isActive: true,
+          },
+        },
+        select: { id: true },
+      });
+
+      if (deptTechnicians.length > 0) {
+        return deptTechnicians.map((t) => t.id);
+      }
+    }
+
+    // Fallback: All active approved IT technicians
+    const allTechnicians = await prisma.user.findMany({
+      where: {
+        role: 'IT_TECHNICIAN',
+        status: 'APPROVED',
+        employeeProfile: {
+          isActive: true,
+        },
+      },
+      select: { id: true },
     });
-    return activeAssignment?.employee?.userId || null;
+
+    return allTechnicians.map((t) => t.id);
+  } catch (err) {
+    console.error('[getEligibleTechnicianUserIds] Failed to fetch eligible technician IDs:', err);
+    return [];
+  }
+}
+
+/**
+ * Helper to retrieve the active owner User ID of an asset.
+ * If no current assignment exists, optionally falls back to looking up the reporter.
+ */
+export async function getAssetOwnerUserId(
+  assetId?: string | null,
+  fallbackReporter?: string | null
+): Promise<string | null> {
+  if (!assetId && !fallbackReporter) return null;
+  try {
+    if (assetId) {
+      const activeAssignment = await prisma.assetAssignment.findFirst({
+        where: { assetId, isCurrent: true },
+        include: { employee: true },
+      });
+      if (activeAssignment?.employee?.userId) {
+        return activeAssignment.employee.userId;
+      }
+    }
+
+    if (fallbackReporter) {
+      const trimmed = fallbackReporter.trim();
+      const reporterUser = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { id: trimmed },
+            { email: trimmed },
+            { employeeProfile: { id: trimmed } },
+            { employeeProfile: { employeeId: trimmed } },
+          ],
+        },
+        select: { id: true },
+      });
+      if (reporterUser?.id) {
+        return reporterUser.id;
+      }
+    }
+
+    return null;
   } catch (err) {
     console.error(`[getAssetOwnerUserId] Failed for asset ${assetId}:`, err);
     return null;
   }
 }
+

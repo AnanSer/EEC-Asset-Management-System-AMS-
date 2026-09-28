@@ -137,13 +137,18 @@ class EmployeeService {
         catch (emailErr) {
             console.error('[createEmployee] SMTP error sending welcome invitation email:', emailErr?.message || emailErr);
         }
-        // In-app Notification: Welcome to EEC EAMS (Phase 10B.2)
+        // In-app Notification: Welcome to EEC EAMS (Phase 10B.2 & 10B.4 Audit)
         await (0, notifications_1.safeNotifyUser)({
             userId: created.userId,
             type: client_1.NotificationType.ACCOUNT,
             title: 'Welcome to EEC EAMS',
             message: 'Your employee account has been created. Complete password setup using the invitation email.',
             link: '/login',
+        });
+        (0, notifications_1.logNotificationDispatch)({
+            event: 'ADMIN_CREATES_EMPLOYEE',
+            requester: created.userId,
+            notifiedUsers: [created.userId],
         });
         return this.formatEmployee(created);
     }

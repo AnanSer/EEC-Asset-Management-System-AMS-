@@ -1,9 +1,11 @@
 /**
- * Employee Service — EEC EAMS
- * Handles API communication with Express backend /api/employees endpoints.
+ * Employee Service — EEC EAMS (Phase 10B.5 Optimized)
+ * Handles API communication with Express backend /api/employees endpoints
+ * with integrated SWR caching, request deduplication, and cascading invalidation.
  */
 
 import apiClient from '../lib/axios';
+import { appDataCache } from '../context/AppDataCacheContext';
 import {
   CreateEmployeeInput,
   UpdateEmployeeInput,
@@ -12,21 +14,40 @@ import {
   EmployeeResponse,
 } from '../constants/employees';
 
+export function invalidateEmployeeCaches() {
+  appDataCache.invalidateEntity('employees');
+}
+
 export const employeeService = {
   /**
    * GET /api/employees — list employees with search, department, role, status & pagination
+   * Served via SWR in-memory cache
    */
-  async getAll(params?: EmployeeQuery): Promise<EmployeesResponse> {
-    const res = await apiClient.get<EmployeesResponse>('/employees', { params });
-    return res.data;
+  async getAll(params?: EmployeeQuery, forceRefresh = false): Promise<EmployeesResponse> {
+    const key = `employees:list:${JSON.stringify(params || {})}`;
+    return appDataCache.fetchWithCache(
+      key,
+      async () => {
+        const res = await apiClient.get<EmployeesResponse>('/employees', { params });
+        return res.data;
+      },
+      { forceRefresh }
+    );
   },
 
   /**
    * GET /api/employees/:id — retrieve single employee with profile, user, department & counts
    */
-  async getById(id: string): Promise<EmployeeResponse> {
-    const res = await apiClient.get<EmployeeResponse>(`/employees/${id}`);
-    return res.data;
+  async getById(id: string, forceRefresh = false): Promise<EmployeeResponse> {
+    const key = `employees:${id}`;
+    return appDataCache.fetchWithCache(
+      key,
+      async () => {
+        const res = await apiClient.get<EmployeeResponse>(`/employees/${id}`);
+        return res.data;
+      },
+      { forceRefresh }
+    );
   },
 
   /**
@@ -34,6 +55,7 @@ export const employeeService = {
    */
   async create(data: CreateEmployeeInput): Promise<EmployeeResponse> {
     const res = await apiClient.post<EmployeeResponse>('/employees', data);
+    invalidateEmployeeCaches();
     return res.data;
   },
 
@@ -42,6 +64,7 @@ export const employeeService = {
    */
   async update(id: string, data: UpdateEmployeeInput): Promise<EmployeeResponse> {
     const res = await apiClient.put<EmployeeResponse>(`/employees/${id}`, data);
+    invalidateEmployeeCaches();
     return res.data;
   },
 
@@ -50,7 +73,15 @@ export const employeeService = {
    */
   async updateStatus(id: string, isActive: boolean): Promise<EmployeeResponse> {
     const res = await apiClient.patch<EmployeeResponse>(`/employees/${id}/status`, { isActive });
+    invalidateEmployeeCaches();
     return res.data;
+  },
+
+  /**
+   * Helper to invalidate cache manually
+   */
+  invalidateCache() {
+    invalidateEmployeeCaches();
   },
 };
 

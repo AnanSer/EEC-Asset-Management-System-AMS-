@@ -4,7 +4,7 @@ import { CreateEmployeeDTO, UpdateEmployeeDTO, EmployeeQueryDTO } from './employ
 import { randomBytes } from 'crypto';
 import { sendWelcomeInvitationEmail } from '../../lib/email';
 import { NotificationType } from '@prisma/client';
-import { safeNotifyUser } from '../notifications';
+import { safeNotifyUser, logNotificationDispatch } from '../notifications';
 
 export class AppError extends Error {
   statusCode: number;
@@ -147,13 +147,19 @@ export class EmployeeService {
       console.error('[createEmployee] SMTP error sending welcome invitation email:', emailErr?.message || emailErr);
     }
 
-    // In-app Notification: Welcome to EEC EAMS (Phase 10B.2)
+    // In-app Notification: Welcome to EEC EAMS (Phase 10B.2 & 10B.4 Audit)
     await safeNotifyUser({
       userId: created.userId,
       type: NotificationType.ACCOUNT,
       title: 'Welcome to EEC EAMS',
       message: 'Your employee account has been created. Complete password setup using the invitation email.',
       link: '/login',
+    });
+
+    logNotificationDispatch({
+      event: 'ADMIN_CREATES_EMPLOYEE',
+      requester: created.userId,
+      notifiedUsers: [created.userId],
     });
 
     return this.formatEmployee(created);

@@ -33,13 +33,28 @@ import {
 } from '@/src/components/reports/ReportCharts';
 import { printReport } from '@/src/utils/export';
 import LoadingButton from '@/components/ui/LoadingButton';
+import { appDataCache } from '@/context/AppDataCacheContext';
 
 export default function ReportsDashboardPage() {
-  const [data, setData] = useState<DashboardReportMetrics | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<DashboardReportMetrics | null>(() => {
+    return appDataCache.getCached<DashboardReportMetrics>('reports:dashboard') || null;
+  });
+  const [loading, setLoading] = useState(() => {
+    return !appDataCache.getCached<DashboardReportMetrics>('reports:dashboard');
+  });
+  const [isUpdating, setIsUpdating] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
 
   useEffect(() => {
+    const cached = appDataCache.getCached<DashboardReportMetrics>('reports:dashboard');
+    if (cached) {
+      setData(cached);
+      setLoading(false);
+      setIsUpdating(true);
+    } else {
+      setLoading(true);
+    }
+
     reportService
       .getDashboard()
       .then((res) => {
@@ -50,6 +65,7 @@ export default function ReportsDashboardPage() {
       })
       .finally(() => {
         setLoading(false);
+        setIsUpdating(false);
       });
   }, []);
 
@@ -66,9 +82,11 @@ export default function ReportsDashboardPage() {
       {/* ─── Header & Actions ────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-eec-primary tracking-tight">
-            Executive Reports & Analytics
-          </h1>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl font-bold text-eec-primary tracking-tight">
+              Executive Reports & Analytics
+            </h1>
+          </div>
           <p className="text-sm text-slate-500 mt-1">
             Enterprise overview of capital equipment, asset lifecycle, personnel custody, and maintenance metrics.
           </p>
@@ -97,7 +115,7 @@ export default function ReportsDashboardPage() {
       </div>
 
       {/* ─── 8 KPI Cards ─────────────────────────────────────────────────────── */}
-      {loading ? (
+      {loading && !data ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 8 }).map((_, i) => (
             <StatCardSkeleton key={i} />
@@ -288,7 +306,7 @@ export default function ReportsDashboardPage() {
       </div>
 
       {/* ─── Exactly 5 Analytics Charts ─────────────────────────────────────── */}
-      {loading ? (
+      {loading && !data ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="eec-card h-72 animate-pulse bg-slate-50" />
           <div className="eec-card h-72 animate-pulse bg-slate-50" />

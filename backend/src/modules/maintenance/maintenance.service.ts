@@ -11,9 +11,11 @@ import {
   safeNotifyUser,
   safeNotifyUsers,
   getTechnicianUserId,
+  getEligibleTechnicianUserIds,
   getDepartmentManagerUserId,
   getAssetOwnerUserId,
   getAdminUserIds,
+  logNotificationDispatch,
 } from '../notifications';
 
 export class AppError extends Error {
@@ -246,21 +248,66 @@ export class MaintenanceService {
 
     const populated = await this.repo.findById(createdTicket.id);
 
-    // In-app Notifications: Maintenance Request Created (Phase 10B.2)
+    // In-app Notifications: Maintenance Request Created (Phase 10B.2 & 10B.4 Audit)
     const creationNotifications = [];
-    const techUserId = await getTechnicianUserId(createdTicket.assignedTechnician);
-    if (techUserId) {
-      creationNotifications.push({
-        userId: techUserId,
-        type: NotificationType.MAINTENANCE,
-        title: 'New Maintenance Request Assigned',
-        message: `Maintenance request ${createdTicket.ticketNumber} for ${populated?.asset?.name || 'asset'} (${populated?.asset?.assetCode || ''}) has been assigned to you.`,
-        link: '/my-maintenance',
+
+    // Resolve reporter user ID to guarantee requester never receives technician assignment notifications
+    let reporterUserId: string | null = null;
+    if (createdTicket.reportedBy) {
+      const reporterUser = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { id: createdTicket.reportedBy },
+            { email: createdTicket.reportedBy },
+            { employeeProfile: { id: createdTicket.reportedBy } },
+            { employeeProfile: { employeeId: createdTicket.reportedBy } },
+          ],
+        },
+        select: { id: true },
       });
+      reporterUserId = reporterUser?.id || null;
     }
 
+    // 1. Resolve Assigned or Eligible IT Technicians
+    const techUserId = await getTechnicianUserId(createdTicket.assignedTechnician);
+    let resolvedTechIds: string[] = [];
+
+    if (techUserId) {
+      resolvedTechIds = [techUserId];
+      // Only notify if technician is not the reporter
+      if (techUserId !== reporterUserId) {
+        creationNotifications.push({
+          userId: techUserId,
+          type: NotificationType.MAINTENANCE,
+          title: 'New Maintenance Request Assigned',
+          message: `Maintenance request ${createdTicket.ticketNumber} for ${populated?.asset?.name || 'asset'} (${populated?.asset?.assetCode || ''}) has been assigned to you.`,
+          link: '/my-maintenance',
+        });
+      }
+    } else {
+      // Unassigned ticket: Notify eligible active IT Technicians handling this department / general ICT
+      const eligibleTechIds = await getEligibleTechnicianUserIds(populated?.asset?.departmentId);
+      resolvedTechIds = eligibleTechIds;
+      for (const tId of eligibleTechIds) {
+        if (tId !== reporterUserId) {
+          creationNotifications.push({
+            userId: tId,
+            type: NotificationType.MAINTENANCE,
+            title: 'New Maintenance Request',
+            message: `New maintenance request ${createdTicket.ticketNumber} submitted for ${populated?.asset?.name || 'asset'} (${populated?.asset?.assetCode || ''}).`,
+            link: '/maintenance',
+          });
+        }
+      }
+    }
+
+    // 2. Resolve Department Manager (when applicable)
     const deptManagerUserId = await getDepartmentManagerUserId(populated?.asset?.departmentId);
-    if (deptManagerUserId && deptManagerUserId !== techUserId) {
+    if (
+      deptManagerUserId &&
+      deptManagerUserId !== reporterUserId &&
+      !resolvedTechIds.includes(deptManagerUserId)
+    ) {
       creationNotifications.push({
         userId: deptManagerUserId,
         type: NotificationType.MAINTENANCE,
@@ -270,7 +317,33 @@ export class MaintenanceService {
       });
     }
 
+    // 3. If ticket was created with immediate IN_PROGRESS status, notify asset owner
+    let ownerUserId: string | null = null;
+    if (initialStatus === 'IN_PROGRESS') {
+      ownerUserId = await getAssetOwnerUserId(createdTicket.assetId, createdTicket.reportedBy);
+      if (ownerUserId && !creationNotifications.some((n) => n.userId === ownerUserId)) {
+        creationNotifications.push({
+          userId: ownerUserId,
+          type: NotificationType.MAINTENANCE,
+          title: 'Maintenance Work Started',
+          message: `Maintenance work has started on ${populated?.asset?.name || 'asset'} (${populated?.asset?.assetCode || ''}) under ticket ${createdTicket.ticketNumber}.`,
+          link: '/my-maintenance',
+        });
+      }
+    }
+
     await safeNotifyUsers(creationNotifications);
+
+    logNotificationDispatch({
+      event: 'MAINTENANCE_CREATED',
+      ticket: createdTicket.ticketNumber,
+      requester: reporterUserId || createdTicket.reportedBy || undefined,
+      assetOwner: ownerUserId || undefined,
+      department: populated?.asset?.department?.name || populated?.asset?.departmentId || undefined,
+      resolvedTechnicians: resolvedTechIds,
+      resolvedManagers: deptManagerUserId ? [deptManagerUserId] : [],
+      notifiedUsers: creationNotifications.map((n) => n.userId),
+    });
 
     return this.formatTicket(populated);
   }
@@ -374,22 +447,10 @@ export class MaintenanceService {
 
     const populated = await this.repo.findById(updatedTicket.id);
 
-    // In-app Notifications: Maintenance Workflow Status Changes (Phase 10B.2)
+    // In-app Notifications: Maintenance Workflow Status Changes (Phase 10B.2 & 10B.4 Audit)
     if (newStatus === 'IN_PROGRESS') {
-      // Event 9: Technician Starts Work -> notify asset owner
-      let ownerUserId = await getAssetOwnerUserId(ticket.assetId);
-      if (!ownerUserId && ticket.reportedBy) {
-        const reporterUser = await prisma.user.findFirst({
-          where: {
-            OR: [
-              { email: ticket.reportedBy },
-              { employeeProfile: { employeeId: ticket.reportedBy } },
-            ],
-          },
-          select: { id: true },
-        });
-        ownerUserId = reporterUser?.id || null;
-      }
+      // Event 9: Maintenance Work Started -> notify asset owner / requester ONLY (no admins)
+      const ownerUserId = await getAssetOwnerUserId(ticket.assetId, ticket.reportedBy);
 
       if (ownerUserId) {
         await safeNotifyUser({
@@ -399,9 +460,17 @@ export class MaintenanceService {
           message: `Maintenance work has started on ${populated?.asset?.name || 'asset'} (${populated?.asset?.assetCode || ''}) under ticket ${populated?.ticketNumber}.`,
           link: '/my-maintenance',
         });
+
+        logNotificationDispatch({
+          event: 'MAINTENANCE_WORK_STARTED',
+          ticket: populated?.ticketNumber,
+          requester: ticket.reportedBy || undefined,
+          assetOwner: ownerUserId,
+          notifiedUsers: [ownerUserId],
+        });
       }
     } else if (newStatus === 'TESTING') {
-      // Event 10: Ticket Moved To Testing -> notify assigned technician & admins
+      // Event 10: Ticket Moved To Testing -> notify assigned technician & testing administrators
       const testingNotifications = [];
       const techUserId = await getTechnicianUserId(ticket.assignedTechnician);
       if (techUserId) {
@@ -428,6 +497,14 @@ export class MaintenanceService {
       }
 
       await safeNotifyUsers(testingNotifications);
+
+      logNotificationDispatch({
+        event: 'MAINTENANCE_MOVED_TO_TESTING',
+        ticket: populated?.ticketNumber,
+        resolvedTechnicians: techUserId ? [techUserId] : [],
+        resolvedAdmins: adminUserIds,
+        notifiedUsers: testingNotifications.map((n) => n.userId),
+      });
     }
 
     return this.formatTicket(populated);

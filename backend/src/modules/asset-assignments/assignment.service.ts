@@ -7,7 +7,7 @@ import {
   AssignmentQueryDTO,
 } from './assignment.validator';
 import { NotificationType } from '@prisma/client';
-import { safeNotifyUser, safeNotifyUsers } from '../notifications';
+import { safeNotifyUser, safeNotifyUsers, logNotificationDispatch } from '../notifications';
 
 export class AppError extends Error {
   statusCode: number;
@@ -180,7 +180,7 @@ export class AssignmentService {
 
     const populated = await this.repo.findById(createdAssignment.id);
 
-    // In-app Notification: Asset Assigned (Phase 10B.2)
+    // In-app Notification: Asset Assigned (Phase 10B.2 & 10B.4 Audit)
     if (employee.userId) {
       await safeNotifyUser({
         userId: employee.userId,
@@ -188,6 +188,12 @@ export class AssignmentService {
         title: 'Asset Assigned',
         message: `${asset.name} (${asset.assetCode}) has been assigned to you.`,
         link: '/my-assets',
+      });
+
+      logNotificationDispatch({
+        event: 'ASSET_ASSIGNED',
+        assetOwner: employee.userId,
+        notifiedUsers: [employee.userId],
       });
     }
 
@@ -298,6 +304,11 @@ export class AssignmentService {
     }
     await safeNotifyUsers(transferNotifications);
 
+    logNotificationDispatch({
+      event: 'ASSET_TRANSFERRED',
+      notifiedUsers: transferNotifications.map((t) => t.userId),
+    });
+
     return this.formatAssignment(populated);
   }
 
@@ -343,7 +354,7 @@ export class AssignmentService {
 
     const closed = await this.repo.findById(activeAssignment.id);
 
-    // In-app Notification: Asset Return (Phase 10B.2)
+    // In-app Notification: Asset Return (Phase 10B.2 & 10B.4 Audit)
     const returningEmployee = await prisma.employeeProfile.findUnique({
       where: { id: activeAssignment.employeeId },
     });
@@ -354,6 +365,12 @@ export class AssignmentService {
         title: 'Asset Returned',
         message: `${asset.name} (${asset.assetCode}) has been successfully returned.`,
         link: '/my-assets',
+      });
+
+      logNotificationDispatch({
+        event: 'ASSET_RETURNED',
+        assetOwner: returningEmployee.userId,
+        notifiedUsers: [returningEmployee.userId],
       });
     }
 

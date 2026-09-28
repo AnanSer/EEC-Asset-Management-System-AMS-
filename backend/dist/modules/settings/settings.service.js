@@ -13,21 +13,22 @@ class SettingsService {
     }
     async updateSettings(data, adminUserId) {
         const updated = await this.repo.updateSettings(data);
-        // In-app Notification: Settings Updated (Phase 10B.2)
-        let targetAdminId = adminUserId;
-        if (!targetAdminId) {
-            const adminIds = await (0, notifications_1.getAdminUserIds)();
-            targetAdminId = adminIds[0];
-        }
-        if (targetAdminId) {
-            await (0, notifications_1.safeNotifyUser)({
-                userId: targetAdminId,
-                type: client_1.NotificationType.SUCCESS,
-                title: 'Settings Updated',
-                message: 'Organization settings updated successfully.',
-                link: '/settings',
-            });
-        }
+        // In-app Notification: Settings Updated (Phase 10B.2 & 10B.4 Audit) -> Notify all active Admin users
+        const adminUserIds = await (0, notifications_1.getAdminUserIds)();
+        const adminNotifications = adminUserIds.map((adminId) => ({
+            userId: adminId,
+            type: client_1.NotificationType.SUCCESS,
+            title: 'Settings Updated',
+            message: 'Organization settings updated successfully.',
+            link: '/settings',
+        }));
+        await (0, notifications_1.safeNotifyUsers)(adminNotifications);
+        (0, notifications_1.logNotificationDispatch)({
+            event: 'SYSTEM_SETTINGS_UPDATED',
+            requester: adminUserId || undefined,
+            resolvedAdmins: adminUserIds,
+            notifiedUsers: adminUserIds,
+        });
         return updated;
     }
     async getSystemInfo() {

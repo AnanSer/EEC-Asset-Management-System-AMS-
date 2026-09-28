@@ -1,9 +1,11 @@
 /**
- * Assignment Service — EEC EAMS
- * Handles API communication with Express backend /api/assignments endpoints.
+ * Assignment Service — EEC EAMS (Phase 10B.5 Optimized)
+ * Handles API communication with Express backend /api/assignments endpoints
+ * with integrated SWR caching, request deduplication, and cascading invalidation.
  */
 
 import apiClient from '../lib/axios';
+import { appDataCache } from '../context/AppDataCacheContext';
 import {
   AssetAssignment,
   AssignAssetInput,
@@ -42,29 +44,54 @@ export interface AssignmentStatsResponse {
   data: AssignmentStats;
 }
 
+export function invalidateAssignmentCaches() {
+  appDataCache.invalidateEntity('assignments');
+}
+
 export const assignmentService = {
   /**
    * GET /api/assignments — list assignments with filters & pagination
    */
-  async getAll(params?: AssignmentQueryParams): Promise<AssignmentsResponse> {
-    const res = await apiClient.get<AssignmentsResponse>('/assignments', { params });
-    return res.data;
+  async getAll(params?: AssignmentQueryParams, forceRefresh = false): Promise<AssignmentsResponse> {
+    const key = `assignments:list:${JSON.stringify(params || {})}`;
+    return appDataCache.fetchWithCache(
+      key,
+      async () => {
+        const res = await apiClient.get<AssignmentsResponse>('/assignments', { params });
+        return res.data;
+      },
+      { forceRefresh }
+    );
   },
 
   /**
    * GET /api/assignments/:id — retrieve single assignment record
    */
-  async getById(id: string): Promise<AssignmentResponse> {
-    const res = await apiClient.get<AssignmentResponse>(`/assignments/${id}`);
-    return res.data;
+  async getById(id: string, forceRefresh = false): Promise<AssignmentResponse> {
+    const key = `assignments:${id}`;
+    return appDataCache.fetchWithCache(
+      key,
+      async () => {
+        const res = await apiClient.get<AssignmentResponse>(`/assignments/${id}`);
+        return res.data;
+      },
+      { forceRefresh }
+    );
   },
 
   /**
    * GET /api/assignments/history/:assetId — retrieve chronological assignment history
    */
-  async getHistory(assetId: string): Promise<AssignmentHistoryResponse> {
-    const res = await apiClient.get<AssignmentHistoryResponse>(`/assignments/history/${assetId}`);
-    return res.data;
+  async getHistory(assetId: string, forceRefresh = false): Promise<AssignmentHistoryResponse> {
+    const key = `assignments:history:${assetId}`;
+    return appDataCache.fetchWithCache(
+      key,
+      async () => {
+        const res = await apiClient.get<AssignmentHistoryResponse>(`/assignments/history/${assetId}`);
+        return res.data;
+      },
+      { forceRefresh }
+    );
   },
 
   /**
@@ -72,6 +99,7 @@ export const assignmentService = {
    */
   async assign(data: AssignAssetInput): Promise<AssignmentResponse> {
     const res = await apiClient.post<AssignmentResponse>('/assignments/assign', data);
+    invalidateAssignmentCaches();
     return res.data;
   },
 
@@ -80,6 +108,7 @@ export const assignmentService = {
    */
   async transfer(assetId: string, data: TransferAssetInput): Promise<AssignmentResponse> {
     const res = await apiClient.patch<AssignmentResponse>(`/assignments/transfer/${assetId}`, data);
+    invalidateAssignmentCaches();
     return res.data;
   },
 
@@ -88,15 +117,30 @@ export const assignmentService = {
    */
   async returnAsset(assetId: string, data: ReturnAssetInput): Promise<AssignmentResponse> {
     const res = await apiClient.patch<AssignmentResponse>(`/assignments/return/${assetId}`, data);
+    invalidateAssignmentCaches();
     return res.data;
   },
 
   /**
    * GET /api/assignments/stats — dashboard and KPI assignment metrics
    */
-  async getStats(): Promise<AssignmentStatsResponse> {
-    const res = await apiClient.get<AssignmentStatsResponse>('/assignments/stats');
-    return res.data;
+  async getStats(forceRefresh = false): Promise<AssignmentStatsResponse> {
+    const key = 'dashboard:assignment_stats';
+    return appDataCache.fetchWithCache(
+      key,
+      async () => {
+        const res = await apiClient.get<AssignmentStatsResponse>('/assignments/stats');
+        return res.data;
+      },
+      { forceRefresh }
+    );
+  },
+
+  /**
+   * Invalidate assignment caches manually
+   */
+  invalidateCache() {
+    invalidateAssignmentCaches();
   },
 };
 

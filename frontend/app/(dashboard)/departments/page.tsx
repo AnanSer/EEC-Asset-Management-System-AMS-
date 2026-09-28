@@ -18,33 +18,47 @@ import PageHeader from '@/components/ui/PageHeader';
 import SearchInput from '@/components/ui/SearchInput';
 import StatusBadge from '@/components/ui/StatusBadge';
 import EmptyState from '@/components/ui/EmptyState';
-import LoadingSkeleton, { TableSkeleton } from '@/components/ui/LoadingSkeleton';
+import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
 import { useToast } from '@/components/ui/Toast';
 import departmentService from '@/services/department.service';
-import { Department, PaginationMeta } from '@/constants/departments';
+import { Department, PaginationMeta, DepartmentsResponse } from '@/constants/departments';
 import { usePermissions } from '@/hooks/usePermissions';
 import { PERMISSIONS } from '@/lib/authorization';
 import PermissionGuard from '@/components/auth/PermissionGuard';
+import { appDataCache } from '@/context/AppDataCacheContext';
+
+const DEFAULT_DEPT_QUERY_KEY = 'departments:list:{"status":"all","page":1,"limit":8}';
 
 export default function DepartmentsPage() {
   const toast = useToast();
   const { can } = usePermissions();
 
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [meta, setMeta] = useState<PaginationMeta>({
-    total: 0,
-    page: 1,
-    limit: 8,
-    totalPages: 1,
-    hasNextPage: false,
-    hasPrevPage: false,
+  const [departments, setDepartments] = useState<Department[]>(() => {
+    const cached = appDataCache.getCached<DepartmentsResponse>(DEFAULT_DEPT_QUERY_KEY);
+    return cached?.data || [];
+  });
+  const [meta, setMeta] = useState<PaginationMeta>(() => {
+    const cached = appDataCache.getCached<DepartmentsResponse>(DEFAULT_DEPT_QUERY_KEY);
+    return (
+      cached?.meta || {
+        total: 0,
+        page: 1,
+        limit: 8,
+        totalPages: 1,
+        hasNextPage: false,
+        hasPrevPage: false,
+      }
+    );
   });
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(() => {
+    return !appDataCache.getCached<DepartmentsResponse>(DEFAULT_DEPT_QUERY_KEY);
+  });
+  const [isUpdating, setIsUpdating] = useState<boolean>(false);
 
   // Status toggle confirmation modal state
   const [statusModal, setStatusModal] = useState<{
@@ -58,15 +72,26 @@ export default function DepartmentsPage() {
   });
 
   const fetchDepartments = useCallback(async () => {
-    try {
-      setLoading(true);
-      const res = await departmentService.getAll({
-        search: search.trim() || undefined,
-        status: statusFilter,
-        page,
-        limit: 8,
-      });
+    const queryParams = {
+      search: search.trim() || undefined,
+      status: statusFilter,
+      page,
+      limit: 8,
+    };
+    const cacheKey = `departments:list:${JSON.stringify(queryParams)}`;
+    const cached = appDataCache.getCached<DepartmentsResponse>(cacheKey);
 
+    if (cached) {
+      setDepartments(cached.data);
+      setMeta(cached.meta);
+      setLoading(false);
+      setIsUpdating(true);
+    } else {
+      setLoading(true);
+    }
+
+    try {
+      const res = await departmentService.getAll(queryParams);
       if (res.success) {
         setDepartments(res.data);
         setMeta(res.meta);
@@ -78,11 +103,22 @@ export default function DepartmentsPage() {
       toast.error(errorMsg);
     } finally {
       setLoading(false);
+      setIsUpdating(false);
     }
   }, [search, statusFilter, page, toast]);
 
   useEffect(() => {
     fetchDepartments();
+  }, [fetchDepartments]);
+
+  // Subscribe to external cache invalidations
+  useEffect(() => {
+    const unsubscribe = appDataCache.subscribe((key) => {
+      if (key === '*' || key.startsWith('departments')) {
+        fetchDepartments();
+      }
+    });
+    return unsubscribe;
   }, [fetchDepartments]);
 
   const handleSearch = (query: string) => {
@@ -120,33 +156,6 @@ export default function DepartmentsPage() {
     }
   };
 
-  if (loading && departments.length === 0 && !search && statusFilter === 'all') {
-    return (
-      <PermissionGuard permission={PERMISSIONS.DEPARTMENTS_VIEW}>
-        <div className="space-y-6">
-          <PageHeader
-            title="Departments"
-            description="Manage Ethiopian Engineering Corporation organizational sectors, directorates, and asset allocations."
-            breadcrumbs={[
-              { label: 'Dashboard', href: '/dashboard' },
-              { label: 'Departments' },
-            ]}
-            action={
-              can(PERMISSIONS.DEPARTMENTS_CREATE)
-                ? {
-                    label: 'Add Department',
-                    href: '/departments/new',
-                    icon: Plus,
-                  }
-                : undefined
-            }
-          />
-          <LoadingSkeleton />
-        </div>
-      </PermissionGuard>
-    );
-  }
-
   return (
     <PermissionGuard permission={PERMISSIONS.DEPARTMENTS_VIEW}>
       <div className="space-y-6">
@@ -154,6 +163,7 @@ export default function DepartmentsPage() {
         <PageHeader
           title="Departments"
           description="Manage Ethiopian Engineering Corporation organizational sectors, directorates, and asset allocations."
+          isUpdating={isUpdating}
           breadcrumbs={[
             { label: 'Dashboard', href: '/dashboard' },
             { label: 'Departments' },
@@ -200,7 +210,7 @@ export default function DepartmentsPage() {
 
         {/* Table Container */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          {loading ? (
+          {loading && departments.length === 0 ? (
             <TableSkeleton rows={6} cols={6} />
           ) : departments.length === 0 ? (
             <div className="p-8">

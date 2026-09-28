@@ -1,9 +1,11 @@
 /**
- * System Settings Service — EEC EAMS
- * Handles API communication with Express backend /api/settings endpoints.
+ * System Settings Service — EEC EAMS (Phase 10B.5 Optimized)
+ * Handles API communication with Express backend /api/settings endpoints
+ * with integrated SWR caching, request deduplication, and cascading invalidation.
  */
 
 import apiClient from '../lib/axios';
+import { appDataCache } from '../context/AppDataCacheContext';
 
 export interface SystemSettings {
   id: string;
@@ -56,13 +58,24 @@ export interface SystemInfoResponse {
   data: SystemInfo;
 }
 
+export function invalidateSettingsCaches() {
+  appDataCache.invalidateEntity('settings');
+}
+
 export const settingsService = {
   /**
    * GET /api/settings — Retrieve current organization settings
    */
-  async getSettings(): Promise<SettingsResponse> {
-    const res = await apiClient.get<SettingsResponse>('/settings');
-    return res.data;
+  async getSettings(forceRefresh = false): Promise<SettingsResponse> {
+    const key = 'settings:organization';
+    return appDataCache.fetchWithCache(
+      key,
+      async () => {
+        const res = await apiClient.get<SettingsResponse>('/settings');
+        return res.data;
+      },
+      { forceRefresh }
+    );
   },
 
   /**
@@ -70,15 +83,30 @@ export const settingsService = {
    */
   async updateSettings(data: UpdateSettingsInput): Promise<SettingsResponse> {
     const res = await apiClient.patch<SettingsResponse>('/settings', data);
+    invalidateSettingsCaches();
     return res.data;
   },
 
   /**
    * GET /api/settings/system-info — Retrieve read-only runtime and deployment information
    */
-  async getSystemInfo(): Promise<SystemInfoResponse> {
-    const res = await apiClient.get<SystemInfoResponse>('/settings/system-info');
-    return res.data;
+  async getSystemInfo(forceRefresh = false): Promise<SystemInfoResponse> {
+    const key = 'settings:system_info';
+    return appDataCache.fetchWithCache(
+      key,
+      async () => {
+        const res = await apiClient.get<SystemInfoResponse>('/settings/system-info');
+        return res.data;
+      },
+      { forceRefresh }
+    );
+  },
+
+  /**
+   * Invalidate settings caches manually
+   */
+  invalidateCache() {
+    invalidateSettingsCaches();
   },
 };
 

@@ -6,19 +6,21 @@ import { Plus, Package, ChevronLeft, ChevronRight } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import SearchInput from '@/components/ui/SearchInput';
 import EmptyState from '@/components/ui/EmptyState';
-import LoadingSkeleton, { TableSkeleton } from '@/components/ui/LoadingSkeleton';
+import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { useToast } from '@/components/ui/Toast';
 import assetService from '@/services/asset.service';
 import departmentService from '@/services/department.service';
 import { Asset, AssetsResponse, ASSET_CATEGORY_LABELS, ASSET_STATUS_LABELS } from '@/constants/assets';
-import { Department } from '@/constants/departments';
+import { Department, DepartmentsResponse } from '@/constants/departments';
 import AssetStats from '@/components/assets/AssetStats';
 import AssetTable from '@/components/assets/AssetTable';
 import { usePermissions } from '@/hooks/usePermissions';
 import { PERMISSIONS } from '@/lib/authorization';
+import { appDataCache } from '@/context/AppDataCacheContext';
 
 const ASSET_STATUSES = ['AVAILABLE', 'ASSIGNED', 'MAINTENANCE', 'TESTING', 'RETIRED', 'DISPOSED'] as const;
 const ASSET_CATEGORIES = ['LAPTOP', 'DESKTOP', 'PRINTER', 'SCANNER', 'ROUTER', 'SWITCH', 'PROJECTOR', 'MONITOR', 'SERVER', 'UPS', 'OTHER'] as const;
+const DEFAULT_ASSET_QUERY_KEY = 'assets:list:{"page":1,"limit":10}';
 
 export default function AssetsPage() {
   const router = useRouter();
@@ -31,10 +33,26 @@ export default function AssetsPage() {
     }
   }, [isEmployee, router]);
 
-  const [assets, setAssets] = useState<Asset[]>([]);
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [meta, setMeta] = useState<AssetsResponse['meta']>({
-    total: 0, page: 1, limit: 10, totalPages: 1, hasNextPage: false, hasPrevPage: false,
+  const [assets, setAssets] = useState<Asset[]>(() => {
+    const cached = appDataCache.getCached<AssetsResponse>(DEFAULT_ASSET_QUERY_KEY);
+    return cached?.data || [];
+  });
+  const [departments, setDepartments] = useState<Department[]>(() => {
+    const cached = appDataCache.getCached<DepartmentsResponse>('departments:list:{"limit":100}');
+    return cached?.data || [];
+  });
+  const [meta, setMeta] = useState<AssetsResponse['meta']>(() => {
+    const cached = appDataCache.getCached<AssetsResponse>(DEFAULT_ASSET_QUERY_KEY);
+    return (
+      cached?.meta || {
+        total: 0,
+        page: 1,
+        limit: 10,
+        totalPages: 1,
+        hasNextPage: false,
+        hasPrevPage: false,
+      }
+    );
   });
 
   const [search, setSearch] = useState('');
@@ -42,26 +60,44 @@ export default function AssetsPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(() => {
+    return !appDataCache.getCached<AssetsResponse>(DEFAULT_ASSET_QUERY_KEY);
+  });
+  const [isUpdating, setIsUpdating] = useState<boolean>(false);
 
   // Load departments for filter
   useEffect(() => {
-    departmentService.getAll({ limit: 100 }).then((res) => {
-      if (res.success) setDepartments(res.data);
-    }).catch(() => {});
+    departmentService
+      .getAll({ limit: 100 })
+      .then((res) => {
+        if (res.success) setDepartments(res.data);
+      })
+      .catch(() => {});
   }, []);
 
   const fetchAssets = useCallback(async () => {
-    try {
+    const queryParams = {
+      search: search.trim() || undefined,
+      category: categoryFilter !== 'all' ? categoryFilter : undefined,
+      status: statusFilter !== 'all' ? statusFilter : undefined,
+      departmentId: departmentFilter !== 'all' ? departmentFilter : undefined,
+      page,
+      limit: 10,
+    };
+    const cacheKey = `assets:list:${JSON.stringify(queryParams)}`;
+    const cached = appDataCache.getCached<AssetsResponse>(cacheKey);
+
+    if (cached) {
+      setAssets(cached.data);
+      setMeta(cached.meta);
+      setLoading(false);
+      setIsUpdating(true);
+    } else {
       setLoading(true);
-      const res = await assetService.getAll({
-        search: search.trim() || undefined,
-        category: categoryFilter !== 'all' ? categoryFilter : undefined,
-        status: statusFilter !== 'all' ? statusFilter : undefined,
-        departmentId: departmentFilter !== 'all' ? departmentFilter : undefined,
-        page,
-        limit: 10,
-      });
+    }
+
+    try {
+      const res = await assetService.getAll(queryParams);
       if (res.success) {
         setAssets(res.data);
         setMeta(res.meta);
@@ -71,12 +107,28 @@ export default function AssetsPage() {
       toast.error(msg);
     } finally {
       setLoading(false);
+      setIsUpdating(false);
     }
   }, [search, categoryFilter, statusFilter, departmentFilter, page, toast]);
 
-  useEffect(() => { fetchAssets(); }, [fetchAssets]);
+  useEffect(() => {
+    fetchAssets();
+  }, [fetchAssets]);
 
-  const handleSearch = (value: string) => { setSearch(value); setPage(1); };
+  // Subscribe to external cache invalidations
+  useEffect(() => {
+    const unsubscribe = appDataCache.subscribe((key) => {
+      if (key === '*' || key.startsWith('assets')) {
+        fetchAssets();
+      }
+    });
+    return unsubscribe;
+  }, [fetchAssets]);
+
+  const handleSearch = (value: string) => {
+    setSearch(value);
+    setPage(1);
+  };
   const handleClearFilters = () => {
     setSearch('');
     setCategoryFilter('all');
@@ -85,31 +137,12 @@ export default function AssetsPage() {
     setPage(1);
   };
 
-  const isInitialLoad = loading && assets.length === 0 && !search && categoryFilter === 'all' && statusFilter === 'all' && departmentFilter === 'all';
-
-  if (isInitialLoad) {
-    return (
-      <div className="space-y-6">
-        <PageHeader
-          title="Assets"
-          description="Manage EEC's IT and operational asset inventory."
-          breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Assets' }]}
-          action={
-            can(PERMISSIONS.ASSETS_CREATE)
-              ? { label: 'Register Asset', href: '/assets/new', icon: Plus }
-              : undefined
-          }
-        />
-        <LoadingSkeleton />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <PageHeader
         title="Assets"
         description="Manage EEC's IT and operational asset inventory."
+        isUpdating={isUpdating}
         breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Assets' }]}
         action={
           can(PERMISSIONS.ASSETS_CREATE)
@@ -119,7 +152,24 @@ export default function AssetsPage() {
       />
 
       {/* Stats */}
-      <AssetStats assets={assets} total={meta.total} />
+      {loading && assets.length === 0 ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div
+              key={i}
+              className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex items-center gap-3"
+            >
+              <div className="w-10 h-10 rounded-xl bg-slate-100 skeleton shrink-0" />
+              <div className="space-y-2 flex-1">
+                <div className="h-6 w-16 bg-slate-100 skeleton rounded" />
+                <div className="h-3 w-20 bg-slate-100 skeleton rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <AssetStats assets={assets} total={meta.total} />
+      )}
 
       {/* Filters */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
@@ -177,7 +227,7 @@ export default function AssetsPage() {
 
       {/* Table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        {loading ? (
+        {loading && assets.length === 0 ? (
           <TableSkeleton rows={6} cols={6} />
         ) : assets.length === 0 ? (
           <div className="p-8">

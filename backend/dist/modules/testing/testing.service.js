@@ -152,9 +152,9 @@ class TestingService {
             return inspection;
         });
         const populated = await this.repo.findById(created.id);
-        // In-app Notifications: Inspection Results (Phase 10B.2)
+        // In-app Notifications: Inspection Results (Phase 10B.2 & 10B.4 Audit)
         if (passed) {
-            // Event 11: Inspection PASS -> notify asset owner, admin users, assigned technician
+            // Event 11: Inspection PASS -> notify asset owner + responsible IT technician ONLY (no unrelated admins)
             const passNotifications = [];
             const techUserId = await (0, notifications_1.getTechnicianUserId)(ticket.assignedTechnician);
             if (techUserId) {
@@ -166,19 +166,7 @@ class TestingService {
                     link: '/my-maintenance',
                 });
             }
-            let ownerUserId = await (0, notifications_1.getAssetOwnerUserId)(ticket.assetId);
-            if (!ownerUserId && ticket.reportedBy) {
-                const reporterUser = await prisma_1.default.user.findFirst({
-                    where: {
-                        OR: [
-                            { email: ticket.reportedBy },
-                            { employeeProfile: { employeeId: ticket.reportedBy } },
-                        ],
-                    },
-                    select: { id: true },
-                });
-                ownerUserId = reporterUser?.id || null;
-            }
+            const ownerUserId = await (0, notifications_1.getAssetOwnerUserId)(ticket.assetId, ticket.reportedBy);
             if (ownerUserId && ownerUserId !== techUserId) {
                 passNotifications.push({
                     userId: ownerUserId,
@@ -188,22 +176,18 @@ class TestingService {
                     link: '/my-maintenance',
                 });
             }
-            const adminUserIds = await (0, notifications_1.getAdminUserIds)();
-            for (const adminId of adminUserIds) {
-                if (adminId !== techUserId && adminId !== ownerUserId) {
-                    passNotifications.push({
-                        userId: adminId,
-                        type: client_1.NotificationType.SUCCESS,
-                        title: 'Maintenance Completed Successfully',
-                        message: `Maintenance and quality inspection passed for ${ticket.asset?.name || 'asset'} (${ticket.asset?.assetCode || ''}) under ticket ${ticket.ticketNumber}. Equipment is ready.`,
-                        link: '/my-maintenance',
-                    });
-                }
-            }
             await (0, notifications_1.safeNotifyUsers)(passNotifications);
+            (0, notifications_1.logNotificationDispatch)({
+                event: 'TESTING_PASSED',
+                ticket: ticket.ticketNumber,
+                requester: ticket.reportedBy || undefined,
+                assetOwner: ownerUserId || undefined,
+                resolvedTechnicians: techUserId ? [techUserId] : [],
+                notifiedUsers: passNotifications.map((n) => n.userId),
+            });
         }
         else {
-            // Event 12: Inspection FAIL -> notify assigned technician
+            // Event 12: Inspection FAIL -> notify responsible IT technician ONLY
             const techUserId = await (0, notifications_1.getTechnicianUserId)(ticket.assignedTechnician);
             if (techUserId) {
                 await (0, notifications_1.safeNotifyUser)({
@@ -212,6 +196,12 @@ class TestingService {
                     title: 'Inspection Failed — Repair Required',
                     message: `Inspection failed for ${ticket.asset?.name || 'asset'} (${ticket.asset?.assetCode || ''}) under ticket ${ticket.ticketNumber}. Rework is required.`,
                     link: '/my-maintenance',
+                });
+                (0, notifications_1.logNotificationDispatch)({
+                    event: 'TESTING_FAILED',
+                    ticket: ticket.ticketNumber,
+                    resolvedTechnicians: [techUserId],
+                    notifiedUsers: [techUserId],
                 });
             }
         }

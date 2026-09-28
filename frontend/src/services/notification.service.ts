@@ -88,7 +88,10 @@ export interface ClearReadResponse {
   timestamp: string;
 }
 
+import { appDataCache } from '../context/AppDataCacheContext';
+
 export function triggerNotificationRefresh() {
+  appDataCache.invalidate('notifications');
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('eec-notification-refresh'));
   }
@@ -98,17 +101,33 @@ export const notificationService = {
   /**
    * GET /api/notifications — list authenticated user notifications with pagination & filters
    */
-  async getNotifications(params?: NotificationQueryParams): Promise<NotificationListResponse> {
-    const res = await apiClient.get<NotificationListResponse>('/notifications', { params });
-    return res.data;
+  async getNotifications(params?: NotificationQueryParams, forceRefresh = false): Promise<NotificationListResponse> {
+    const key = `notifications:list:${JSON.stringify(params || {})}`;
+    return appDataCache.fetchWithCache(
+      key,
+      async () => {
+        const res = await apiClient.get<NotificationListResponse>('/notifications', { params });
+        return res.data;
+      },
+      { forceRefresh }
+    );
   },
 
   /**
-   * GET /api/notifications/unread-count — returns unread notification count
+   * GET /api/notifications/unread-count — returns unread notification count with request deduplication
    */
-  async getUnreadCount(): Promise<UnreadCountResponse> {
-    const res = await apiClient.get<UnreadCountResponse>('/notifications/unread-count');
-    return res.data;
+  async getUnreadCount(forceRefresh = false): Promise<UnreadCountResponse> {
+    const key = 'notifications:unread_count';
+    if (!forceRefresh) {
+      const cached = appDataCache.getCached<UnreadCountResponse>(key);
+      if (cached !== undefined) return cached;
+    }
+
+    return appDataCache.deduplicate(key, async () => {
+      const res = await apiClient.get<UnreadCountResponse>('/notifications/unread-count');
+      appDataCache.setCached(key, res.data, 60000); // 1 minute TTL unless event refreshed
+      return res.data;
+    });
   },
 
   /**
@@ -145,6 +164,13 @@ export const notificationService = {
     const res = await apiClient.delete<ClearReadResponse>('/notifications/read');
     triggerNotificationRefresh();
     return res.data;
+  },
+
+  /**
+   * Invalidate notification caches manually
+   */
+  invalidateCache() {
+    triggerNotificationRefresh();
   },
 };
 

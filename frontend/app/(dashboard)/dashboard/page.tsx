@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 import Link from 'next/link';
 import {
   Package,
@@ -16,10 +16,14 @@ import {
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
 import StatusBadge from '@/components/ui/StatusBadge';
-import assignmentService from '@/services/assignment.service';
-import maintenanceService from '@/services/maintenance.service';
+import { DashboardSkeleton } from '@/components/loading';
+import assignmentService, { AssignmentStatsResponse } from '@/services/assignment.service';
+import maintenanceService, { MaintenanceStatsResponse } from '@/services/maintenance.service';
 import { AssignmentStats } from '@/constants/assignments';
 import { MaintenanceStats as MaintenanceStatsType } from '@/constants/maintenance';
+import { useCacheQuery } from '@/context/AppDataCacheContext';
+import { usePermissions } from '@/hooks/usePermissions';
+import { ROLES } from '@/lib/authorization';
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
 
@@ -51,57 +55,111 @@ function SectionCard({
 // ─── Dashboard Page ─────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState<AssignmentStats | null>(null);
-  const [maintenanceStats, setMaintenanceStats] = useState<MaintenanceStatsType | null>(null);
+  const { role, isLoading: isRoleLoading } = usePermissions();
+  const canViewStats = !isRoleLoading && role !== null && role !== ROLES.EMPLOYEE;
 
-  useEffect(() => {
-    assignmentService
-      .getStats()
-      .then((res) => {
-        if (res.success) setStats(res.data);
-      })
-      .catch(() => {});
+  const {
+    data: rawAssignmentStats,
+    isLoading: isLoadingStats,
+    isUpdating: isUpdatingStats,
+  } = useCacheQuery<AssignmentStatsResponse | AssignmentStats | null>(
+    'dashboard:assignment_stats',
+    async () => {
+      return await assignmentService.getStats();
+    },
+    { enabled: canViewStats }
+  );
 
-    maintenanceService
-      .getStats()
-      .then((res) => {
-        if (res.success) setMaintenanceStats(res.data);
-      })
-      .catch(() => {});
-  }, []);
+  const {
+    data: rawMaintenanceStats,
+    isLoading: isLoadingMaintenance,
+    isUpdating: isUpdatingMaintenance,
+  } = useCacheQuery<MaintenanceStatsResponse | MaintenanceStatsType | null>(
+    'dashboard:maintenance_stats',
+    async () => {
+      return await maintenanceService.getStats();
+    },
+    { enabled: canViewStats }
+  );
 
-  const today = new Date().toLocaleDateString('en-GB', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  // Safely normalize stats whether cache contains the full API response or inner data object
+  const stats: AssignmentStats | null = useMemo(() => {
+    if (!rawAssignmentStats) return null;
+    if (
+      'data' in rawAssignmentStats &&
+      rawAssignmentStats.data &&
+      typeof rawAssignmentStats.data === 'object'
+    ) {
+      return rawAssignmentStats.data as AssignmentStats;
+    }
+    return rawAssignmentStats as AssignmentStats;
+  }, [rawAssignmentStats]);
+
+  const maintenanceStats: MaintenanceStatsType | null = useMemo(() => {
+    if (!rawMaintenanceStats) return null;
+    if (
+      'data' in rawMaintenanceStats &&
+      rawMaintenanceStats.data &&
+      typeof rawMaintenanceStats.data === 'object'
+    ) {
+      return rawMaintenanceStats.data as MaintenanceStatsType;
+    }
+    return rawMaintenanceStats as MaintenanceStatsType;
+  }, [rawMaintenanceStats]);
+
+  const recentAssignments = useMemo(
+    () => (Array.isArray(stats?.recentAssignments) ? stats.recentAssignments : []),
+    [stats]
+  );
+
+  const recentTickets = useMemo(
+    () => (Array.isArray(maintenanceStats?.recentTickets) ? maintenanceStats.recentTickets : []),
+    [maintenanceStats]
+  );
+
+  const isUpdating = isUpdatingStats || isUpdatingMaintenance;
+  const isInitialLoading = !stats && !maintenanceStats && (isLoadingStats || isLoadingMaintenance);
+
+  const today = useMemo(
+    () =>
+      new Date().toLocaleDateString('en-GB', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      }),
+    []
+  );
+
+  if (isInitialLoading) {
+    return <DashboardSkeleton />;
+  }
 
   const kpis = [
     {
       title: 'Available Assets',
-      value: stats ? stats.availableAssets : '—',
+      value: typeof stats?.availableAssets === 'number' ? stats.availableAssets : (stats?.availableAssets ?? '—'),
       icon: Package,
       accent: 'success' as const,
       subtitle: 'In inventory, ready for allocation',
     },
     {
       title: 'Assigned Assets',
-      value: stats ? stats.assignedAssets : '—',
+      value: typeof stats?.assignedAssets === 'number' ? stats.assignedAssets : (stats?.assignedAssets ?? '—'),
       icon: ClipboardList,
       accent: 'primary' as const,
       subtitle: 'Currently deployed with personnel',
     },
     {
       title: 'Employees With Assets',
-      value: stats ? stats.employeesWithAssets : '—',
+      value: typeof stats?.employeesWithAssets === 'number' ? stats.employeesWithAssets : (stats?.employeesWithAssets ?? '—'),
       icon: Users,
       accent: 'accent' as const,
       subtitle: 'Active staff holding corporate equipment',
     },
     {
       title: 'Total Assignments',
-      value: stats ? stats.totalAssignments : '—',
+      value: typeof stats?.totalAssignments === 'number' ? stats.totalAssignments : (stats?.totalAssignments ?? '—'),
       icon: CheckCircle2,
       accent: 'active' as const,
       subtitle: 'All historical & active custody events',
@@ -111,28 +169,28 @@ export default function DashboardPage() {
   const maintenanceKpis = [
     {
       title: 'Open Tickets',
-      value: maintenanceStats ? maintenanceStats.openTickets : '—',
+      value: typeof maintenanceStats?.openTickets === 'number' ? maintenanceStats.openTickets : (maintenanceStats?.openTickets ?? '—'),
       icon: Clock,
       accent: 'warning' as const,
       subtitle: 'Defects awaiting technician review',
     },
     {
       title: 'Under Repair',
-      value: maintenanceStats ? maintenanceStats.inProgress : '—',
+      value: typeof maintenanceStats?.inProgress === 'number' ? maintenanceStats.inProgress : (maintenanceStats?.inProgress ?? '—'),
       icon: Wrench,
       accent: 'primary' as const,
       subtitle: 'Currently being serviced by IT',
     },
     {
       title: 'Under Testing',
-      value: maintenanceStats ? maintenanceStats.testing : '—',
+      value: typeof maintenanceStats?.testing === 'number' ? maintenanceStats.testing : (maintenanceStats?.testing ?? '—'),
       icon: FlaskConical,
       accent: 'accent' as const,
       subtitle: 'Benchmarked for quality pass/fail',
     },
     {
       title: 'Repairs This Month',
-      value: maintenanceStats ? maintenanceStats.completedThisMonth : '—',
+      value: typeof maintenanceStats?.completedThisMonth === 'number' ? maintenanceStats.completedThisMonth : (maintenanceStats?.completedThisMonth ?? '—'),
       icon: CheckCircle2,
       accent: 'success' as const,
       subtitle: 'Completed and restored to inventory',
@@ -144,6 +202,7 @@ export default function DashboardPage() {
       <PageHeader
         title="Dashboard"
         description={today}
+        isUpdating={isUpdating}
         actions={
           <div className="flex items-center gap-2 text-xs text-slate-500 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-1.5">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
@@ -200,7 +259,7 @@ export default function DashboardPage() {
               </Link>
             }
           >
-            {stats && stats.recentAssignments.length > 0 ? (
+            {recentAssignments.length > 0 ? (
               <div className="overflow-x-auto -mx-4 -mb-4 sm:mx-0 sm:mb-0">
                 <table className="w-full text-left text-xs">
                   <thead>
@@ -212,17 +271,17 @@ export default function DashboardPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {stats.recentAssignments.slice(0, 5).map((item) => (
+                    {recentAssignments.slice(0, 5).map((item) => (
                       <tr key={item.id} className="hover:bg-slate-50/70 transition-colors">
                         <td className="py-2.5 px-3">
                           <Link
                             href={`/assets/${item.assetId}`}
                             className="font-semibold text-eec-primary hover:underline block truncate max-w-[170px]"
                           >
-                            {item.asset?.assetCode}
+                            {item.asset?.assetCode || '—'}
                           </Link>
                           <span className="text-[11px] text-slate-400 block truncate max-w-[170px]">
-                            {item.asset?.name}
+                            {item.asset?.name || '—'}
                           </span>
                         </td>
                         <td className="py-2.5 px-3 font-medium text-slate-800">
@@ -231,7 +290,7 @@ export default function DashboardPage() {
                               href={`/employees/${item.employeeId}`}
                               className="hover:text-eec-primary hover:underline block truncate max-w-[150px]"
                             >
-                              {item.employee.fullName}
+                              {item.employee.fullName || 'Employee'}
                             </Link>
                           ) : (
                             <span className="text-slate-400 italic">Unassigned</span>
@@ -243,11 +302,13 @@ export default function DashboardPage() {
                           </span>
                         </td>
                         <td className="py-2.5 px-3 text-right text-slate-500 font-mono whitespace-nowrap">
-                          {new Date(item.assignedDate).toLocaleDateString('en-GB', {
-                            day: '2-digit',
-                            month: 'short',
-                            year: 'numeric',
-                          })}
+                          {item.assignedDate
+                            ? new Date(item.assignedDate).toLocaleDateString('en-GB', {
+                                day: '2-digit',
+                                month: 'short',
+                                year: 'numeric',
+                              })
+                            : '—'}
                         </td>
                       </tr>
                     ))}
@@ -276,7 +337,7 @@ export default function DashboardPage() {
               </Link>
             }
           >
-            {maintenanceStats && maintenanceStats.recentTickets.length > 0 ? (
+            {recentTickets.length > 0 ? (
               <div className="overflow-x-auto -mx-4 -mb-4 sm:mx-0 sm:mb-0">
                 <table className="w-full text-left text-xs">
                   <thead>
@@ -288,7 +349,7 @@ export default function DashboardPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {maintenanceStats.recentTickets.slice(0, 5).map((t) => (
+                    {recentTickets.slice(0, 5).map((t) => (
                       <tr key={t.id} className="hover:bg-slate-50/70 transition-colors">
                         <td className="py-2.5 px-3 font-mono font-semibold text-eec-primary">
                           <Link href={`/maintenance/${t.id}`} className="hover:underline">
@@ -303,7 +364,7 @@ export default function DashboardPage() {
                             {t.asset?.name || 'Asset'}
                           </Link>
                           <span className="text-[10px] font-mono text-slate-400 block">
-                            {t.asset?.assetCode}
+                            {t.asset?.assetCode || '—'}
                           </span>
                         </td>
                         <td className="py-2.5 px-3 text-slate-600 font-medium">
@@ -312,7 +373,7 @@ export default function DashboardPage() {
                           </span>
                         </td>
                         <td className="py-2.5 px-3 text-right">
-                          <StatusBadge status={t.status.toLowerCase()} />
+                          <StatusBadge status={(t.status || 'OPEN').toLowerCase()} />
                         </td>
                       </tr>
                     ))}

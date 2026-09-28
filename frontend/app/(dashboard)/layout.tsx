@@ -7,6 +7,7 @@ import Navbar from '@/components/layout/Navbar';
 import { ToastProvider, useToast } from '@/components/ui/Toast';
 import { authClient } from '@/lib/auth-client';
 import LogoPreloader from '@/components/loading/LogoPreloader';
+import { AppDataCacheProvider, appDataCache } from '@/context/AppDataCacheContext';
 import {
   AuthSessionProvider,
   fetchAuthSession,
@@ -37,6 +38,7 @@ function DashboardAuthGuard({ children }: { children: React.ReactNode }) {
               error('Session expired. Please sign in again.');
             }
             clearAuthSessionCache();
+            appDataCache.clearCache();
             router.push('/login');
           }
           return;
@@ -48,6 +50,7 @@ function DashboardAuthGuard({ children }: { children: React.ReactNode }) {
         if (status === 'SUSPENDED') {
           if (isMounted) {
             clearAuthSessionCache();
+            appDataCache.clearCache();
             try {
               await authClient.signOut();
             } catch (signOutErr) {
@@ -139,9 +142,11 @@ export default function DashboardLayout({
 }) {
   return (
     <ToastProvider>
-      <AuthSessionProvider>
-        <DashboardAuthGuard>{children}</DashboardAuthGuard>
-      </AuthSessionProvider>
+      <AppDataCacheProvider>
+        <AuthSessionProvider>
+          <DashboardAuthGuard>{children}</DashboardAuthGuard>
+        </AuthSessionProvider>
+      </AppDataCacheProvider>
     </ToastProvider>
   );
 }

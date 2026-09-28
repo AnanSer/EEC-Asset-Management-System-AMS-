@@ -173,72 +173,127 @@ export interface PaginatedReportResponse<T, S = undefined> {
   };
 }
 
+import { appDataCache } from '../context/AppDataCacheContext';
+
+export function invalidateReportCaches() {
+  appDataCache.invalidate('reports');
+}
+
 // ─── Service API ─────────────────────────────────────────────────────────────
 
 export const reportService = {
   /**
    * GET /api/reports/dashboard — Executive KPI and 5 charts
    */
-  async getDashboard(): Promise<DashboardReportMetrics> {
-    const res = await apiClient.get<{ success: boolean; data: DashboardReportMetrics }>(
-      '/reports/dashboard'
+  async getDashboard(forceRefresh = false): Promise<DashboardReportMetrics> {
+    const key = 'reports:dashboard';
+    return appDataCache.fetchWithCache(
+      key,
+      async () => {
+        const res = await apiClient.get<{ success: boolean; data: DashboardReportMetrics }>(
+          '/reports/dashboard'
+        );
+        return res.data.data;
+      },
+      { forceRefresh }
     );
-    return res.data.data;
   },
 
   /**
    * GET /api/reports/assets — Asset inventory report
    */
-  async getAssets(params?: Record<string, any>): Promise<PaginatedReportResponse<AssetReportItem, { totalValue: number }>> {
-    const res = await apiClient.get<PaginatedReportResponse<AssetReportItem, { totalValue: number }>>(
-      '/reports/assets',
-      { params }
+  async getAssets(params?: Record<string, any>, forceRefresh = false): Promise<PaginatedReportResponse<AssetReportItem, { totalValue: number }>> {
+    const key = `reports:assets:${JSON.stringify(params || {})}`;
+    return appDataCache.fetchWithCache(
+      key,
+      async () => {
+        const res = await apiClient.get<PaginatedReportResponse<AssetReportItem, { totalValue: number }>>(
+          '/reports/assets',
+          { params }
+        );
+        return res.data;
+      },
+      { forceRefresh }
     );
-    return res.data;
   },
 
   /**
    * GET /api/reports/employees — Employee equipment report
    */
-  async getEmployees(params?: Record<string, any>): Promise<PaginatedReportResponse<EmployeeReportItem>> {
-    const res = await apiClient.get<PaginatedReportResponse<EmployeeReportItem>>(
-      '/reports/employees',
-      { params }
+  async getEmployees(params?: Record<string, any>, forceRefresh = false): Promise<PaginatedReportResponse<EmployeeReportItem>> {
+    const key = `reports:employees:${JSON.stringify(params || {})}`;
+    return appDataCache.fetchWithCache(
+      key,
+      async () => {
+        const res = await apiClient.get<PaginatedReportResponse<EmployeeReportItem>>(
+          '/reports/employees',
+          { params }
+        );
+        return res.data;
+      },
+      { forceRefresh }
     );
-    return res.data;
   },
 
   /**
    * GET /api/reports/departments — Department asset allocation report
    */
-  async getDepartments(params?: Record<string, any>): Promise<PaginatedReportResponse<DepartmentReportItem>> {
-    const res = await apiClient.get<PaginatedReportResponse<DepartmentReportItem>>(
-      '/reports/departments',
-      { params }
+  async getDepartments(params?: Record<string, any>, forceRefresh = false): Promise<PaginatedReportResponse<DepartmentReportItem>> {
+    const key = `reports:departments:${JSON.stringify(params || {})}`;
+    return appDataCache.fetchWithCache(
+      key,
+      async () => {
+        const res = await apiClient.get<PaginatedReportResponse<DepartmentReportItem>>(
+          '/reports/departments',
+          { params }
+        );
+        return res.data;
+      },
+      { forceRefresh }
     );
-    return res.data;
   },
 
   /**
    * GET /api/reports/maintenance — Maintenance & testing report
    */
-  async getMaintenance(params?: Record<string, any>): Promise<PaginatedReportResponse<MaintenanceReportItem, { totalCost: number }>> {
-    const res = await apiClient.get<PaginatedReportResponse<MaintenanceReportItem, { totalCost: number }>>(
-      '/reports/maintenance',
-      { params }
+  async getMaintenance(params?: Record<string, any>, forceRefresh = false): Promise<PaginatedReportResponse<MaintenanceReportItem, { totalCost: number }>> {
+    const key = `reports:maintenance:${JSON.stringify(params || {})}`;
+    return appDataCache.fetchWithCache(
+      key,
+      async () => {
+        const res = await apiClient.get<PaginatedReportResponse<MaintenanceReportItem, { totalCost: number }>>(
+          '/reports/maintenance',
+          { params }
+        );
+        return res.data;
+      },
+      { forceRefresh }
     );
-    return res.data;
   },
 
   /**
    * GET /api/reports/warranty — Warranty Center report
    */
-  async getWarranty(params?: Record<string, any>): Promise<PaginatedReportResponse<WarrantyReportItem>> {
-    const res = await apiClient.get<PaginatedReportResponse<WarrantyReportItem>>(
-      '/reports/warranty',
-      { params }
+  async getWarranty(params?: Record<string, any>, forceRefresh = false): Promise<PaginatedReportResponse<WarrantyReportItem>> {
+    const key = `reports:warranty:${JSON.stringify(params || {})}`;
+    return appDataCache.fetchWithCache(
+      key,
+      async () => {
+        const res = await apiClient.get<PaginatedReportResponse<WarrantyReportItem>>(
+          '/reports/warranty',
+          { params }
+        );
+        return res.data;
+      },
+      { forceRefresh }
     );
-    return res.data;
+  },
+
+  /**
+   * Invalidate report caches manually
+   */
+  invalidateCache() {
+    invalidateReportCaches();
   },
 };
 

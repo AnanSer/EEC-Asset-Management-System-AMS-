@@ -11,6 +11,7 @@ import { UserAvatar } from '@/components/auth';
 import PermissionGuard from '@/components/auth/PermissionGuard';
 import LoadingButton from '@/components/ui/LoadingButton';
 import { PERMISSIONS } from '@/lib/authorization';
+import { invalidateEmployeeCaches } from '@/services/employee.service';
 import {
   UserCheck,
   UserX,
@@ -154,6 +155,7 @@ export default function PendingUsersPage() {
         success(
           `Account for ${approveUser.employeeProfile?.fullName || approveUser.email} has been approved as ${selectedRole.replace('_', ' ')}.`
         );
+        invalidateEmployeeCaches();
         setApproveUser(null);
         setApprovalNotes('');
         setSelectedRole('EMPLOYEE');
@@ -198,6 +200,7 @@ export default function PendingUsersPage() {
         success(
           `Account request for ${rejectUser.employeeProfile?.fullName || rejectUser.email} has been rejected.`
         );
+        invalidateEmployeeCaches();
         setRejectUser(null);
         setRejectionReason('');
         fetchPendingUsers(true);

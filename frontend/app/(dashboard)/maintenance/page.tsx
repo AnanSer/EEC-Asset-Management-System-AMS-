@@ -19,6 +19,9 @@ import {
 import MaintenanceStats from '@/components/maintenance/MaintenanceStats';
 import MaintenanceTable from '@/components/maintenance/MaintenanceTable';
 import { usePermissions } from '@/hooks/usePermissions';
+import { appDataCache } from '@/context/AppDataCacheContext';
+
+const DEFAULT_MAINTENANCE_QUERY_KEY = 'maintenance:list:{"page":1,"limit":10}';
 
 export default function MaintenancePage() {
   const router = useRouter();
@@ -31,20 +34,36 @@ export default function MaintenancePage() {
     }
   }, [isEmployee, router]);
 
-  const [tickets, setTickets] = useState<MaintenanceTicket[]>([]);
-  const [stats, setStats] = useState<StatsType>({
-    openTickets: 0,
-    inProgress: 0,
-    testing: 0,
-    completedThisMonth: 0,
-    recentTickets: [],
+  const [tickets, setTickets] = useState<MaintenanceTicket[]>(() => {
+    const cached = appDataCache.getCached<any>(DEFAULT_MAINTENANCE_QUERY_KEY);
+    return Array.isArray(cached?.data) ? cached.data : Array.isArray(cached) ? cached : [];
+  });
+  const [stats, setStats] = useState<StatsType>(() => {
+    const cached =
+      appDataCache.getCached<any>('dashboard:maintenance_stats') ||
+      appDataCache.getCached<any>('maintenance:stats');
+    const rawStats = cached?.data || cached;
+    return (
+      rawStats || {
+        openTickets: 0,
+        inProgress: 0,
+        testing: 0,
+        completedThisMonth: 0,
+        recentTickets: [],
+      }
+    );
   });
 
-  const [meta, setMeta] = useState({
-    total: 0,
-    page: 1,
-    limit: 10,
-    totalPages: 1,
+  const [meta, setMeta] = useState(() => {
+    const cached = appDataCache.getCached<any>(DEFAULT_MAINTENANCE_QUERY_KEY);
+    return (
+      cached?.meta || {
+        total: 0,
+        page: 1,
+        limit: 10,
+        totalPages: 1,
+      }
+    );
   });
 
   const [search, setSearch] = useState('');
@@ -52,11 +71,21 @@ export default function MaintenancePage() {
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(() => {
+    return !appDataCache.getCached<any>(DEFAULT_MAINTENANCE_QUERY_KEY);
+  });
+  const [isUpdating, setIsUpdating] = useState<boolean>(false);
 
   // Load stats
   const fetchStats = useCallback(async () => {
     try {
+      const cached =
+        appDataCache.getCached<any>('dashboard:maintenance_stats') ||
+        appDataCache.getCached<any>('maintenance:stats');
+      if (cached) {
+        const statsData = cached.data || cached;
+        setStats(statsData);
+      }
       const res = await maintenanceService.getStats();
       if (res.success) {
         setStats(res.data);
@@ -67,17 +96,28 @@ export default function MaintenancePage() {
   }, []);
 
   const fetchTickets = useCallback(async () => {
-    try {
-      setLoading(true);
-      const res = await maintenanceService.getAll({
-        search: search.trim() || undefined,
-        status: statusFilter !== 'all' ? statusFilter : undefined,
-        priority: priorityFilter !== 'all' ? priorityFilter : undefined,
-        category: categoryFilter !== 'all' ? categoryFilter : undefined,
-        page,
-        limit: 10,
-      });
+    const queryParams = {
+      search: search.trim() || undefined,
+      status: statusFilter !== 'all' ? statusFilter : undefined,
+      priority: priorityFilter !== 'all' ? priorityFilter : undefined,
+      category: categoryFilter !== 'all' ? categoryFilter : undefined,
+      page,
+      limit: 10,
+    };
+    const cacheKey = `maintenance:list:${JSON.stringify(queryParams)}`;
+    const cached = appDataCache.getCached<any>(cacheKey);
 
+    if (cached) {
+      setTickets(cached.data);
+      setMeta(cached.meta);
+      setLoading(false);
+      setIsUpdating(true);
+    } else {
+      setLoading(true);
+    }
+
+    try {
+      const res = await maintenanceService.getAll(queryParams);
       if (res.success) {
         setTickets(res.data);
         setMeta(res.meta);
@@ -88,6 +128,7 @@ export default function MaintenancePage() {
       toast.error(msg);
     } finally {
       setLoading(false);
+      setIsUpdating(false);
     }
   }, [search, statusFilter, priorityFilter, categoryFilter, page, toast]);
 
@@ -98,6 +139,17 @@ export default function MaintenancePage() {
   useEffect(() => {
     fetchTickets();
   }, [fetchTickets]);
+
+  // Subscribe to external cache invalidations
+  useEffect(() => {
+    const unsubscribe = appDataCache.subscribe((key) => {
+      if (key === '*' || key.startsWith('maintenance')) {
+        fetchTickets();
+        fetchStats();
+      }
+    });
+    return unsubscribe;
+  }, [fetchTickets, fetchStats]);
 
   const handleResetFilters = () => {
     setSearch('');
@@ -119,6 +171,7 @@ export default function MaintenancePage() {
       <PageHeader
         title="Maintenance & Quality Testing"
         description="Diagnose asset failures, assign technicians, track repair lifecycles, and record inspection benchmarks"
+        isUpdating={isUpdating}
         action={{
           label: 'New Maintenance Ticket',
           href: '/maintenance/new',
@@ -212,7 +265,7 @@ export default function MaintenancePage() {
         </div>
 
         {/* Tickets Table / Loading / Empty */}
-        {loading ? (
+        {loading && tickets.length === 0 ? (
           <div className="p-6">
             <TableSkeleton rows={5} cols={7} />
           </div>

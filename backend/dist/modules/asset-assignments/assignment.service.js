@@ -156,7 +156,7 @@ class AssignmentService {
             return assignment;
         });
         const populated = await this.repo.findById(createdAssignment.id);
-        // In-app Notification: Asset Assigned (Phase 10B.2)
+        // In-app Notification: Asset Assigned (Phase 10B.2 & 10B.4 Audit)
         if (employee.userId) {
             await (0, notifications_1.safeNotifyUser)({
                 userId: employee.userId,
@@ -164,6 +164,11 @@ class AssignmentService {
                 title: 'Asset Assigned',
                 message: `${asset.name} (${asset.assetCode}) has been assigned to you.`,
                 link: '/my-assets',
+            });
+            (0, notifications_1.logNotificationDispatch)({
+                event: 'ASSET_ASSIGNED',
+                assetOwner: employee.userId,
+                notifiedUsers: [employee.userId],
             });
         }
         return this.formatAssignment(populated);
@@ -255,6 +260,10 @@ class AssignmentService {
             });
         }
         await (0, notifications_1.safeNotifyUsers)(transferNotifications);
+        (0, notifications_1.logNotificationDispatch)({
+            event: 'ASSET_TRANSFERRED',
+            notifiedUsers: transferNotifications.map((t) => t.userId),
+        });
         return this.formatAssignment(populated);
     }
     async returnAsset(assetId, data) {
@@ -293,7 +302,7 @@ class AssignmentService {
             });
         });
         const closed = await this.repo.findById(activeAssignment.id);
-        // In-app Notification: Asset Return (Phase 10B.2)
+        // In-app Notification: Asset Return (Phase 10B.2 & 10B.4 Audit)
         const returningEmployee = await prisma_1.default.employeeProfile.findUnique({
             where: { id: activeAssignment.employeeId },
         });
@@ -304,6 +313,11 @@ class AssignmentService {
                 title: 'Asset Returned',
                 message: `${asset.name} (${asset.assetCode}) has been successfully returned.`,
                 link: '/my-assets',
+            });
+            (0, notifications_1.logNotificationDispatch)({
+                event: 'ASSET_RETURNED',
+                assetOwner: returningEmployee.userId,
+                notifiedUsers: [returningEmployee.userId],
             });
         }
         return this.formatAssignment(closed);

@@ -125,13 +125,30 @@ class IdentityService {
             phone: data.phone,
             officeLocation: data.officeLocation,
         });
-        // In-app Notification: Registration Request Submitted (Phase 10B.2)
+        // In-app Notifications: Registration Request Submitted (Phase 10B.2 & 10B.4 Audit)
+        // 1. Notify the registering employee of submitted status
         await (0, notifications_1.safeNotifyUser)({
             userId: created.id,
             type: client_1.NotificationType.ACCOUNT,
             title: 'Registration Request Submitted',
             message: 'Your account request has been submitted and is awaiting ICT Administrator approval.',
             link: '/pending',
+        });
+        // 2. Notify all active Administrators for approval
+        const adminUserIds = await (0, notifications_1.getAdminUserIds)();
+        const adminNotifications = adminUserIds.map((adminId) => ({
+            userId: adminId,
+            type: client_1.NotificationType.ACCOUNT,
+            title: 'New Account Pending Approval',
+            message: `${data.fullName} (${data.employeeId}) has registered and requires account approval.`,
+            link: '/users/pending',
+        }));
+        await (0, notifications_1.safeNotifyUsers)(adminNotifications);
+        (0, notifications_1.logNotificationDispatch)({
+            event: 'EMPLOYEE_SELF_REGISTERED',
+            requester: created.id,
+            resolvedAdmins: adminUserIds,
+            notifiedUsers: [created.id, ...adminUserIds],
         });
         return {
             message: 'Registration request submitted successfully. Awaiting administrator approval.',
@@ -191,13 +208,18 @@ class IdentityService {
             console.error('[approveAccount] SMTP error sending welcome email:', emailErr?.message || emailErr);
             warningMessage = 'Account approved successfully, but welcome email could not be delivered.';
         }
-        // In-app Notification: Account Approved (Phase 10B.2)
+        // In-app Notification: Account Approved (Phase 10B.2 & 10B.4 Audit)
         await (0, notifications_1.safeNotifyUser)({
             userId: updated.id,
             type: client_1.NotificationType.ACCOUNT,
             title: 'Account Approved',
             message: 'Your EEC EAMS account has been approved. You can now sign in.',
             link: '/login',
+        });
+        (0, notifications_1.logNotificationDispatch)({
+            event: 'ADMIN_APPROVES_EMPLOYEE',
+            requester: updated.id,
+            notifiedUsers: [updated.id],
         });
         return {
             message: warningMessage || 'Account approved successfully',
@@ -217,13 +239,18 @@ class IdentityService {
             throw new AppError(`Cannot reject user with status '${user.status}'`, 400);
         }
         const updated = await this.repo.updateAccountStatus(id, client_1.AccountStatus.REJECTED);
-        // In-app Notification: Account Request Rejected (Phase 10B.2)
+        // In-app Notification: Account Request Rejected (Phase 10B.2 & 10B.4 Audit)
         await (0, notifications_1.safeNotifyUser)({
             userId: updated.id,
             type: client_1.NotificationType.ACCOUNT,
             title: 'Account Request Rejected',
             message: 'Your registration request was not approved. Contact the ICT Directorate.',
             link: '/rejected',
+        });
+        (0, notifications_1.logNotificationDispatch)({
+            event: 'ADMIN_REJECTS_EMPLOYEE',
+            requester: updated.id,
+            notifiedUsers: [updated.id],
         });
         return {
             message: 'Account request rejected',

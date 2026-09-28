@@ -1,13 +1,21 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import React, { useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, Globe } from 'lucide-react';
-import { navItems, bottomNavItems } from '@/lib/authorization';
+import { navItems, bottomNavItems, ROLES } from '@/lib/authorization';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
 import EECLogo from '@/components/brand/EECLogo';
 import clsx from 'clsx';
+import { appDataCache } from '@/context/AppDataCacheContext';
+import assignmentService from '@/services/assignment.service';
+import maintenanceService from '@/services/maintenance.service';
+import employeeService from '@/services/employee.service';
+import assetService from '@/services/asset.service';
+import departmentService from '@/services/department.service';
+import notificationService from '@/services/notification.service';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -16,6 +24,7 @@ interface SidebarProps {
 
 export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const { role } = usePermissions();
   const { branding, isLoading } = useSystemSettings();
 
@@ -28,6 +37,155 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
     if (!role) return true;
     return item.allowedRoles.includes(role);
   });
+
+  // Prefetch top visible dashboard routes after mount/login
+  useEffect(() => {
+    if (!role) return;
+    const allowedHrefs = visibleNavItems.slice(0, 5).map((item) => item.href);
+    allowedHrefs.forEach((route) => {
+      try {
+        router.prefetch(route);
+      } catch {}
+    });
+  }, [role, router, visibleNavItems]);
+
+  // Phase 10B.5-P2: Role-aware background idle pre-warming for primary datasets
+  useEffect(() => {
+    if (!role) return;
+
+    let timeoutId: NodeJS.Timeout | null = null;
+    let idleCallbackId: number | null = null;
+
+    const performIdlePreWarm = () => {
+      // Role-specific idle pre-warming based on authenticated RBAC permissions:
+      if (role === ROLES.EMPLOYEE) {
+        // EMPLOYEE: Only personal resources
+        appDataCache.prefetch('assets:list:{"personal":true,"limit":50}', () =>
+          assetService.getAll({ personal: true, limit: 50 })
+        );
+        appDataCache.prefetch('maintenance:list:{"personal":true,"page":1,"limit":50}', () =>
+          maintenanceService.getAll({ personal: true, page: 1, limit: 50 })
+        );
+        appDataCache.prefetch('notifications:list:{"page":1,"limit":20}', () =>
+          notificationService.getNotifications({ page: 1, limit: 20 })
+        );
+        return;
+      }
+
+      // ADMIN, IT_TECHNICIAN, DEPARTMENT_MANAGER:
+      // 1. Department dropdown list (shared by Employees & Assets filter bars)
+      appDataCache.prefetch('departments:list:{"limit":100}', () =>
+        departmentService.getAll({ limit: 100 })
+      );
+
+      // 2. Employees primary list (ADMIN and DEPARTMENT_MANAGER only)
+      if (role === ROLES.ADMIN || role === ROLES.DEPARTMENT_MANAGER) {
+        appDataCache.prefetch('employees:list:{"status":"all","page":1,"limit":8}', () =>
+          employeeService.getAll({ status: 'all', page: 1, limit: 8 })
+        );
+      }
+
+      // 3. Assets primary list (ADMIN, IT_TECHNICIAN, DEPARTMENT_MANAGER)
+      appDataCache.prefetch('assets:list:{"page":1,"limit":10}', () =>
+        assetService.getAll({ page: 1, limit: 10 })
+      );
+
+      // 4. Maintenance stats & primary list (ADMIN, IT_TECHNICIAN, DEPARTMENT_MANAGER)
+      appDataCache.prefetch('dashboard:maintenance_stats', () =>
+        maintenanceService.getStats()
+      );
+      appDataCache.prefetch('maintenance:list:{"page":1,"limit":10}', () =>
+        maintenanceService.getAll({ page: 1, limit: 10 })
+      );
+
+      // 5. Dashboard assignment stats (ADMIN, IT_TECHNICIAN, DEPARTMENT_MANAGER)
+      appDataCache.prefetch('dashboard:assignment_stats', () =>
+        assignmentService.getStats()
+      );
+    };
+
+    // Use requestIdleCallback when available, otherwise safe setTimeout fallback
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      idleCallbackId = (window as any).requestIdleCallback(
+        () => {
+          performIdlePreWarm();
+        },
+        { timeout: 3000 }
+      );
+    } else {
+      timeoutId = setTimeout(() => {
+        performIdlePreWarm();
+      }, 1500);
+    }
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      if (idleCallbackId !== null && typeof window !== 'undefined' && 'cancelIdleCallback' in window) {
+        (window as any).cancelIdleCallback(idleCallbackId);
+      }
+    };
+  }, [role]);
+
+  // Role-aware prefetch of route data and route bundle on hover
+  const handlePrefetch = useCallback(
+    (href: string) => {
+      try {
+        router.prefetch(href);
+      } catch {}
+
+      if (href === '/dashboard') {
+        if (role !== ROLES.EMPLOYEE) {
+          appDataCache.prefetch('dashboard:assignment_stats', () => assignmentService.getStats());
+          appDataCache.prefetch('dashboard:maintenance_stats', () => maintenanceService.getStats());
+        }
+      } else if (href === '/employees') {
+        if (role === ROLES.ADMIN || role === ROLES.DEPARTMENT_MANAGER) {
+          appDataCache.prefetch('departments:list:{"limit":100}', () =>
+            departmentService.getAll({ limit: 100 })
+          );
+          appDataCache.prefetch('employees:list:{"status":"all","page":1,"limit":8}', () =>
+            employeeService.getAll({ status: 'all', page: 1, limit: 8 })
+          );
+        }
+      } else if (href === '/assets') {
+        if (role === ROLES.ADMIN || role === ROLES.IT_TECHNICIAN || role === ROLES.DEPARTMENT_MANAGER) {
+          appDataCache.prefetch('departments:list:{"limit":100}', () =>
+            departmentService.getAll({ limit: 100 })
+          );
+          appDataCache.prefetch('assets:list:{"page":1,"limit":10}', () =>
+            assetService.getAll({ page: 1, limit: 10 })
+          );
+        }
+      } else if (href === '/maintenance') {
+        if (role === ROLES.ADMIN || role === ROLES.IT_TECHNICIAN || role === ROLES.DEPARTMENT_MANAGER) {
+          appDataCache.prefetch('dashboard:maintenance_stats', () => maintenanceService.getStats());
+          appDataCache.prefetch('maintenance:stats', () => maintenanceService.getStats());
+          appDataCache.prefetch('maintenance:list:{"page":1,"limit":10}', () =>
+            maintenanceService.getAll({ page: 1, limit: 10 })
+          );
+        }
+      } else if (href === '/departments') {
+        if (role === ROLES.ADMIN || role === ROLES.DEPARTMENT_MANAGER) {
+          appDataCache.prefetch('departments:list:{"status":"all","page":1,"limit":8}', () =>
+            departmentService.getAll({ status: 'all', page: 1, limit: 8 })
+          );
+        }
+      } else if (href === '/my-assets') {
+        appDataCache.prefetch('assets:list:{"personal":true,"limit":50}', () =>
+          assetService.getAll({ personal: true, limit: 50 })
+        );
+      } else if (href === '/my-maintenance') {
+        appDataCache.prefetch('maintenance:list:{"personal":true,"page":1,"limit":50}', () =>
+          maintenanceService.getAll({ personal: true, page: 1, limit: 50 })
+        );
+      } else if (href === '/notifications') {
+        appDataCache.prefetch('notifications:list:{"page":1,"limit":20}', () =>
+          notificationService.getNotifications({ page: 1, limit: 20 })
+        );
+      }
+    },
+    [router, role]
+  );
 
   return (
     <aside
@@ -107,6 +265,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
             <Link
               key={item.href}
               href={item.href}
+              onMouseEnter={() => handlePrefetch(item.href)}
               className={clsx(
                 'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all duration-150 relative',
                 collapsed ? 'justify-center px-2' : '',
@@ -149,6 +308,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
             <Link
               key={item.href}
               href={item.href}
+              onMouseEnter={() => handlePrefetch(item.href)}
               className={clsx(
                 'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all duration-150',
                 collapsed ? 'justify-center px-2' : '',

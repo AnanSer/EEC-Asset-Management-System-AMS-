@@ -5,32 +5,46 @@ import { Plus, Users, ChevronLeft, ChevronRight } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import SearchInput from '@/components/ui/SearchInput';
 import EmptyState from '@/components/ui/EmptyState';
-import LoadingSkeleton, { TableSkeleton } from '@/components/ui/LoadingSkeleton';
+import { StatCardSkeleton, TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
 import { useToast } from '@/components/ui/Toast';
 import employeeService from '@/services/employee.service';
 import departmentService from '@/services/department.service';
 import { Employee, EmployeesResponse } from '@/constants/employees';
-import { Department } from '@/constants/departments';
+import { Department, DepartmentsResponse } from '@/constants/departments';
 import EmployeeStats from '@/components/employees/EmployeeStats';
 import EmployeeTable from '@/components/employees/EmployeeTable';
 import { usePermissions } from '@/hooks/usePermissions';
 import { PERMISSIONS } from '@/lib/authorization';
 import PermissionGuard from '@/components/auth/PermissionGuard';
+import { appDataCache } from '@/context/AppDataCacheContext';
+
+const DEFAULT_EMPLOYEE_QUERY_KEY = 'employees:list:{"status":"all","page":1,"limit":8}';
 
 export default function EmployeesPage() {
   const toast = useToast();
   const { can } = usePermissions();
 
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [meta, setMeta] = useState<EmployeesResponse['meta']>({
-    total: 0,
-    page: 1,
-    limit: 8,
-    totalPages: 1,
-    hasNextPage: false,
-    hasPrevPage: false,
+  const [employees, setEmployees] = useState<Employee[]>(() => {
+    const cached = appDataCache.getCached<EmployeesResponse>(DEFAULT_EMPLOYEE_QUERY_KEY);
+    return cached?.data || [];
+  });
+  const [departments, setDepartments] = useState<Department[]>(() => {
+    const cached = appDataCache.getCached<DepartmentsResponse>('departments:list:{"limit":100}');
+    return cached?.data || [];
+  });
+  const [meta, setMeta] = useState<EmployeesResponse['meta']>(() => {
+    const cached = appDataCache.getCached<EmployeesResponse>(DEFAULT_EMPLOYEE_QUERY_KEY);
+    return (
+      cached?.meta || {
+        total: 0,
+        page: 1,
+        limit: 8,
+        totalPages: 1,
+        hasNextPage: false,
+        hasPrevPage: false,
+      }
+    );
   });
 
   const [search, setSearch] = useState('');
@@ -38,7 +52,10 @@ export default function EmployeesPage() {
   const [selectedRole, setSelectedRole] = useState('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(() => {
+    return !appDataCache.getCached<EmployeesResponse>(DEFAULT_EMPLOYEE_QUERY_KEY);
+  });
+  const [isUpdating, setIsUpdating] = useState<boolean>(false);
 
   // Status modal state
   const [statusModal, setStatusModal] = useState<{
@@ -66,19 +83,30 @@ export default function EmployeesPage() {
     loadDepts();
   }, []);
 
-  // Fetch employees
+  // Fetch employees with SWR
   const fetchEmployees = useCallback(async () => {
-    try {
-      setLoading(true);
-      const res = await employeeService.getAll({
-        search: search.trim() || undefined,
-        departmentId: selectedDepartmentId !== 'all' ? selectedDepartmentId : undefined,
-        role: selectedRole !== 'all' ? selectedRole : undefined,
-        status: statusFilter,
-        page,
-        limit: 8,
-      });
+    const queryParams = {
+      search: search.trim() || undefined,
+      departmentId: selectedDepartmentId !== 'all' ? selectedDepartmentId : undefined,
+      role: selectedRole !== 'all' ? selectedRole : undefined,
+      status: statusFilter,
+      page,
+      limit: 8,
+    };
+    const cacheKey = `employees:list:${JSON.stringify(queryParams)}`;
+    const cached = appDataCache.getCached<EmployeesResponse>(cacheKey);
 
+    if (cached) {
+      setEmployees(cached.data);
+      setMeta(cached.meta);
+      setLoading(false);
+      setIsUpdating(true);
+    } else {
+      setLoading(true);
+    }
+
+    try {
+      const res = await employeeService.getAll(queryParams);
       if (res.success) {
         setEmployees(res.data);
         setMeta(res.meta);
@@ -90,11 +118,22 @@ export default function EmployeesPage() {
       toast.error(errorMsg);
     } finally {
       setLoading(false);
+      setIsUpdating(false);
     }
   }, [search, selectedDepartmentId, selectedRole, statusFilter, page, toast]);
 
   useEffect(() => {
     fetchEmployees();
+  }, [fetchEmployees]);
+
+  // Subscribe to external cache invalidations
+  useEffect(() => {
+    const unsubscribe = appDataCache.subscribe((key) => {
+      if (key === '*' || key.startsWith('employees')) {
+        fetchEmployees();
+      }
+    });
+    return unsubscribe;
   }, [fetchEmployees]);
 
   const handleSearch = (value: string) => {
@@ -142,34 +181,6 @@ export default function EmployeesPage() {
     }
   };
 
-  // Initial loading state
-  if (loading && employees.length === 0 && !search && selectedDepartmentId === 'all' && selectedRole === 'all' && statusFilter === 'all') {
-    return (
-      <PermissionGuard permission={PERMISSIONS.EMPLOYEES_VIEW}>
-        <div className="space-y-6">
-          <PageHeader
-            title="Employees"
-            description="Manage Ethiopian Engineering Corporation workforce, roles, and departmental assignments."
-            breadcrumbs={[
-              { label: 'Dashboard', href: '/dashboard' },
-              { label: 'Employees' },
-            ]}
-            action={
-              can(PERMISSIONS.EMPLOYEES_CREATE)
-                ? {
-                    label: 'Add Employee',
-                    href: '/employees/new',
-                    icon: Plus,
-                  }
-                : undefined
-            }
-          />
-          <LoadingSkeleton />
-        </div>
-      </PermissionGuard>
-    );
-  }
-
   return (
     <PermissionGuard permission={PERMISSIONS.EMPLOYEES_VIEW}>
       <div className="space-y-6">
@@ -177,6 +188,7 @@ export default function EmployeesPage() {
       <PageHeader
         title="Employees"
         description="Manage Ethiopian Engineering Corporation workforce, roles, and departmental assignments."
+        isUpdating={isUpdating}
         breadcrumbs={[
           { label: 'Dashboard', href: '/dashboard' },
           { label: 'Employees' },
@@ -193,11 +205,19 @@ export default function EmployeesPage() {
       />
 
       {/* Stats Cards */}
-      <EmployeeStats
-        employees={employees}
-        total={meta.total}
-        totalDepartments={departments.length || 10}
-      />
+      {loading && employees.length === 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <StatCardSkeleton key={i} />
+          ))}
+        </div>
+      ) : (
+        <EmployeeStats
+          employees={employees}
+          total={meta.total}
+          totalDepartments={departments.length || 10}
+        />
+      )}
 
       {/* Filter and Search Bar */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
@@ -269,7 +289,7 @@ export default function EmployeesPage() {
 
       {/* Table Container */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        {loading ? (
+        {loading && employees.length === 0 ? (
           <TableSkeleton rows={6} cols={8} />
         ) : employees.length === 0 ? (
           <div className="p-8">

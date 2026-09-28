@@ -1,20 +1,51 @@
 "use strict";
 /**
- * Notification Helper Functions — EEC EAMS (Phase 10B.2)
- * Safe dispatchers and recipient resolvers for Enterprise Notification Center.
+ * Notification Helper Functions — EEC EAMS (Phase 10B.2 & 10B.4 Audit)
+ * Safe dispatchers, recipient resolvers, and diagnostic logging for Enterprise Notification Center.
  */
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.logNotificationDispatch = logNotificationDispatch;
 exports.safeNotifyUser = safeNotifyUser;
 exports.safeNotifyUsers = safeNotifyUsers;
 exports.getAdminUserIds = getAdminUserIds;
 exports.getDepartmentManagerUserId = getDepartmentManagerUserId;
 exports.getTechnicianUserId = getTechnicianUserId;
+exports.getEligibleTechnicianUserIds = getEligibleTechnicianUserIds;
 exports.getAssetOwnerUserId = getAssetOwnerUserId;
 const prisma_1 = __importDefault(require("../../lib/prisma"));
 const notification_service_1 = require("./notification.service");
+/**
+ * Diagnostic logger for notification dispatch in development.
+ * Never logs credentials, passwords, or sensitive authentication secrets.
+ */
+function logNotificationDispatch(params) {
+    if (process.env.NODE_ENV !== 'production' || process.env.ENABLE_NOTIFICATION_LOGS === 'true') {
+        console.log(`\n[NOTIFICATION_DISPATCH] ═════════════════════════════════════`);
+        console.log(`EVENT: ${params.event}`);
+        if (params.ticket)
+            console.log(`TICKET: ${params.ticket}`);
+        if (params.requester)
+            console.log(`REQUESTER: ${params.requester}`);
+        if (params.assetOwner)
+            console.log(`ASSET_OWNER: ${params.assetOwner}`);
+        if (params.department)
+            console.log(`DEPARTMENT: ${params.department}`);
+        if (params.resolvedTechnicians && params.resolvedTechnicians.length > 0) {
+            console.log(`RESOLVED TECHNICIANS: [${params.resolvedTechnicians.join(', ')}]`);
+        }
+        if (params.resolvedManagers && params.resolvedManagers.length > 0) {
+            console.log(`RESOLVED MANAGERS: [${params.resolvedManagers.join(', ')}]`);
+        }
+        if (params.resolvedAdmins && params.resolvedAdmins.length > 0) {
+            console.log(`RESOLVED ADMINS: [${params.resolvedAdmins.join(', ')}]`);
+        }
+        console.log(`NOTIFIED USERS: [${params.notifiedUsers.join(', ')}]`);
+        console.log(`═════════════════════════════════════════════════════════════\n`);
+    }
+}
 /**
  * Safely send an in-app notification to a single user.
  * Catches and logs any errors to guarantee business transaction safety.
@@ -54,12 +85,15 @@ async function safeNotifyUsers(payloads) {
     }
 }
 /**
- * Helper to retrieve all active Admin user IDs.
+ * Helper to retrieve all active, approved Admin user IDs.
  */
 async function getAdminUserIds() {
     try {
         const admins = await prisma_1.default.user.findMany({
-            where: { role: 'ADMIN', status: 'APPROVED' },
+            where: {
+                role: 'ADMIN',
+                status: 'APPROVED',
+            },
             select: { id: true },
         });
         return admins.map((a) => a.id);
@@ -70,7 +104,7 @@ async function getAdminUserIds() {
     }
 }
 /**
- * Helper to retrieve the Department Manager user ID for a specific department.
+ * Helper to retrieve the active Department Manager user ID for a specific department.
  */
 async function getDepartmentManagerUserId(departmentId) {
     if (!departmentId)
@@ -80,7 +114,10 @@ async function getDepartmentManagerUserId(departmentId) {
             where: {
                 role: 'DEPARTMENT_MANAGER',
                 status: 'APPROVED',
-                employeeProfile: { departmentId },
+                employeeProfile: {
+                    departmentId,
+                    isActive: true,
+                },
             },
             select: { id: true },
         });
@@ -92,48 +129,76 @@ async function getDepartmentManagerUserId(departmentId) {
     }
 }
 /**
- * Helper to resolve an IT Technician's user ID from name, employeeId, email, or profileId.
+ * Helper to resolve an active IT Technician's user ID from name, employeeId, email, or profileId.
+ * Strips formatting annotations (such as department name or parentheses) and verifies role and active status.
  */
 async function getTechnicianUserId(identifier) {
     if (!identifier)
         return null;
     try {
-        const trimmed = identifier.trim();
-        const nameParts = trimmed.split(' ');
-        const tech = await prisma_1.default.user.findFirst({
+        const raw = identifier.trim();
+        // Remove parenthesized content (e.g., "Biruk Tadesse (EMP-003 - ICT Directorate)" -> "Biruk Tadesse")
+        const cleaned = raw.replace(/\(.*?\)/g, '').trim();
+        const parts = cleaned.split(/\s+/).filter(Boolean);
+        // 1. Direct match on user.id, email, employeeProfile.id, or employeeProfile.employeeId
+        const directMatch = await prisma_1.default.user.findFirst({
             where: {
                 role: 'IT_TECHNICIAN',
+                status: 'APPROVED',
+                employeeProfile: { isActive: true },
                 OR: [
-                    { id: trimmed },
-                    { email: trimmed },
-                    { employeeProfile: { id: trimmed } },
-                    { employeeProfile: { employeeId: trimmed } },
-                    ...(nameParts.length >= 2
-                        ? [
-                            {
-                                employeeProfile: {
-                                    firstName: { equals: nameParts[0], mode: 'insensitive' },
-                                    lastName: { equals: nameParts.slice(1).join(' '), mode: 'insensitive' },
-                                },
-                            },
-                        ]
-                        : [
-                            {
-                                employeeProfile: {
-                                    firstName: { equals: trimmed, mode: 'insensitive' },
-                                },
-                            },
-                            {
-                                employeeProfile: {
-                                    lastName: { equals: trimmed, mode: 'insensitive' },
-                                },
-                            },
-                        ]),
+                    { id: raw },
+                    { email: raw },
+                    { employeeProfile: { id: raw } },
+                    { employeeProfile: { employeeId: raw } },
+                    { employeeProfile: { employeeId: cleaned } },
                 ],
             },
             select: { id: true },
         });
-        return tech?.id || null;
+        if (directMatch) {
+            return directMatch.id;
+        }
+        // 2. Name-based match (case-insensitive)
+        if (parts.length >= 2) {
+            const firstNamePart = parts[0];
+            const lastNamePart = parts.slice(1).join(' ');
+            const nameMatch = await prisma_1.default.user.findFirst({
+                where: {
+                    role: 'IT_TECHNICIAN',
+                    status: 'APPROVED',
+                    employeeProfile: {
+                        isActive: true,
+                        firstName: { equals: firstNamePart, mode: 'insensitive' },
+                        lastName: { equals: lastNamePart, mode: 'insensitive' },
+                    },
+                },
+                select: { id: true },
+            });
+            if (nameMatch) {
+                return nameMatch.id;
+            }
+        }
+        else if (parts.length === 1) {
+            const singleMatch = await prisma_1.default.user.findFirst({
+                where: {
+                    role: 'IT_TECHNICIAN',
+                    status: 'APPROVED',
+                    employeeProfile: {
+                        isActive: true,
+                        OR: [
+                            { firstName: { equals: parts[0], mode: 'insensitive' } },
+                            { lastName: { equals: parts[0], mode: 'insensitive' } },
+                        ],
+                    },
+                },
+                select: { id: true },
+            });
+            if (singleMatch) {
+                return singleMatch.id;
+            }
+        }
+        return null;
     }
     catch (err) {
         console.error(`[getTechnicianUserId] Failed for identifier ${identifier}:`, err);
@@ -141,17 +206,81 @@ async function getTechnicianUserId(identifier) {
     }
 }
 /**
- * Helper to retrieve the active owner User ID of an asset.
+ * Helper to retrieve eligible active IT Technicians for a maintenance request.
+ * If departmentId is provided and technicians belong to that department, prioritizes department technicians.
+ * Otherwise returns all active approved IT technicians.
  */
-async function getAssetOwnerUserId(assetId) {
-    if (!assetId)
+async function getEligibleTechnicianUserIds(departmentId) {
+    try {
+        if (departmentId) {
+            const deptTechnicians = await prisma_1.default.user.findMany({
+                where: {
+                    role: 'IT_TECHNICIAN',
+                    status: 'APPROVED',
+                    employeeProfile: {
+                        departmentId,
+                        isActive: true,
+                    },
+                },
+                select: { id: true },
+            });
+            if (deptTechnicians.length > 0) {
+                return deptTechnicians.map((t) => t.id);
+            }
+        }
+        // Fallback: All active approved IT technicians
+        const allTechnicians = await prisma_1.default.user.findMany({
+            where: {
+                role: 'IT_TECHNICIAN',
+                status: 'APPROVED',
+                employeeProfile: {
+                    isActive: true,
+                },
+            },
+            select: { id: true },
+        });
+        return allTechnicians.map((t) => t.id);
+    }
+    catch (err) {
+        console.error('[getEligibleTechnicianUserIds] Failed to fetch eligible technician IDs:', err);
+        return [];
+    }
+}
+/**
+ * Helper to retrieve the active owner User ID of an asset.
+ * If no current assignment exists, optionally falls back to looking up the reporter.
+ */
+async function getAssetOwnerUserId(assetId, fallbackReporter) {
+    if (!assetId && !fallbackReporter)
         return null;
     try {
-        const activeAssignment = await prisma_1.default.assetAssignment.findFirst({
-            where: { assetId, isCurrent: true },
-            include: { employee: true },
-        });
-        return activeAssignment?.employee?.userId || null;
+        if (assetId) {
+            const activeAssignment = await prisma_1.default.assetAssignment.findFirst({
+                where: { assetId, isCurrent: true },
+                include: { employee: true },
+            });
+            if (activeAssignment?.employee?.userId) {
+                return activeAssignment.employee.userId;
+            }
+        }
+        if (fallbackReporter) {
+            const trimmed = fallbackReporter.trim();
+            const reporterUser = await prisma_1.default.user.findFirst({
+                where: {
+                    OR: [
+                        { id: trimmed },
+                        { email: trimmed },
+                        { employeeProfile: { id: trimmed } },
+                        { employeeProfile: { employeeId: trimmed } },
+                    ],
+                },
+                select: { id: true },
+            });
+            if (reporterUser?.id) {
+                return reporterUser.id;
+            }
+        }
+        return null;
     }
     catch (err) {
         console.error(`[getAssetOwnerUserId] Failed for asset ${assetId}:`, err);

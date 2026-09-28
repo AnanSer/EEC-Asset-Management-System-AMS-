@@ -2,6 +2,53 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
+import { appDataCache } from '@/context/AppDataCacheContext';
+
+function isRouteDataCached(href: string): boolean {
+  try {
+    const path = href.split('?')[0];
+    if (path === '/dashboard') {
+      return Boolean(
+        appDataCache.getCached('dashboard:assignment_stats') ||
+        appDataCache.getCached('dashboard:maintenance_stats')
+      );
+    }
+    if (path === '/employees') {
+      return Boolean(
+        appDataCache.getCached('employees:list:{"status":"all","page":1,"limit":8}') ||
+        appDataCache.getCached('employees:list:{}')
+      );
+    }
+    if (path === '/assets') {
+      return Boolean(
+        appDataCache.getCached('assets:list:{"page":1,"limit":10}') ||
+        appDataCache.getCached('assets:list:{}')
+      );
+    }
+    if (path === '/maintenance') {
+      return Boolean(
+        appDataCache.getCached('maintenance:stats') ||
+        appDataCache.getCached('maintenance:list:{"page":1,"limit":10}')
+      );
+    }
+    if (path === '/departments') {
+      return Boolean(
+        appDataCache.getCached('departments:list:{"limit":100}') ||
+        appDataCache.getCached('departments:list:{}')
+      );
+    }
+    if (path === '/notifications') {
+      return Boolean(appDataCache.getCached('notifications:list:{"page":1,"limit":20}'));
+    }
+    if (path === '/settings') {
+      return Boolean(appDataCache.getCached('settings:all'));
+    }
+    if (path === '/reports') {
+      return Boolean(appDataCache.getCached('reports:dashboard'));
+    }
+  } catch {}
+  return false;
+}
 
 export default function RouteLoadingBar() {
   const pathname = usePathname();
@@ -76,7 +123,9 @@ export default function RouteLoadingBar() {
       // If navigating to different path
       const currentUrl = window.location.pathname + window.location.search;
       if (href !== currentUrl) {
-        startLoading();
+        if (!isRouteDataCached(href)) {
+          startLoading();
+        }
       }
     };
 

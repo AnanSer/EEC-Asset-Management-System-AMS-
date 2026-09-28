@@ -1,9 +1,11 @@
 /**
- * Testing & Inspection Service — EEC EAMS
- * Handles API communication with Express backend /api/testing endpoints.
+ * Testing & Inspection Service — EEC EAMS (Phase 10B.5 Optimized)
+ * Handles API communication with Express backend /api/testing endpoints
+ * with integrated SWR caching, request deduplication, and cascading invalidation.
  */
 
 import apiClient from '../lib/axios';
+import { appDataCache } from '../context/AppDataCacheContext';
 import {
   InspectionTest,
   CreateInspectionInput,
@@ -20,13 +22,24 @@ export interface InspectionResponse {
   data: InspectionTest;
 }
 
+export function invalidateTestingCaches() {
+  appDataCache.invalidateEntity('testing');
+}
+
 export const testingService = {
   /**
    * GET /api/testing/:ticketId — list inspections for a ticket
    */
-  async getByTicketId(ticketId: string): Promise<InspectionListResponse> {
-    const res = await apiClient.get<InspectionListResponse>(`/testing/${ticketId}`);
-    return res.data;
+  async getByTicketId(ticketId: string, forceRefresh = false): Promise<InspectionListResponse> {
+    const key = `testing:ticket:${ticketId}`;
+    return appDataCache.fetchWithCache(
+      key,
+      async () => {
+        const res = await apiClient.get<InspectionListResponse>(`/testing/${ticketId}`);
+        return res.data;
+      },
+      { forceRefresh }
+    );
   },
 
   /**
@@ -34,6 +47,7 @@ export const testingService = {
    */
   async create(data: CreateInspectionInput): Promise<InspectionResponse> {
     const res = await apiClient.post<InspectionResponse>('/testing', data);
+    invalidateTestingCaches();
     return res.data;
   },
 
@@ -42,7 +56,15 @@ export const testingService = {
    */
   async update(id: string, data: Partial<CreateInspectionInput>): Promise<InspectionResponse> {
     const res = await apiClient.put<InspectionResponse>(`/testing/${id}`, data);
+    invalidateTestingCaches();
     return res.data;
+  },
+
+  /**
+   * Invalidate testing caches manually
+   */
+  invalidateCache() {
+    invalidateTestingCaches();
   },
 };
 

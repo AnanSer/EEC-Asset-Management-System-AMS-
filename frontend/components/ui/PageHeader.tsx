@@ -18,6 +18,7 @@ export interface PageHeaderProps {
   action?: PageHeaderAction;
   actions?: React.ReactNode;
   children?: React.ReactNode;
+  isUpdating?: boolean;
 }
 
 export default function PageHeader({
@@ -27,6 +28,7 @@ export default function PageHeader({
   action,
   actions,
   children,
+  isUpdating,
 }: PageHeaderProps) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -34,7 +36,9 @@ export default function PageHeader({
         {breadcrumbs && breadcrumbs.length > 0 && (
           <Breadcrumb items={breadcrumbs} />
         )}
-        <h1 className="text-2xl font-bold text-eec-primary tracking-tight">{title}</h1>
+        <div className="flex items-center gap-2.5">
+          <h1 className="text-2xl font-bold text-eec-primary tracking-tight">{title}</h1>
+        </div>
         {description && <p className="mt-1 text-sm text-slate-500">{description}</p>}
       </div>
 
