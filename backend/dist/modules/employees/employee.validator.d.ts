@@ -4,6 +4,7 @@ export declare const userRoleEnum: z.ZodEnum<{
     DEPARTMENT_MANAGER: "DEPARTMENT_MANAGER";
     EMPLOYEE: "EMPLOYEE";
     IT_TECHNICIAN: "IT_TECHNICIAN";
+    STORE_KEEPER: "STORE_KEEPER";
 }>;
 export declare const createEmployeeSchema: z.ZodObject<{
     fullName: z.ZodString;
@@ -17,6 +18,7 @@ export declare const createEmployeeSchema: z.ZodObject<{
         DEPARTMENT_MANAGER: "DEPARTMENT_MANAGER";
         EMPLOYEE: "EMPLOYEE";
         IT_TECHNICIAN: "IT_TECHNICIAN";
+        STORE_KEEPER: "STORE_KEEPER";
     }>>;
     officeLocation: z.ZodNullable<z.ZodOptional<z.ZodString>>;
 }, z.core.$strip>;
@@ -32,6 +34,7 @@ export declare const updateEmployeeSchema: z.ZodObject<{
         DEPARTMENT_MANAGER: "DEPARTMENT_MANAGER";
         EMPLOYEE: "EMPLOYEE";
         IT_TECHNICIAN: "IT_TECHNICIAN";
+        STORE_KEEPER: "STORE_KEEPER";
     }>>;
     officeLocation: z.ZodNullable<z.ZodOptional<z.ZodString>>;
 }, z.core.$strip>;

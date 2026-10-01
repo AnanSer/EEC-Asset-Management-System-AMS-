@@ -58,8 +58,8 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
     const performIdlePreWarm = () => {
       // Role-specific idle pre-warming based on authenticated RBAC permissions:
-      if (role === ROLES.EMPLOYEE) {
-        // EMPLOYEE: Only personal resources
+      if (role === ROLES.EMPLOYEE || role === ROLES.STORE_KEEPER) {
+        // EMPLOYEE & STORE_KEEPER: Only personal resources
         appDataCache.prefetch('assets:list:{"personal":true,"limit":50}', () =>
           assetService.getAll({ personal: true, limit: 50 })
         );
@@ -134,7 +134,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
       } catch {}
 
       if (href === '/dashboard') {
-        if (role !== ROLES.EMPLOYEE) {
+        if (role === ROLES.ADMIN || role === ROLES.IT_TECHNICIAN || role === ROLES.DEPARTMENT_MANAGER) {
           appDataCache.prefetch('dashboard:assignment_stats', () => assignmentService.getStats());
           appDataCache.prefetch('dashboard:maintenance_stats', () => maintenanceService.getStats());
         }

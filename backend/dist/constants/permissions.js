@@ -71,5 +71,12 @@ exports.ROLE_PERMISSIONS = {
         exports.PERMISSIONS.MAINTENANCE_CREATE,
         exports.PERMISSIONS.SETTINGS_VIEW,
     ],
+    [roles_1.ROLES.STORE_KEEPER]: [
+        exports.PERMISSIONS.DEPARTMENTS_VIEW,
+        exports.PERMISSIONS.ASSETS_VIEW,
+        exports.PERMISSIONS.MAINTENANCE_VIEW,
+        exports.PERMISSIONS.MAINTENANCE_CREATE,
+        exports.PERMISSIONS.SETTINGS_VIEW,
+    ],
 };
 //# sourceMappingURL=permissions.js.map

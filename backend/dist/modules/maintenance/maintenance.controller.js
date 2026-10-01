@@ -36,7 +36,7 @@ class MaintenanceController {
                 });
                 if (user) {
                     const role = user.role;
-                    const isPersonal = validatedQuery.personal === 'true' || validatedQuery.personal === true || role === constants_1.ROLES.EMPLOYEE;
+                    const isPersonal = validatedQuery.personal === 'true' || validatedQuery.personal === true || role === constants_1.ROLES.EMPLOYEE || role === constants_1.ROLES.STORE_KEEPER;
                     // Personal view: View tickets assigned to technician (IT_TECHNICIAN) OR reported by/assigned to user (EMPLOYEE, MANAGER)
                     if (isPersonal) {
                         if (user.employeeProfile) {

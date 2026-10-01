@@ -101,8 +101,8 @@ export function canAccessEmployee(
     return auth.departmentId === employee.departmentId;
   }
 
-  // Rule 4: EMPLOYEE can only access their own profile
-  if (role === ROLES.EMPLOYEE) {
+  // Rule 4: EMPLOYEE & STORE_KEEPER can only access their own profile
+  if (role === ROLES.EMPLOYEE || role === ROLES.STORE_KEEPER) {
     if (employee.userId && auth.userId) {
       return employee.userId === auth.userId;
     }
@@ -125,6 +125,7 @@ export function canAccessEmployee(
  * - IT_TECHNICIAN -> true
  * - DEPARTMENT_MANAGER -> own department only
  * - EMPLOYEE -> own department only
+ * - STORE_KEEPER -> own department only
  */
 export function canAccessDepartment(
   auth: AuthUserContext,
@@ -143,8 +144,8 @@ export function canAccessDepartment(
     return false;
   }
 
-  // Rules 3 & 4: DEPARTMENT_MANAGER & EMPLOYEE can only access own department
-  if (role === ROLES.DEPARTMENT_MANAGER || role === ROLES.EMPLOYEE) {
+  // Rules 3 & 4: DEPARTMENT_MANAGER, EMPLOYEE, STORE_KEEPER can only access own department
+  if (role === ROLES.DEPARTMENT_MANAGER || role === ROLES.EMPLOYEE || role === ROLES.STORE_KEEPER) {
     return auth.departmentId === departmentId;
   }
 
@@ -260,8 +261,8 @@ export function canAccessAsset(
     return false;
   }
 
-  // Rule 4: EMPLOYEE -> currently assigned asset only
-  if (role === ROLES.EMPLOYEE) {
+  // Rule 4: EMPLOYEE & STORE_KEEPER -> currently assigned asset only
+  if (role === ROLES.EMPLOYEE || role === ROLES.STORE_KEEPER) {
     return isAssetAssignedToAuthUser(auth, asset);
   }
 
@@ -273,8 +274,8 @@ export function canAccessAsset(
  * Rules:
  * - ADMIN -> true
  * - IT_TECHNICIAN -> true
- * - DEPARTMENT_MANAGER -> ticket in own department OR own assigned asset OR reported by manager
- * - EMPLOYEE -> ticket reported by employee OR ticket asset currently assigned to employee
+ * - DEPARTMENT_MANAGER -> department ticket OR own assigned asset OR reported by manager
+ * - EMPLOYEE & STORE_KEEPER -> ticket reported by user OR ticket asset currently assigned to user
  */
 export function canAccessMaintenanceTicket(
   auth: AuthUserContext,
@@ -304,8 +305,8 @@ export function canAccessMaintenanceTicket(
     return false;
   }
 
-  // Rule 4: EMPLOYEE -> reported by employee OR ticket asset currently assigned to employee
-  if (role === ROLES.EMPLOYEE) {
+  // Rule 4: EMPLOYEE & STORE_KEEPER -> reported by user OR ticket asset currently assigned to user
+  if (role === ROLES.EMPLOYEE || role === ROLES.STORE_KEEPER) {
     if (isReportedByAuthUser(auth, ticket)) {
       return true;
     }

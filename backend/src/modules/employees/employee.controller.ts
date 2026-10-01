@@ -39,8 +39,8 @@ export class EmployeeController {
             parsedQuery.departmentId = user.employeeProfile.departmentId;
           }
 
-          // EMPLOYEE: View only own employee profile
-          if (role === ROLES.EMPLOYEE) {
+          // EMPLOYEE & STORE_KEEPER: View only own employee profile
+          if (role === ROLES.EMPLOYEE || role === ROLES.STORE_KEEPER) {
             if (user.employeeProfile) {
               const single = await this.service.getEmployeeById(user.employeeProfile.id);
               return res.status(200).json(

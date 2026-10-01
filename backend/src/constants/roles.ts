@@ -8,6 +8,7 @@ export const ROLES = {
   IT_TECHNICIAN: 'IT_TECHNICIAN',
   DEPARTMENT_MANAGER: 'DEPARTMENT_MANAGER',
   EMPLOYEE: 'EMPLOYEE',
+  STORE_KEEPER: 'STORE_KEEPER',
 } as const;
 
 export type Role = (typeof ROLES)[keyof typeof ROLES];
@@ -17,4 +18,5 @@ export const ROLE_LIST = [
   ROLES.IT_TECHNICIAN,
   ROLES.DEPARTMENT_MANAGER,
   ROLES.EMPLOYEE,
+  ROLES.STORE_KEEPER,
 ] as const;

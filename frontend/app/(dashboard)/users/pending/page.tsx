@@ -67,7 +67,7 @@ export default function PendingUsersPage() {
 
   // Modals state
   const [approveUser, setApproveUser] = useState<PendingUser | null>(null);
-  const [selectedRole, setSelectedRole] = useState<'EMPLOYEE' | 'IT_TECHNICIAN' | 'DEPARTMENT_MANAGER' | 'ADMIN'>('EMPLOYEE');
+  const [selectedRole, setSelectedRole] = useState<'EMPLOYEE' | 'STORE_KEEPER' | 'IT_TECHNICIAN' | 'DEPARTMENT_MANAGER' | 'ADMIN'>('EMPLOYEE');
   const [approvalNotes, setApprovalNotes] = useState('');
   const [isApproving, setIsApproving] = useState(false);
 
@@ -456,6 +456,7 @@ export default function PendingUsersPage() {
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm text-slate-800 bg-white focus:outline-none focus:border-eec-accent focus:ring-2 focus:ring-eec-accent/20"
               >
                 <option value="EMPLOYEE">EMPLOYEE (Standard Staff Access)</option>
+                <option value="STORE_KEEPER">STORE_KEEPER (Store & Physical Asset Custody)</option>
                 <option value="IT_TECHNICIAN">IT_TECHNICIAN (Maintenance & Asset Management)</option>
                 <option value="DEPARTMENT_MANAGER">DEPARTMENT_MANAGER (Department Approvals & Reports)</option>
                 <option value="ADMIN">ADMIN (Full Administrative Control)</option>

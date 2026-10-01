@@ -205,6 +205,19 @@ async function main() {
       phone: '+251-11-551-4004',
       officeLocation: 'Addis Ababa Head Office (Kazanchis), Block A, Suite 304',
     },
+    {
+      roleName: 'STORE_KEEPER',
+      email: 'storekeeper@eec.gov.et',
+      name: 'Almaz Tefera',
+      firstName: 'Almaz',
+      lastName: 'Tefera',
+      employeeId: 'EEC-STR-001',
+      departmentCode: 'EEC-ICT',
+      role: UserRole.STORE_KEEPER,
+      jobTitle: 'Central Asset Store Keeper',
+      phone: '+251-11-551-4008',
+      officeLocation: 'Addis Ababa Head Office (Kazanchis), Block C, Asset Storage Unit',
+    },
   ];
 
   const seededEmployees: Record<string, any> = {};
@@ -976,6 +989,18 @@ async function main() {
       'Email Verified': true,
       'Active': true,
       'Assigned Asset': 'Dell Latitude 5540 Laptop (EEC-AST-001)',
+    },
+    {
+      'Role': 'STORE_KEEPER',
+      'Name': 'Almaz Tefera',
+      'Email': 'storekeeper@eec.gov.et',
+      'Password': DEMO_PASSWORD,
+      'Employee ID': 'EEC-STR-001',
+      'Department': 'ICT Directorate',
+      'Status': 'APPROVED',
+      'Email Verified': true,
+      'Active': true,
+      'Assigned Asset': 'None',
     },
   ]);
   console.log('================================================================================================================\n');

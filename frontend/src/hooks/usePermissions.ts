@@ -22,6 +22,7 @@ export interface UsePermissionsReturn {
   isTechnician: boolean;
   isDepartmentManager: boolean;
   isEmployee: boolean;
+  isStoreKeeper: boolean;
   refetch: () => Promise<void>;
 }
 
@@ -65,6 +66,7 @@ export function usePermissions(): UsePermissionsReturn {
     isTechnician: role === ROLES.IT_TECHNICIAN,
     isDepartmentManager: role === ROLES.DEPARTMENT_MANAGER,
     isEmployee: role === ROLES.EMPLOYEE,
+    isStoreKeeper: role === ROLES.STORE_KEEPER,
     refetch: fetchRole,
   };
 }

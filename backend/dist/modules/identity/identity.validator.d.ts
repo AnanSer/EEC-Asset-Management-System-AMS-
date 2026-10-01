@@ -4,6 +4,7 @@ export declare const userRoleEnum: z.ZodEnum<{
     DEPARTMENT_MANAGER: "DEPARTMENT_MANAGER";
     EMPLOYEE: "EMPLOYEE";
     IT_TECHNICIAN: "IT_TECHNICIAN";
+    STORE_KEEPER: "STORE_KEEPER";
 }>;
 export declare const accountStatusEnum: z.ZodEnum<{
     APPROVED: "APPROVED";
@@ -29,6 +30,7 @@ export declare const registrationSchema: z.ZodObject<{
         DEPARTMENT_MANAGER: "DEPARTMENT_MANAGER";
         EMPLOYEE: "EMPLOYEE";
         IT_TECHNICIAN: "IT_TECHNICIAN";
+        STORE_KEEPER: "STORE_KEEPER";
     }>>>;
 }, z.core.$strip>;
 /**
@@ -41,6 +43,7 @@ export declare const approvalSchema: z.ZodObject<{
         DEPARTMENT_MANAGER: "DEPARTMENT_MANAGER";
         EMPLOYEE: "EMPLOYEE";
         IT_TECHNICIAN: "IT_TECHNICIAN";
+        STORE_KEEPER: "STORE_KEEPER";
     }>>>;
     notes: z.ZodNullable<z.ZodOptional<z.ZodString>>;
 }, z.core.$strip>;

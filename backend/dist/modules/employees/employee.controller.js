@@ -28,8 +28,8 @@ class EmployeeController {
                         if (role === constants_1.ROLES.DEPARTMENT_MANAGER && user.employeeProfile?.departmentId) {
                             parsedQuery.departmentId = user.employeeProfile.departmentId;
                         }
-                        // EMPLOYEE: View only own employee profile
-                        if (role === constants_1.ROLES.EMPLOYEE) {
+                        // EMPLOYEE & STORE_KEEPER: View only own employee profile
+                        if (role === constants_1.ROLES.EMPLOYEE || role === constants_1.ROLES.STORE_KEEPER) {
                             if (user.employeeProfile) {
                                 const single = await this.service.getEmployeeById(user.employeeProfile.id);
                                 return res.status(200).json((0, api_1.paginatedResponse)(single ? [single] : [], (0, api_1.buildPagination)(1, 10, single ? 1 : 0)));

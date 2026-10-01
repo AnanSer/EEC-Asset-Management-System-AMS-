@@ -262,6 +262,7 @@ export default function EmployeesPage() {
             <option value="ADMIN">Admin</option>
             <option value="IT_TECHNICIAN">IT Technician</option>
             <option value="DEPARTMENT_MANAGER">Department Manager</option>
+            <option value="STORE_KEEPER">Store Keeper</option>
             <option value="EMPLOYEE">Employee</option>
           </select>
 

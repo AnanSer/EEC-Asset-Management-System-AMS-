@@ -84,6 +84,7 @@ export declare function canAccessEmployee(auth: AuthUserContext, employee: Emplo
  * - IT_TECHNICIAN -> true
  * - DEPARTMENT_MANAGER -> own department only
  * - EMPLOYEE -> own department only
+ * - STORE_KEEPER -> own department only
  */
 export declare function canAccessDepartment(auth: AuthUserContext, departmentId: string | null | undefined): boolean;
 /**
@@ -100,8 +101,8 @@ export declare function canAccessAsset(auth: AuthUserContext, asset: AssetAccess
  * Rules:
  * - ADMIN -> true
  * - IT_TECHNICIAN -> true
- * - DEPARTMENT_MANAGER -> ticket in own department OR own assigned asset OR reported by manager
- * - EMPLOYEE -> ticket reported by employee OR ticket asset currently assigned to employee
+ * - DEPARTMENT_MANAGER -> department ticket OR own assigned asset OR reported by manager
+ * - EMPLOYEE & STORE_KEEPER -> ticket reported by user OR ticket asset currently assigned to user
  */
 export declare function canAccessMaintenanceTicket(auth: AuthUserContext, ticket: MaintenanceTicketAccessTarget): boolean;
 //# sourceMappingURL=resourceAccess.d.ts.map

@@ -33,7 +33,7 @@ export const navItems: NavItem[] = [
     label: 'Dashboard',
     href: '/dashboard',
     icon: LayoutDashboard,
-    allowedRoles: [ROLES.ADMIN, ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER, ROLES.EMPLOYEE],
+    allowedRoles: [ROLES.ADMIN, ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER, ROLES.EMPLOYEE, ROLES.STORE_KEEPER],
   },
   {
     label: 'Departments',
@@ -81,13 +81,13 @@ export const navItems: NavItem[] = [
     label: 'My Assets',
     href: '/my-assets',
     icon: Laptop,
-    allowedRoles: [ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER, ROLES.EMPLOYEE],
+    allowedRoles: [ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER, ROLES.EMPLOYEE, ROLES.STORE_KEEPER],
   },
   {
     label: 'My Maintenance',
     href: '/my-maintenance',
     icon: Wrench,
-    allowedRoles: [ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER, ROLES.EMPLOYEE],
+    allowedRoles: [ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER, ROLES.EMPLOYEE, ROLES.STORE_KEEPER],
   },
   {
     label: 'Reports',
@@ -102,12 +102,12 @@ export const bottomNavItems: NavItem[] = [
     label: 'Profile',
     href: '/profile',
     icon: UserCircle,
-    allowedRoles: [ROLES.ADMIN, ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER, ROLES.EMPLOYEE],
+    allowedRoles: [ROLES.ADMIN, ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER, ROLES.EMPLOYEE, ROLES.STORE_KEEPER],
   },
   {
     label: 'Settings',
     href: '/settings',
     icon: Settings,
-    allowedRoles: [ROLES.ADMIN, ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER, ROLES.EMPLOYEE],
+    allowedRoles: [ROLES.ADMIN, ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER, ROLES.EMPLOYEE, ROLES.STORE_KEEPER],
   },
 ];

@@ -56,7 +56,9 @@ function SectionCard({
 
 export default function DashboardPage() {
   const { role, isLoading: isRoleLoading } = usePermissions();
-  const canViewStats = !isRoleLoading && role !== null && role !== ROLES.EMPLOYEE;
+  const canViewStats =
+    !isRoleLoading &&
+    (role === ROLES.ADMIN || role === ROLES.IT_TECHNICIAN || role === ROLES.DEPARTMENT_MANAGER);
 
   const {
     data: rawAssignmentStats,

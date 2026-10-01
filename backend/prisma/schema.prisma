@@ -18,6 +18,7 @@ enum UserRole {
   IT_TECHNICIAN
   DEPARTMENT_MANAGER
   EMPLOYEE
+  STORE_KEEPER
 }
 
 enum AccountStatus {

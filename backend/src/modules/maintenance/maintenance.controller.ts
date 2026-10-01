@@ -58,7 +58,7 @@ export class MaintenanceController {
 
         if (user) {
           const role = user.role as Role;
-          const isPersonal = validatedQuery.personal === 'true' || validatedQuery.personal === true || role === ROLES.EMPLOYEE;
+          const isPersonal = validatedQuery.personal === 'true' || validatedQuery.personal === true || role === ROLES.EMPLOYEE || role === ROLES.STORE_KEEPER;
 
           // Personal view: View tickets assigned to technician (IT_TECHNICIAN) OR reported by/assigned to user (EMPLOYEE, MANAGER)
           if (isPersonal) {

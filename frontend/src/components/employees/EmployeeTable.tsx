@@ -33,6 +33,8 @@ export default function EmployeeTable({
         return 'bg-blue-50 text-blue-700 ring-blue-200';
       case 'DEPARTMENT_MANAGER':
         return 'bg-teal-50 text-teal-700 ring-teal-200';
+      case 'STORE_KEEPER':
+        return 'bg-amber-50 text-amber-700 ring-amber-200';
       case 'EMPLOYEE':
       default:
         return 'bg-slate-100 text-slate-700 ring-slate-200';

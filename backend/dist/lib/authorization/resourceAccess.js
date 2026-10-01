@@ -35,8 +35,8 @@ function canAccessEmployee(auth, employee) {
             return false;
         return auth.departmentId === employee.departmentId;
     }
-    // Rule 4: EMPLOYEE can only access their own profile
-    if (role === constants_1.ROLES.EMPLOYEE) {
+    // Rule 4: EMPLOYEE & STORE_KEEPER can only access their own profile
+    if (role === constants_1.ROLES.EMPLOYEE || role === constants_1.ROLES.STORE_KEEPER) {
         if (employee.userId && auth.userId) {
             return employee.userId === auth.userId;
         }
@@ -57,6 +57,7 @@ function canAccessEmployee(auth, employee) {
  * - IT_TECHNICIAN -> true
  * - DEPARTMENT_MANAGER -> own department only
  * - EMPLOYEE -> own department only
+ * - STORE_KEEPER -> own department only
  */
 function canAccessDepartment(auth, departmentId) {
     if (!auth)
@@ -69,8 +70,8 @@ function canAccessDepartment(auth, departmentId) {
     if (!departmentId || !auth.departmentId) {
         return false;
     }
-    // Rules 3 & 4: DEPARTMENT_MANAGER & EMPLOYEE can only access own department
-    if (role === constants_1.ROLES.DEPARTMENT_MANAGER || role === constants_1.ROLES.EMPLOYEE) {
+    // Rules 3 & 4: DEPARTMENT_MANAGER, EMPLOYEE, STORE_KEEPER can only access own department
+    if (role === constants_1.ROLES.DEPARTMENT_MANAGER || role === constants_1.ROLES.EMPLOYEE || role === constants_1.ROLES.STORE_KEEPER) {
         return auth.departmentId === departmentId;
     }
     return false;
@@ -181,8 +182,8 @@ function canAccessAsset(auth, asset) {
         }
         return false;
     }
-    // Rule 4: EMPLOYEE -> currently assigned asset only
-    if (role === constants_1.ROLES.EMPLOYEE) {
+    // Rule 4: EMPLOYEE & STORE_KEEPER -> currently assigned asset only
+    if (role === constants_1.ROLES.EMPLOYEE || role === constants_1.ROLES.STORE_KEEPER) {
         return isAssetAssignedToAuthUser(auth, asset);
     }
     return false;
@@ -192,8 +193,8 @@ function canAccessAsset(auth, asset) {
  * Rules:
  * - ADMIN -> true
  * - IT_TECHNICIAN -> true
- * - DEPARTMENT_MANAGER -> ticket in own department OR own assigned asset OR reported by manager
- * - EMPLOYEE -> ticket reported by employee OR ticket asset currently assigned to employee
+ * - DEPARTMENT_MANAGER -> department ticket OR own assigned asset OR reported by manager
+ * - EMPLOYEE & STORE_KEEPER -> ticket reported by user OR ticket asset currently assigned to user
  */
 function canAccessMaintenanceTicket(auth, ticket) {
     if (!auth)
@@ -217,8 +218,8 @@ function canAccessMaintenanceTicket(auth, ticket) {
         }
         return false;
     }
-    // Rule 4: EMPLOYEE -> reported by employee OR ticket asset currently assigned to employee
-    if (role === constants_1.ROLES.EMPLOYEE) {
+    // Rule 4: EMPLOYEE & STORE_KEEPER -> reported by user OR ticket asset currently assigned to user
+    if (role === constants_1.ROLES.EMPLOYEE || role === constants_1.ROLES.STORE_KEEPER) {
         if (isReportedByAuthUser(auth, ticket)) {
             return true;
         }
