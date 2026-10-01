@@ -12,6 +12,7 @@ import {
   AssetQuery,
   AssetsResponse,
   AssetResponse,
+  AssetInventoryResponse,
 } from '../constants/assets';
 
 export function invalidateAssetCaches() {
@@ -28,6 +29,21 @@ export const assetService = {
       key,
       async () => {
         const res = await apiClient.get<AssetsResponse>('/assets', { params });
+        return res.data;
+      },
+      { forceRefresh }
+    );
+  },
+
+  /**
+   * GET /api/assets/inventory — retrieve inventory counts (by status, category, location)
+   */
+  async getInventory(forceRefresh = false): Promise<AssetInventoryResponse> {
+    const key = 'assets:inventory';
+    return appDataCache.fetchWithCache(
+      key,
+      async () => {
+        const res = await apiClient.get<AssetInventoryResponse>('/assets/inventory');
         return res.data;
       },
       { forceRefresh }
@@ -72,6 +88,15 @@ export const assetService = {
    */
   async updateStatus(id: string, status: string): Promise<AssetResponse> {
     const res = await apiClient.patch<AssetResponse>(`/assets/${id}/status`, { status });
+    invalidateAssetCaches();
+    return res.data;
+  },
+
+  /**
+   * PATCH /api/assets/:id/location — physical location update
+   */
+  async updateLocation(id: string, location: string | null): Promise<AssetResponse> {
+    const res = await apiClient.patch<AssetResponse>(`/assets/${id}/location`, { location });
     invalidateAssetCaches();
     return res.data;
   },

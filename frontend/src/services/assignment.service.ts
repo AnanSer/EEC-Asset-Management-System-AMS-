@@ -46,6 +46,7 @@ export interface AssignmentStatsResponse {
 
 export function invalidateAssignmentCaches() {
   appDataCache.invalidateEntity('assignments');
+  appDataCache.invalidateEntity('assets');
 }
 
 export const assignmentService = {

@@ -4,6 +4,7 @@ import {
   createAssetSchema,
   updateAssetSchema,
   updateAssetStatusSchema,
+  updateAssetLocationSchema,
   assetQuerySchema,
 } from './asset.validator';
 import prisma from '../../lib/prisma';
@@ -173,6 +174,53 @@ export class AssetController {
       return res.status(200).json(
         successResponse(updated, null, `Asset status updated to '${status}'`)
       );
+    } catch (err: any) {
+      return this.handleError(res, err);
+    }
+  };
+
+  updateLocation = async (req: Request, res: Response) => {
+    try {
+      const id = String(req.params.id);
+      const { location } = updateAssetLocationSchema.parse(req.body);
+      const updated = await this.service.updateLocation(id, location ?? null);
+
+      return res.status(200).json(
+        successResponse(updated, null, 'Asset location updated successfully')
+      );
+    } catch (err: any) {
+      return this.handleError(res, err);
+    }
+  };
+
+  getInventory = async (req: Request, res: Response) => {
+    try {
+      let departmentId: string | undefined = undefined;
+
+      if (req.auth?.user) {
+        const user = await prisma.user.findFirst({
+          where: { OR: [{ id: req.auth.user.id }, { email: req.auth.user.email }] },
+          include: { employeeProfile: true },
+        });
+
+        if (user) {
+          const role = user.role as Role;
+          // Security Guard: EMPLOYEES are strictly forbidden from organization inventory
+          if (role === ROLES.EMPLOYEE) {
+            return res.status(403).json(
+              errorResponse('Forbidden: Employees cannot access organization inventory', 403)
+            );
+          }
+
+          // Department Managers only see inventory in their assigned department
+          if (role === ROLES.DEPARTMENT_MANAGER && user.employeeProfile?.departmentId) {
+            departmentId = user.employeeProfile.departmentId;
+          }
+        }
+      }
+
+      const inventory = await this.service.getInventory(departmentId);
+      return res.status(200).json(successResponse(inventory));
     } catch (err: any) {
       return this.handleError(res, err);
     }

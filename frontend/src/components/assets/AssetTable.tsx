@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Eye, Tag, Hash } from 'lucide-react';
+import { Eye, MapPin, User } from 'lucide-react';
 import StatusBadge from '@/components/ui/StatusBadge';
 import { Asset, ASSET_CATEGORY_LABELS, ASSET_STATUS_LABELS, ASSET_CONDITION_LABELS } from '@/constants/assets';
 import AssetThumbnail from './AssetThumbnail';
@@ -21,19 +21,19 @@ export default function AssetTable({ assets }: AssetTableProps) {
               Item
             </th>
             <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">
-              Asset Name
-            </th>
-            <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">
-              Code / Serial
+              Asset
             </th>
             <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">
               Category
             </th>
             <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">
-              Department
+              Status
             </th>
             <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">
-              Status
+              Current Location
+            </th>
+            <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+              Assigned To
             </th>
             <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">
               Condition
@@ -58,7 +58,7 @@ export default function AssetTable({ assets }: AssetTableProps) {
                 </Link>
               </td>
 
-              {/* Asset Name */}
+              {/* Asset Name + Code & Serial */}
               <td className="px-4 py-3">
                 <Link
                   href={`/assets/${asset.id}`}
@@ -66,35 +66,23 @@ export default function AssetTable({ assets }: AssetTableProps) {
                 >
                   {asset.name}
                 </Link>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  {[asset.brand, asset.model].filter(Boolean).join(' · ') || '—'}
-                </p>
-              </td>
-
-              {/* Code / Serial */}
-              <td className="px-4 py-3">
-                <span className="font-mono text-xs font-semibold px-1.5 py-0.5 rounded bg-eec-primary/10 text-eec-primary border border-eec-primary/20">
-                  {asset.assetCode}
-                </span>
-                <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1">
-                  <Hash className="w-3 h-3" /> {asset.serialNumber}
-                </p>
+                <div className="flex items-center gap-1.5 mt-0.5 text-xs text-slate-500">
+                  <span className="font-mono text-xs font-semibold px-1.5 py-0.2 rounded bg-eec-primary/10 text-eec-primary border border-eec-primary/20">
+                    {asset.assetCode}
+                  </span>
+                  <span>·</span>
+                  <span className="text-slate-400 font-mono text-[11px]">{asset.serialNumber}</span>
+                </div>
               </td>
 
               {/* Category */}
               <td className="px-4 py-3">
-                <span className="text-xs font-medium text-slate-600">
+                <span className="text-xs font-medium text-slate-700">
                   {ASSET_CATEGORY_LABELS[asset.category] ?? asset.category}
                 </span>
               </td>
 
-              {/* Department */}
-              <td className="px-4 py-3">
-                <p className="text-xs font-medium text-slate-700">{asset.department?.name ?? '—'}</p>
-                <p className="text-xs text-slate-400">{asset.location ?? asset.department?.officeLocation ?? ''}</p>
-              </td>
-
-              {/* Status — read-only badge */}
+              {/* Status */}
               <td className="px-4 py-3">
                 <StatusBadge
                   status={asset.status.toLowerCase()}
@@ -102,7 +90,43 @@ export default function AssetTable({ assets }: AssetTableProps) {
                 />
               </td>
 
-              {/* Condition — read-only badge */}
+              {/* Current Location */}
+              <td className="px-4 py-3">
+                <div className="flex items-center gap-1.5 text-xs font-medium text-slate-700">
+                  <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <span>{asset.location || '—'}</span>
+                </div>
+                {asset.department?.name && (
+                  <p className="text-[11px] text-slate-400 ml-5 truncate max-w-[150px]">
+                    {asset.department.name}
+                  </p>
+                )}
+              </td>
+
+              {/* Assigned To */}
+              <td className="px-4 py-3">
+                {asset.currentAssignment ? (
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-5 h-5 rounded-full bg-eec-primary/10 flex items-center justify-center shrink-0">
+                      <User className="w-3 h-3 text-eec-primary" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-slate-800 leading-tight">
+                        {asset.currentAssignment.employeeName}
+                      </p>
+                      {asset.currentAssignment.employeeBadgeId && (
+                        <p className="text-[10px] font-mono text-slate-400">
+                          {asset.currentAssignment.employeeBadgeId}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <span className="text-xs text-slate-400">—</span>
+                )}
+              </td>
+
+              {/* Condition */}
               <td className="px-4 py-3">
                 <StatusBadge
                   status={asset.condition.toLowerCase()}
@@ -110,7 +134,7 @@ export default function AssetTable({ assets }: AssetTableProps) {
                 />
               </td>
 
-              {/* Actions — View only */}
+              {/* Actions */}
               <td className="px-4 py-3">
                 <div className="flex items-center justify-end">
                   <Link

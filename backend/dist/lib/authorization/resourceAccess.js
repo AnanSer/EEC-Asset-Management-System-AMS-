@@ -168,8 +168,8 @@ function canAccessAsset(auth, asset) {
     if (!auth)
         return false;
     const role = auth.role;
-    // Rules 1 & 2: ADMIN & IT_TECHNICIAN bypass
-    if (role === constants_1.ROLES.ADMIN || role === constants_1.ROLES.IT_TECHNICIAN) {
+    // Rules 1, 2 & 5: ADMIN, IT_TECHNICIAN, and STORE_KEEPER can view all assets
+    if (role === constants_1.ROLES.ADMIN || role === constants_1.ROLES.IT_TECHNICIAN || role === constants_1.ROLES.STORE_KEEPER) {
         return true;
     }
     // Rule 3: DEPARTMENT_MANAGER -> asset in own department OR own assigned asset

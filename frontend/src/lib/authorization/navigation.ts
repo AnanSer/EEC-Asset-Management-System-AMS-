@@ -16,6 +16,7 @@ import {
   UserCircle,
   UserCheck,
   Laptop,
+  Warehouse,
   type LucideIcon,
 } from 'lucide-react';
 import { ROLES, type Role } from './roles';
@@ -57,7 +58,13 @@ export const navItems: NavItem[] = [
     label: 'Assets',
     href: '/assets',
     icon: Package,
-    allowedRoles: [ROLES.ADMIN, ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER],
+    allowedRoles: [ROLES.ADMIN, ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER, ROLES.STORE_KEEPER],
+  },
+  {
+    label: 'Inventory',
+    href: '/store/inventory',
+    icon: Warehouse,
+    allowedRoles: [ROLES.ADMIN, ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER, ROLES.STORE_KEEPER],
   },
   {
     label: 'Assignments',

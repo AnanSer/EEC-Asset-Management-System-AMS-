@@ -8,6 +8,8 @@ export declare class AssetController {
     create: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
     update: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
     updateStatus: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
+    updateLocation: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
+    getInventory: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
     private handleError;
 }
 export declare const assetController: AssetController;

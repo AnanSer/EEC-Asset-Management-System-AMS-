@@ -120,7 +120,11 @@ export declare const assetQuerySchema: z.ZodObject<{
     page: z.ZodDefault<z.ZodOptional<z.ZodCoercedNumber<unknown>>>;
     limit: z.ZodDefault<z.ZodOptional<z.ZodCoercedNumber<unknown>>>;
 }, z.core.$strip>;
+export declare const updateAssetLocationSchema: z.ZodObject<{
+    location: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+}, z.core.$strip>;
 export type CreateAssetDTO = z.infer<typeof createAssetSchema>;
 export type UpdateAssetDTO = z.infer<typeof updateAssetSchema>;
+export type UpdateAssetLocationDTO = z.infer<typeof updateAssetLocationSchema>;
 export type AssetQueryDTO = z.infer<typeof assetQuerySchema>;
 //# sourceMappingURL=asset.validator.d.ts.map

@@ -169,6 +169,148 @@ export class AssetRepository {
       include: assetInclude,
     });
   }
+
+  async updateLocation(id: string, location: string | null) {
+    return prisma.asset.update({
+      where: { id },
+      data: { location: location ?? null },
+      include: assetInclude,
+    });
+  }
+
+  async getInventory(departmentId?: string) {
+    const where: any = {};
+    if (departmentId) {
+      where.departmentId = departmentId;
+    }
+
+    const [
+      total,
+      available,
+      assigned,
+      maintenance,
+      testing,
+      retired,
+      disposed,
+      groupedByCategory,
+      groupedByLocation,
+    ] = await Promise.all([
+      prisma.asset.count({ where }),
+      prisma.asset.count({ where: { ...where, status: AssetStatus.AVAILABLE } }),
+      prisma.asset.count({ where: { ...where, status: AssetStatus.ASSIGNED } }),
+      prisma.asset.count({ where: { ...where, status: AssetStatus.MAINTENANCE } }),
+      prisma.asset.count({ where: { ...where, status: AssetStatus.TESTING } }),
+      prisma.asset.count({ where: { ...where, status: AssetStatus.RETIRED } }),
+      prisma.asset.count({ where: { ...where, status: AssetStatus.DISPOSED } }),
+      prisma.asset.groupBy({
+        by: ['category', 'status'],
+        where,
+        _count: { id: true },
+      }),
+      prisma.asset.groupBy({
+        by: ['location', 'status'],
+        where,
+        _count: { id: true },
+      }),
+    ]);
+
+    const categories = Object.values(AssetCategory);
+    const byCategory: Record<
+      string,
+      {
+        total: number;
+        available: number;
+        assigned: number;
+        maintenance: number;
+        testing: number;
+        retired: number;
+      }
+    > = {};
+
+    for (const cat of categories) {
+      byCategory[cat] = {
+        total: 0,
+        available: 0,
+        assigned: 0,
+        maintenance: 0,
+        testing: 0,
+        retired: 0,
+      };
+    }
+
+    for (const row of groupedByCategory) {
+      const cat = row.category;
+      if (!byCategory[cat]) {
+        byCategory[cat] = {
+          total: 0,
+          available: 0,
+          assigned: 0,
+          maintenance: 0,
+          testing: 0,
+          retired: 0,
+        };
+      }
+      const count = row._count.id;
+      byCategory[cat].total += count;
+      if (row.status === AssetStatus.AVAILABLE) byCategory[cat].available += count;
+      else if (row.status === AssetStatus.ASSIGNED) byCategory[cat].assigned += count;
+      else if (row.status === AssetStatus.MAINTENANCE) byCategory[cat].maintenance += count;
+      else if (row.status === AssetStatus.TESTING) byCategory[cat].testing += count;
+      else if (row.status === AssetStatus.RETIRED || row.status === AssetStatus.DISPOSED) {
+        byCategory[cat].retired += count;
+      }
+    }
+
+    const locationMap: Record<
+      string,
+      {
+        location: string;
+        total: number;
+        available: number;
+        assigned: number;
+        maintenance: number;
+        testing: number;
+        retired: number;
+      }
+    > = {};
+
+    for (const row of groupedByLocation) {
+      const loc = row.location?.trim() || 'Unassigned Location';
+      if (!locationMap[loc]) {
+        locationMap[loc] = {
+          location: loc,
+          total: 0,
+          available: 0,
+          assigned: 0,
+          maintenance: 0,
+          testing: 0,
+          retired: 0,
+        };
+      }
+      const count = row._count.id;
+      locationMap[loc].total += count;
+      if (row.status === AssetStatus.AVAILABLE) locationMap[loc].available += count;
+      else if (row.status === AssetStatus.ASSIGNED) locationMap[loc].assigned += count;
+      else if (row.status === AssetStatus.MAINTENANCE) locationMap[loc].maintenance += count;
+      else if (row.status === AssetStatus.TESTING) locationMap[loc].testing += count;
+      else if (row.status === AssetStatus.RETIRED || row.status === AssetStatus.DISPOSED) {
+        locationMap[loc].retired += count;
+      }
+    }
+
+    const byLocation = Object.values(locationMap).sort((a, b) => b.total - a.total);
+
+    return {
+      total,
+      available,
+      assigned,
+      maintenance,
+      testing,
+      retired: retired + disposed,
+      byCategory,
+      byLocation,
+    };
+  }
 }
 
 export const assetRepository = new AssetRepository();

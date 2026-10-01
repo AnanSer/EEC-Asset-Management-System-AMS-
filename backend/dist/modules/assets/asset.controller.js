@@ -138,6 +138,44 @@ class AssetController {
                 return this.handleError(res, err);
             }
         };
+        this.updateLocation = async (req, res) => {
+            try {
+                const id = String(req.params.id);
+                const { location } = asset_validator_1.updateAssetLocationSchema.parse(req.body);
+                const updated = await this.service.updateLocation(id, location ?? null);
+                return res.status(200).json((0, api_1.successResponse)(updated, null, 'Asset location updated successfully'));
+            }
+            catch (err) {
+                return this.handleError(res, err);
+            }
+        };
+        this.getInventory = async (req, res) => {
+            try {
+                let departmentId = undefined;
+                if (req.auth?.user) {
+                    const user = await prisma_1.default.user.findFirst({
+                        where: { OR: [{ id: req.auth.user.id }, { email: req.auth.user.email }] },
+                        include: { employeeProfile: true },
+                    });
+                    if (user) {
+                        const role = user.role;
+                        // Security Guard: EMPLOYEES are strictly forbidden from organization inventory
+                        if (role === constants_1.ROLES.EMPLOYEE) {
+                            return res.status(403).json((0, api_1.errorResponse)('Forbidden: Employees cannot access organization inventory', 403));
+                        }
+                        // Department Managers only see inventory in their assigned department
+                        if (role === constants_1.ROLES.DEPARTMENT_MANAGER && user.employeeProfile?.departmentId) {
+                            departmentId = user.employeeProfile.departmentId;
+                        }
+                    }
+                }
+                const inventory = await this.service.getInventory(departmentId);
+                return res.status(200).json((0, api_1.successResponse)(inventory));
+            }
+            catch (err) {
+                return this.handleError(res, err);
+            }
+        };
     }
     handleError(res, err) {
         if (err instanceof asset_service_1.AppError) {

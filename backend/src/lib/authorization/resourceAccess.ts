@@ -245,8 +245,8 @@ export function canAccessAsset(
 
   const role = auth.role as Role;
 
-  // Rules 1 & 2: ADMIN & IT_TECHNICIAN bypass
-  if (role === ROLES.ADMIN || role === ROLES.IT_TECHNICIAN) {
+  // Rules 1, 2 & 5: ADMIN, IT_TECHNICIAN, and STORE_KEEPER can view all assets
+  if (role === ROLES.ADMIN || role === ROLES.IT_TECHNICIAN || role === ROLES.STORE_KEEPER) {
     return true;
   }
 

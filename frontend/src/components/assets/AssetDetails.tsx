@@ -32,11 +32,12 @@ import {
 import TransferModal from '@/components/assignments/TransferModal';
 import ReturnModal from '@/components/assignments/ReturnModal';
 import AssignmentTimeline from '@/components/assignments/AssignmentTimeline';
+import UpdateLocationModal from './UpdateLocationModal';
 import AssetThumbnail from './AssetThumbnail';
 import maintenanceService from '@/services/maintenance.service';
 import { MaintenanceTicket } from '@/constants/maintenance';
 import { usePermissions } from '@/hooks/usePermissions';
-import { PERMISSIONS } from '@/lib/authorization';
+import { PERMISSIONS, ROLES } from '@/lib/authorization';
 
 interface AssetDetailsProps {
   asset: Asset;
@@ -122,13 +123,14 @@ function warrantyLabel(warrantyExpiry?: string | null): { label: string; status:
 }
 
 export default function AssetDetails({ asset, onRefresh }: AssetDetailsProps) {
-  const { can } = usePermissions();
+  const { can, isAdmin, isTechnician, isStoreKeeper } = usePermissions();
   const assignmentsCount = asset._count?.assignments ?? 0;
   const maintenanceCount = asset._count?.maintenanceTickets ?? 0;
   const warranty = warrantyLabel(asset.warrantyExpiry);
 
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [showReturnModal, setShowReturnModal] = useState(false);
+  const [showLocationModal, setShowLocationModal] = useState(false);
   const [refreshTimelineTrigger, setRefreshTimelineTrigger] = useState(0);
 
   const [maintenanceTickets, setMaintenanceTickets] = useState<MaintenanceTicket[]>([]);
@@ -474,9 +476,23 @@ export default function AssetDetails({ asset, onRefresh }: AssetDetailsProps) {
         </InfoCard>
 
         {/* Location */}
-        <InfoCard title="Location &amp; Facility">
+        <InfoCard
+          title="Location &amp; Facility"
+          action={
+            (isAdmin || isTechnician || isStoreKeeper) ? (
+              <button
+                type="button"
+                onClick={() => setShowLocationModal(true)}
+                className="text-xs font-semibold text-eec-primary hover:underline flex items-center gap-1"
+              >
+                <Edit2 className="w-3.5 h-3.5" /> Edit Location
+              </button>
+            ) : undefined
+          }
+        >
           <InfoRow icon={Building2} label="Department" value={asset.department?.name} />
-          <InfoRow icon={MapPin} label="Office Location" value={asset.location || asset.department?.officeLocation} />
+          <InfoRow icon={MapPin} label="Physical Location" value={asset.location || '—'} />
+          <InfoRow icon={MapPin} label="Office Location" value={asset.department?.officeLocation} />
           <InfoRow icon={Building2} label="Building" value={asset.department?.building} />
           <InfoRow icon={MapPin} label="Floor" value={asset.department?.floor} />
         </InfoCard>
@@ -508,6 +524,23 @@ export default function AssetDetails({ asset, onRefresh }: AssetDetailsProps) {
           </div>
         </InfoCard>
       </div>
+
+      {/* Update Location Modal */}
+      {showLocationModal && (
+        <UpdateLocationModal
+          isOpen={showLocationModal}
+          onClose={() => setShowLocationModal(false)}
+          asset={{
+            id: asset.id,
+            assetCode: asset.assetCode,
+            name: asset.name,
+            location: asset.location,
+          }}
+          onSuccess={() => {
+            if (onRefresh) onRefresh();
+          }}
+        />
+      )}
 
       {/* Transfer Modal */}
       {showTransferModal && currentAssignment && (

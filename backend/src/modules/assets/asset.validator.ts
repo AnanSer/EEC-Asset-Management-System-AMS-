@@ -88,6 +88,12 @@ export const assetQuerySchema = z.object({
   limit: z.coerce.number().int().positive().max(100).optional().default(10),
 });
 
+// PATCH /api/assets/:id/location — update physical custody location only
+export const updateAssetLocationSchema = z.object({
+  location: z.string().trim().max(150).nullable().optional(),
+});
+
 export type CreateAssetDTO = z.infer<typeof createAssetSchema>;
 export type UpdateAssetDTO = z.infer<typeof updateAssetSchema>;
+export type UpdateAssetLocationDTO = z.infer<typeof updateAssetLocationSchema>;
 export type AssetQueryDTO = z.infer<typeof assetQuerySchema>;

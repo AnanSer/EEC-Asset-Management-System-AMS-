@@ -58,8 +58,20 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
     const performIdlePreWarm = () => {
       // Role-specific idle pre-warming based on authenticated RBAC permissions:
-      if (role === ROLES.EMPLOYEE || role === ROLES.STORE_KEEPER) {
-        // EMPLOYEE & STORE_KEEPER: Only personal resources
+      if (role === ROLES.STORE_KEEPER) {
+        // STORE_KEEPER: Inventory and assets pre-warming
+        appDataCache.prefetch('assets:inventory', () => assetService.getInventory());
+        appDataCache.prefetch('assets:list:{"page":1,"limit":10}', () =>
+          assetService.getAll({ page: 1, limit: 10 })
+        );
+        appDataCache.prefetch('notifications:list:{"page":1,"limit":20}', () =>
+          notificationService.getNotifications({ page: 1, limit: 20 })
+        );
+        return;
+      }
+
+      if (role === ROLES.EMPLOYEE) {
+        // EMPLOYEE: Only personal resources
         appDataCache.prefetch('assets:list:{"personal":true,"limit":50}', () =>
           assetService.getAll({ personal: true, limit: 50 })
         );
@@ -148,13 +160,17 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
           );
         }
       } else if (href === '/assets') {
-        if (role === ROLES.ADMIN || role === ROLES.IT_TECHNICIAN || role === ROLES.DEPARTMENT_MANAGER) {
+        if (role === ROLES.ADMIN || role === ROLES.IT_TECHNICIAN || role === ROLES.DEPARTMENT_MANAGER || role === ROLES.STORE_KEEPER) {
           appDataCache.prefetch('departments:list:{"limit":100}', () =>
             departmentService.getAll({ limit: 100 })
           );
           appDataCache.prefetch('assets:list:{"page":1,"limit":10}', () =>
             assetService.getAll({ page: 1, limit: 10 })
           );
+        }
+      } else if (href === '/store/inventory') {
+        if (role === ROLES.ADMIN || role === ROLES.IT_TECHNICIAN || role === ROLES.DEPARTMENT_MANAGER || role === ROLES.STORE_KEEPER) {
+          appDataCache.prefetch('assets:inventory', () => assetService.getInventory());
         }
       } else if (href === '/maintenance') {
         if (role === ROLES.ADMIN || role === ROLES.IT_TECHNICIAN || role === ROLES.DEPARTMENT_MANAGER) {

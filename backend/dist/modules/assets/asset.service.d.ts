@@ -169,6 +169,61 @@ export declare class AssetService {
         updatedAt: any;
         _count: any;
     } | null>;
+    updateLocation(id: string, location: string | null): Promise<{
+        id: any;
+        assetCode: any;
+        name: any;
+        category: any;
+        brand: any;
+        model: any;
+        serialNumber: any;
+        status: any;
+        condition: any;
+        departmentId: any;
+        department: any;
+        location: any;
+        purchaseDate: any;
+        purchasePrice: number | null;
+        warrantyExpiry: any;
+        notes: any;
+        currentAssignment: {
+            id: any;
+            employeeId: any;
+            employeeBadgeId: any;
+            employeeName: string;
+            departmentName: any;
+            assignedDate: any;
+            remarks: any;
+        } | null;
+        createdAt: any;
+        updatedAt: any;
+        _count: any;
+    } | null>;
+    getInventory(departmentId?: string): Promise<{
+        total: number;
+        available: number;
+        assigned: number;
+        maintenance: number;
+        testing: number;
+        retired: number;
+        byCategory: Record<string, {
+            total: number;
+            available: number;
+            assigned: number;
+            maintenance: number;
+            testing: number;
+            retired: number;
+        }>;
+        byLocation: {
+            location: string;
+            total: number;
+            available: number;
+            assigned: number;
+            maintenance: number;
+            testing: number;
+            retired: number;
+        }[];
+    }>;
 }
 export declare const assetService: AssetService;
 //# sourceMappingURL=asset.service.d.ts.map

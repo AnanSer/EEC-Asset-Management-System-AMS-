@@ -9,6 +9,8 @@ const router = (0, express_1.Router)();
 router.use((0, middleware_1.requireAuth)());
 // GET /api/assets - list assets (scoped by role in controller)
 router.get('/', asset_controller_1.assetController.getAll);
+// GET /api/assets/inventory - Store Keeper / Tech / Manager / Admin inventory counts (must be before /:id)
+router.get('/inventory', (0, middleware_1.requireRole)(constants_1.ROLES.ADMIN, constants_1.ROLES.IT_TECHNICIAN, constants_1.ROLES.DEPARTMENT_MANAGER, constants_1.ROLES.STORE_KEEPER), asset_controller_1.assetController.getInventory);
 // GET /api/assets/:id - get single asset details (scoped by canAccessAsset in controller)
 router.get('/:id', asset_controller_1.assetController.getById);
 // POST /api/assets - register a new asset (ADMIN and IT_TECHNICIAN)
@@ -17,5 +19,7 @@ router.post('/', (0, middleware_1.requireRole)(constants_1.ROLES.ADMIN, constant
 router.put('/:id', (0, middleware_1.requireRole)(constants_1.ROLES.ADMIN, constants_1.ROLES.IT_TECHNICIAN), asset_controller_1.assetController.update);
 // PATCH /api/assets/:id/status - change asset status (ADMIN and IT_TECHNICIAN)
 router.patch('/:id/status', (0, middleware_1.requireRole)(constants_1.ROLES.ADMIN, constants_1.ROLES.IT_TECHNICIAN), asset_controller_1.assetController.updateStatus);
+// PATCH /api/assets/:id/location - physical location update (ADMIN, IT_TECHNICIAN, STORE_KEEPER)
+router.patch('/:id/location', (0, middleware_1.requireRole)(constants_1.ROLES.ADMIN, constants_1.ROLES.IT_TECHNICIAN, constants_1.ROLES.STORE_KEEPER), asset_controller_1.assetController.updateLocation);
 exports.default = router;
 //# sourceMappingURL=asset.routes.js.map

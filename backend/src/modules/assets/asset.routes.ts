@@ -11,6 +11,13 @@ router.use(requireAuth());
 // GET /api/assets - list assets (scoped by role in controller)
 router.get('/', assetController.getAll);
 
+// GET /api/assets/inventory - Store Keeper / Tech / Manager / Admin inventory counts (must be before /:id)
+router.get(
+  '/inventory',
+  requireRole(ROLES.ADMIN, ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER, ROLES.STORE_KEEPER),
+  assetController.getInventory
+);
+
 // GET /api/assets/:id - get single asset details (scoped by canAccessAsset in controller)
 router.get('/:id', assetController.getById);
 
@@ -33,6 +40,13 @@ router.patch(
   '/:id/status',
   requireRole(ROLES.ADMIN, ROLES.IT_TECHNICIAN),
   assetController.updateStatus
+);
+
+// PATCH /api/assets/:id/location - physical location update (ADMIN, IT_TECHNICIAN, STORE_KEEPER)
+router.patch(
+  '/:id/location',
+  requireRole(ROLES.ADMIN, ROLES.IT_TECHNICIAN, ROLES.STORE_KEEPER),
+  assetController.updateLocation
 );
 
 export default router;

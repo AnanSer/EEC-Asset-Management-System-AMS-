@@ -54,6 +54,7 @@ export interface MaintenanceTechniciansResponse {
 
 export function invalidateMaintenanceCaches() {
   appDataCache.invalidateEntity('maintenance');
+  appDataCache.invalidateEntity('assets');
 }
 
 export const maintenanceService = {

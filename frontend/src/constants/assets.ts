@@ -132,3 +132,40 @@ export interface AssetResponse {
   message?: string;
   data: Asset;
 }
+
+export interface AssetCategoryInventory {
+  category: AssetCategory;
+  categoryLabel: string;
+  total: number;
+  available: number;
+  assigned: number;
+  maintenance: number;
+  testing: number;
+  retired: number;
+}
+
+export interface AssetLocationInventory {
+  location: string;
+  total: number;
+  available: number;
+  assigned: number;
+  maintenance: number;
+  testing: number;
+  retired: number;
+}
+
+export interface AssetInventorySummary {
+  total: number;
+  available: number;
+  assigned: number;
+  maintenance: number;
+  testing: number;
+  retired: number;
+  byCategory: Record<string, AssetCategoryInventory>;
+  byLocation: AssetLocationInventory[];
+}
+
+export interface AssetInventoryResponse {
+  success: boolean;
+  data: AssetInventorySummary;
+}

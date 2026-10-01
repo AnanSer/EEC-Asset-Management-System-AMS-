@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.assetQuerySchema = exports.updateAssetStatusSchema = exports.updateAssetSchema = exports.createAssetSchema = exports.WORKFLOW_CONTROLLED_STATUSES = exports.assetConditionEnum = exports.assetStatusEnum = exports.assetCategoryEnum = void 0;
+exports.updateAssetLocationSchema = exports.assetQuerySchema = exports.updateAssetStatusSchema = exports.updateAssetSchema = exports.createAssetSchema = exports.WORKFLOW_CONTROLLED_STATUSES = exports.assetConditionEnum = exports.assetStatusEnum = exports.assetCategoryEnum = void 0;
 const zod_1 = require("zod");
 exports.assetCategoryEnum = zod_1.z.enum([
     'LAPTOP', 'DESKTOP', 'PRINTER', 'SCANNER', 'ROUTER',
@@ -81,5 +81,9 @@ exports.assetQuerySchema = zod_1.z.object({
     personal: zod_1.z.enum(['true', 'false']).or(zod_1.z.boolean()).optional(),
     page: zod_1.z.coerce.number().int().positive().optional().default(1),
     limit: zod_1.z.coerce.number().int().positive().max(100).optional().default(10),
+});
+// PATCH /api/assets/:id/location — update physical custody location only
+exports.updateAssetLocationSchema = zod_1.z.object({
+    location: zod_1.z.string().trim().max(150).nullable().optional(),
 });
 //# sourceMappingURL=asset.validator.js.map

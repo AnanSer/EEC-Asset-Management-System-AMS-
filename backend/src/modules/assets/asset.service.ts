@@ -176,6 +176,19 @@ export class AssetService {
     const updated = await this.repo.updateStatus(id, status as AssetStatus);
     return this.formatAsset(updated);
   }
+
+  async updateLocation(id: string, location: string | null) {
+    const current = await this.repo.findById(id);
+    if (!current) {
+      throw new AppError(`Asset with ID '${id}' not found`, 404);
+    }
+    const updated = await this.repo.updateLocation(id, location);
+    return this.formatAsset(updated);
+  }
+
+  async getInventory(departmentId?: string) {
+    return await this.repo.getInventory(departmentId);
+  }
 }
 
 export const assetService = new AssetService();

@@ -155,6 +155,17 @@ class AssetService {
         const updated = await this.repo.updateStatus(id, status);
         return this.formatAsset(updated);
     }
+    async updateLocation(id, location) {
+        const current = await this.repo.findById(id);
+        if (!current) {
+            throw new AppError(`Asset with ID '${id}' not found`, 404);
+        }
+        const updated = await this.repo.updateLocation(id, location);
+        return this.formatAsset(updated);
+    }
+    async getInventory(departmentId) {
+        return await this.repo.getInventory(departmentId);
+    }
 }
 exports.AssetService = AssetService;
 exports.assetService = new AssetService();

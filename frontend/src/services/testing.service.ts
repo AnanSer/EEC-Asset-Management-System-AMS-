@@ -24,6 +24,7 @@ export interface InspectionResponse {
 
 export function invalidateTestingCaches() {
   appDataCache.invalidateEntity('testing');
+  appDataCache.invalidateEntity('assets');
 }
 
 export const testingService = {

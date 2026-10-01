@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.assetRepository = exports.AssetRepository = void 0;
 const prisma_1 = __importDefault(require("../../lib/prisma"));
+const client_1 = require("@prisma/client");
 const assetInclude = {
     department: {
         select: {
@@ -148,6 +149,115 @@ class AssetRepository {
             data: { status },
             include: assetInclude,
         });
+    }
+    async updateLocation(id, location) {
+        return prisma_1.default.asset.update({
+            where: { id },
+            data: { location: location ?? null },
+            include: assetInclude,
+        });
+    }
+    async getInventory(departmentId) {
+        const where = {};
+        if (departmentId) {
+            where.departmentId = departmentId;
+        }
+        const [total, available, assigned, maintenance, testing, retired, disposed, groupedByCategory, groupedByLocation,] = await Promise.all([
+            prisma_1.default.asset.count({ where }),
+            prisma_1.default.asset.count({ where: { ...where, status: client_1.AssetStatus.AVAILABLE } }),
+            prisma_1.default.asset.count({ where: { ...where, status: client_1.AssetStatus.ASSIGNED } }),
+            prisma_1.default.asset.count({ where: { ...where, status: client_1.AssetStatus.MAINTENANCE } }),
+            prisma_1.default.asset.count({ where: { ...where, status: client_1.AssetStatus.TESTING } }),
+            prisma_1.default.asset.count({ where: { ...where, status: client_1.AssetStatus.RETIRED } }),
+            prisma_1.default.asset.count({ where: { ...where, status: client_1.AssetStatus.DISPOSED } }),
+            prisma_1.default.asset.groupBy({
+                by: ['category', 'status'],
+                where,
+                _count: { id: true },
+            }),
+            prisma_1.default.asset.groupBy({
+                by: ['location', 'status'],
+                where,
+                _count: { id: true },
+            }),
+        ]);
+        const categories = Object.values(client_1.AssetCategory);
+        const byCategory = {};
+        for (const cat of categories) {
+            byCategory[cat] = {
+                total: 0,
+                available: 0,
+                assigned: 0,
+                maintenance: 0,
+                testing: 0,
+                retired: 0,
+            };
+        }
+        for (const row of groupedByCategory) {
+            const cat = row.category;
+            if (!byCategory[cat]) {
+                byCategory[cat] = {
+                    total: 0,
+                    available: 0,
+                    assigned: 0,
+                    maintenance: 0,
+                    testing: 0,
+                    retired: 0,
+                };
+            }
+            const count = row._count.id;
+            byCategory[cat].total += count;
+            if (row.status === client_1.AssetStatus.AVAILABLE)
+                byCategory[cat].available += count;
+            else if (row.status === client_1.AssetStatus.ASSIGNED)
+                byCategory[cat].assigned += count;
+            else if (row.status === client_1.AssetStatus.MAINTENANCE)
+                byCategory[cat].maintenance += count;
+            else if (row.status === client_1.AssetStatus.TESTING)
+                byCategory[cat].testing += count;
+            else if (row.status === client_1.AssetStatus.RETIRED || row.status === client_1.AssetStatus.DISPOSED) {
+                byCategory[cat].retired += count;
+            }
+        }
+        const locationMap = {};
+        for (const row of groupedByLocation) {
+            const loc = row.location?.trim() || 'Unassigned Location';
+            if (!locationMap[loc]) {
+                locationMap[loc] = {
+                    location: loc,
+                    total: 0,
+                    available: 0,
+                    assigned: 0,
+                    maintenance: 0,
+                    testing: 0,
+                    retired: 0,
+                };
+            }
+            const count = row._count.id;
+            locationMap[loc].total += count;
+            if (row.status === client_1.AssetStatus.AVAILABLE)
+                locationMap[loc].available += count;
+            else if (row.status === client_1.AssetStatus.ASSIGNED)
+                locationMap[loc].assigned += count;
+            else if (row.status === client_1.AssetStatus.MAINTENANCE)
+                locationMap[loc].maintenance += count;
+            else if (row.status === client_1.AssetStatus.TESTING)
+                locationMap[loc].testing += count;
+            else if (row.status === client_1.AssetStatus.RETIRED || row.status === client_1.AssetStatus.DISPOSED) {
+                locationMap[loc].retired += count;
+            }
+        }
+        const byLocation = Object.values(locationMap).sort((a, b) => b.total - a.total);
+        return {
+            total,
+            available,
+            assigned,
+            maintenance,
+            testing,
+            retired: retired + disposed,
+            byCategory,
+            byLocation,
+        };
     }
 }
 exports.AssetRepository = AssetRepository;
