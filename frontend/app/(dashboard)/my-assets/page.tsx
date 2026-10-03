@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Laptop, Search, ExternalLink, Wrench, ShieldCheck, Calendar, Hash, RotateCcw, Clock, CheckCircle2, PackageCheck } from 'lucide-react';
+import { Laptop, Search, ExternalLink, Wrench, ShieldCheck, Calendar, Hash, RotateCcw, Clock, CheckCircle2, PackageCheck, UserCheck } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import EmptyState from '@/components/ui/EmptyState';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
@@ -324,6 +324,21 @@ export default function MyAssetsPage() {
                               </span>
                               <span className="font-medium text-slate-700 capitalize">
                                 {asset.returnedAssignment.conditionOnReturn.toLowerCase()}
+                              </span>
+                            </div>
+                          )}
+
+                          {asset.returnedAssignment?.receivedBy && (
+                            <div className="flex items-center justify-between">
+                              <span className="flex items-center gap-1.5 text-slate-500">
+                                <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
+                                Receipt Confirmed By:
+                              </span>
+                              <span
+                                className="font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/80 text-[11px]"
+                                title={asset.returnedAssignment.receivedByEmail || undefined}
+                              >
+                                {asset.returnedAssignment.receivedBy}
                               </span>
                             </div>
                           )}

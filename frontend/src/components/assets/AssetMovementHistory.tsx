@@ -274,6 +274,45 @@ export default function AssetMovementHistory({
                   )}
                 </div>
 
+                {/* Person who approved/confirmed receipt or handled movement */}
+                {ev.actorName && (
+                  <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-200/60 text-xs">
+                    <div className={`p-1 rounded shrink-0 ${
+                      ev.type === 'RETURN'
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : 'bg-blue-100 text-blue-800'
+                    }`}>
+                      <UserCheck className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-semibold text-slate-700">
+                        {ev.type === 'RETURN'
+                          ? 'Receipt Confirmed & Approved By:'
+                          : ev.type === 'ASSIGNMENT' || ev.type === 'TRANSFER'
+                          ? 'Handled / Handed Over By:'
+                          : 'Action Performed By:'}
+                      </span>
+                      <span className={`font-bold px-2 py-0.5 rounded border text-xs ${
+                        ev.type === 'RETURN'
+                          ? 'text-emerald-800 bg-emerald-50 border-emerald-200'
+                          : 'text-blue-800 bg-blue-50 border-blue-200'
+                      }`}>
+                        {ev.actorName}
+                      </span>
+                      {ev.actorEmail && (
+                        <span className="text-2xs text-slate-400 font-mono">
+                          ({ev.actorEmail})
+                        </span>
+                      )}
+                      {ev.actorRole && (
+                        <span className="text-2xs text-slate-500 font-medium capitalize">
+                          • {ev.actorRole.replace('_', ' ').toLowerCase()}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* Notes & Details */}
                 {ev.details && (
                   <div className="flex items-start gap-1.5 text-xs text-slate-600 bg-white p-2.5 rounded-lg border border-slate-100 mt-1">

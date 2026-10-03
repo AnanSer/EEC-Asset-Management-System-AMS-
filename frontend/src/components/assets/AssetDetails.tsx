@@ -428,19 +428,37 @@ export default function AssetDetails({
             />
           </div>
         ) : (
-          <div className="p-4 rounded-lg bg-slate-50 border border-slate-100 text-xs text-slate-500 flex items-center justify-between">
-            <p>
-              {isReturnedCustody
-                ? 'This equipment was returned to the company store and is currently in Available inventory without an active custodian.'
-                : 'This equipment is currently stored in Available inventory and has no active custodian.'}
-            </p>
-            {!isReturnedCustody && can(PERMISSIONS.ASSETS_ASSIGN) && (
-              <Link
-                href={`/assignments/new?assetId=${asset.id}`}
-                className="font-semibold text-eec-primary hover:underline inline-flex items-center gap-1"
-              >
-                <Plus className="w-3.5 h-3.5" /> Assign Now
-              </Link>
+          <div className="p-4 rounded-lg bg-slate-50 border border-slate-100 text-xs text-slate-500 space-y-2">
+            <div className="flex items-center justify-between">
+              <p>
+                {isReturnedCustody
+                  ? 'This equipment was returned to the company store and is currently in Available inventory without an active custodian.'
+                  : 'This equipment is currently stored in Available inventory and has no active custodian.'}
+              </p>
+              {!isReturnedCustody && can(PERMISSIONS.ASSETS_ASSIGN) && (
+                <Link
+                  href={`/assignments/new?assetId=${asset.id}`}
+                  className="font-semibold text-eec-primary hover:underline inline-flex items-center gap-1 shrink-0"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Assign Now
+                </Link>
+              )}
+            </div>
+            {isReturnedCustody && asset.returnedAssignment?.receivedBy && (
+              <div className="flex items-center gap-2 pt-2 border-t border-slate-200/60 flex-wrap">
+                <span className="flex items-center gap-1 text-slate-600 font-medium">
+                  <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  Receipt Confirmed & Approved By:
+                </span>
+                <span className="font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/80">
+                  {asset.returnedAssignment.receivedBy}
+                </span>
+                {asset.returnedAssignment.returnedDate && (
+                  <span className="text-slate-400 text-2xs">
+                    on {formatDate(asset.returnedAssignment.returnedDate)}
+                  </span>
+                )}
+              </div>
             )}
           </div>
         )}

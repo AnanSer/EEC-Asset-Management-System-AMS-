@@ -24,6 +24,8 @@ export interface AssetMovementEvent {
     date: string;
     title: string;
     actorName?: string;
+    actorEmail?: string | null;
+    actorRole?: string | null;
     employeeName?: string;
     departmentName?: string;
     location?: string;

@@ -60,6 +60,23 @@ export class AssetController {
                           },
                         },
                       },
+                      returnRequests: {
+                        where: { status: 'RECEIVED' },
+                        orderBy: { receivedAt: 'desc' },
+                        take: 1,
+                        include: {
+                          receivedBy: {
+                            select: {
+                              id: true,
+                              email: true,
+                              role: true,
+                              employeeProfile: {
+                                select: { firstName: true, lastName: true },
+                              },
+                            },
+                          },
+                        },
+                      },
                     },
                   },
                 },
@@ -79,6 +96,11 @@ export class AssetController {
                 const baseAsset = asgn.asset;
                 const isCurrent = asgn.isCurrent;
                 const custodyStatus = isCurrent ? 'ASSIGNED' : 'RETURNED';
+
+                const returnReq = baseAsset.returnRequests?.[0];
+                const receiverName = returnReq?.receivedBy?.employeeProfile
+                  ? `${returnReq.receivedBy.employeeProfile.firstName} ${returnReq.receivedBy.employeeProfile.lastName}`
+                  : returnReq?.receivedBy?.email || 'Store Keeper';
 
                 return {
                   ...baseAsset,
@@ -103,6 +125,8 @@ export class AssetController {
                         conditionOnReturn: asgn.conditionOnReturn,
                         notes: asgn.notes,
                         isCurrent: false,
+                        receivedBy: receiverName,
+                        receivedByEmail: returnReq?.receivedBy?.email || null,
                       }
                     : null,
                 };

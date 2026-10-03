@@ -90,6 +90,8 @@ export interface Asset {
     returnedDate?: string | null;
     conditionOnReturn?: string | null;
     notes?: string | null;
+    receivedBy?: string | null;
+    receivedByEmail?: string | null;
   } | null;
   assignments?: any[];
 }

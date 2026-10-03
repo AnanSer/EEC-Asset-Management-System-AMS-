@@ -197,7 +197,9 @@ class StoreService {
                         requester: { include: { department: true } },
                         receivedBy: {
                             select: {
+                                id: true,
                                 email: true,
+                                role: true,
                                 employeeProfile: { select: { firstName: true, lastName: true } },
                             },
                         },
@@ -235,6 +237,17 @@ class StoreService {
             const deptName = asgn.employee?.department?.name || 'Department';
             // If returned, add the Return event
             if (asgn.returnedDate) {
+                // Find matching return request for this return
+                const matchingReturnReq = asset.returnRequests.find((r) => {
+                    if (!r.receivedAt || !asgn.returnedDate)
+                        return false;
+                    return Math.abs(new Date(r.receivedAt).getTime() - new Date(asgn.returnedDate).getTime()) < 300000;
+                }) || asset.returnRequests[0];
+                const receiverName = matchingReturnReq?.receivedBy?.employeeProfile
+                    ? `${matchingReturnReq.receivedBy.employeeProfile.firstName} ${matchingReturnReq.receivedBy.employeeProfile.lastName}`
+                    : matchingReturnReq?.receivedBy?.email || 'Store Keeper';
+                const receiverEmail = matchingReturnReq?.receivedBy?.email || null;
+                const receiverRole = matchingReturnReq?.receivedBy?.role || 'STORE_KEEPER';
                 events.push({
                     id: `asgn-ret-${asgn.id}`,
                     type: 'RETURN',
@@ -242,13 +255,26 @@ class StoreService {
                     title: `Returned from ${empName}`,
                     employeeName: empName,
                     departmentName: deptName,
-                    location: asset.location || 'Store',
+                    location: matchingReturnReq?.returnLocation || asset.location || 'Store',
                     condition: asgn.conditionOnReturn,
                     status: 'COMPLETED',
-                    details: asgn.notes || 'Custody returned to store inventory',
+                    actorName: receiverName,
+                    actorEmail: receiverEmail,
+                    actorRole: receiverRole,
+                    details: matchingReturnReq?.notes
+                        ? `Receipt confirmed by ${receiverName}: ${matchingReturnReq.notes}`
+                        : asgn.notes || `Receipt inspected and confirmed by ${receiverName}`,
                 });
             }
             // Add the Assignment/Transfer-in event
+            const matchingHandover = asset.assetRequests.find((r) => {
+                if (!r.fulfilledAt || !asgn.assignedDate)
+                    return false;
+                return Math.abs(new Date(r.fulfilledAt).getTime() - new Date(asgn.assignedDate).getTime()) < 300000;
+            }) || asset.assetRequests[0];
+            const fulfillerName = matchingHandover?.fulfilledBy?.employeeProfile
+                ? `${matchingHandover.fulfilledBy.employeeProfile.firstName} ${matchingHandover.fulfilledBy.employeeProfile.lastName}`
+                : matchingHandover?.fulfilledBy?.email || 'Store Keeper';
             events.push({
                 id: `asgn-start-${asgn.id}`,
                 type: isTransfer ? 'TRANSFER' : 'ASSIGNMENT',
@@ -259,7 +285,8 @@ class StoreService {
                 location: asset.location || 'Assigned Custody',
                 condition: asgn.conditionOnAssign,
                 status: asgn.isCurrent ? 'ACTIVE' : 'COMPLETED',
-                details: asgn.notes || 'Handed over by Store Keeper',
+                actorName: fulfillerName,
+                details: asgn.notes || `Handed over by ${fulfillerName}`,
             });
         }
         // 2. Process Maintenance Tickets
