@@ -30,6 +30,12 @@ export type CacheEntity =
   | 'notifications'
   | 'settings'
   | 'reports'
+  | 'requests'
+  | 'my-requests'
+  | 'returns'
+  | 'my-returns'
+  | 'store-dashboard'
+  | 'asset-movement'
   | 'profile';
 
 export interface AppDataCacheContextValue {

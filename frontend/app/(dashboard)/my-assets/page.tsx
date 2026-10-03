@@ -2,36 +2,54 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Laptop, Search, ExternalLink, Wrench, ShieldCheck, Calendar, Hash } from 'lucide-react';
+import { Laptop, Search, ExternalLink, Wrench, ShieldCheck, Calendar, Hash, RotateCcw, Clock } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import EmptyState from '@/components/ui/EmptyState';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import StatusBadge from '@/components/ui/StatusBadge';
 import { useToast } from '@/components/ui/Toast';
 import assetService from '@/services/asset.service';
+import returnService from '@/services/return.service';
 import { Asset, ASSET_STATUS_LABELS } from '@/constants/assets';
 import AssetThumbnail from '@/components/assets/AssetThumbnail';
 import PermissionGuard from '@/components/auth/PermissionGuard';
 import { PERMISSIONS } from '@/lib/authorization';
+import { usePermissions } from '@/hooks/usePermissions';
+import RequestReturnModal from '@/components/returns/RequestReturnModal';
 
 export default function MyAssetsPage() {
   const toast = useToast();
+  const { can } = usePermissions();
   const [assets, setAssets] = useState<Asset[]>([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [loading, setLoading] = useState(true);
+  const [pendingReturnAssetIds, setPendingReturnAssetIds] = useState<Set<string>>(new Set());
+  const [assetForReturn, setAssetForReturn] = useState<Asset | null>(null);
+  const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
 
   const fetchMyAssets = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await assetService.getAll({
-        personal: true,
-        search: search.trim() || undefined,
-        status: statusFilter !== 'all' ? statusFilter : undefined,
-        limit: 50,
-      });
-      if (res.success) {
-        setAssets(res.data);
+      const [assetsRes, returnsRes] = await Promise.allSettled([
+        assetService.getAll({
+          personal: true,
+          search: search.trim() || undefined,
+          status: statusFilter !== 'all' ? statusFilter : undefined,
+          limit: 50,
+        }),
+        returnService.getMyReturns({ status: 'PENDING' }),
+      ]);
+
+      if (assetsRes.status === 'fulfilled' && assetsRes.value.success) {
+        setAssets(assetsRes.value.data);
+      }
+
+      if (returnsRes.status === 'fulfilled' && returnsRes.value.success) {
+        const pendingIds = new Set<string>(
+          (returnsRes.value.data || []).map((r: any) => r.assetId)
+        );
+        setPendingReturnAssetIds(pendingIds);
       }
     } catch (err: unknown) {
       const msg = (err as any)?.response?.data?.message || 'Failed to fetch your assigned assets';
@@ -189,18 +207,44 @@ export default function MyAssetsPage() {
                   </div>
 
                   {/* Actions footer */}
-                  <div className="bg-slate-50/70 border-t border-slate-100 p-3 flex items-center justify-between gap-2">
-                    <Link
-                      href={`/maintenance/new?assetId=${asset.id}`}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 transition-colors shadow-2xs"
-                    >
-                      <Wrench className="w-3.5 h-3.5 text-amber-600" />
-                      Report Issue
-                    </Link>
+                  <div className="bg-slate-50/70 border-t border-slate-100 p-3 flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <Link
+                        href={`/maintenance/new?assetId=${asset.id}`}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 transition-colors shadow-2xs"
+                      >
+                        <Wrench className="w-3.5 h-3.5 text-amber-600" />
+                        Report Issue
+                      </Link>
+
+                      {asset.status === 'ASSIGNED' && can(PERMISSIONS.ASSET_RETURNS_CREATE) && (
+                        pendingReturnAssetIds.has(asset.id) ? (
+                          <span
+                            title="Return request submitted; awaiting Store Keeper physical inspection"
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200"
+                          >
+                            <Clock className="w-3.5 h-3.5" />
+                            Return Requested
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAssetForReturn(asset);
+                              setIsReturnModalOpen(true);
+                            }}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 hover:text-eec-primary transition-colors shadow-2xs"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5 text-eec-primary" />
+                            Request Return
+                          </button>
+                        )
+                      )}
+                    </div>
 
                     <Link
                       href={`/assets/${asset.id}`}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-eec-primary hover:bg-eec-primary/90 transition-colors shadow-2xs"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-eec-primary hover:bg-eec-primary/90 transition-colors shadow-2xs"
                     >
                       View Details
                       <ExternalLink className="w-3 h-3" />
@@ -211,6 +255,19 @@ export default function MyAssetsPage() {
             })}
           </div>
         )}
+
+        {/* Request Return Modal */}
+        <RequestReturnModal
+          asset={assetForReturn}
+          isOpen={isReturnModalOpen}
+          onClose={() => {
+            setIsReturnModalOpen(false);
+            setAssetForReturn(null);
+          }}
+          onSuccess={() => {
+            fetchMyAssets();
+          }}
+        />
       </div>
     </PermissionGuard>
   );

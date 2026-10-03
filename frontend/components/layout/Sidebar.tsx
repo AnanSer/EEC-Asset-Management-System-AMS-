@@ -16,6 +16,9 @@ import employeeService from '@/services/employee.service';
 import assetService from '@/services/asset.service';
 import departmentService from '@/services/department.service';
 import notificationService from '@/services/notification.service';
+import requestService from '@/services/request.service';
+import returnService from '@/services/return.service';
+import storeService from '@/services/store.service';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -59,11 +62,18 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
     const performIdlePreWarm = () => {
       // Role-specific idle pre-warming based on authenticated RBAC permissions:
       if (role === ROLES.STORE_KEEPER) {
-        // STORE_KEEPER: Inventory and assets pre-warming
+        // STORE_KEEPER: Inventory, assets, and approved requests pre-warming
         appDataCache.prefetch('assets:inventory', () => assetService.getInventory());
         appDataCache.prefetch('assets:list:{"page":1,"limit":10}', () =>
           assetService.getAll({ page: 1, limit: 10 })
         );
+        appDataCache.prefetch('requests:list:{"status":"APPROVED","page":1,"limit":20}', () =>
+          requestService.getAll({ status: 'APPROVED', page: 1, limit: 20 })
+        );
+        appDataCache.prefetch('returns:list:{"status":"PENDING","page":1,"limit":20}', () =>
+          returnService.getAll({ status: 'PENDING', page: 1, limit: 20 })
+        );
+        appDataCache.prefetch('store-dashboard:overview', () => storeService.getDashboard());
         appDataCache.prefetch('notifications:list:{"page":1,"limit":20}', () =>
           notificationService.getNotifications({ page: 1, limit: 20 })
         );
@@ -74,6 +84,9 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
         // EMPLOYEE: Only personal resources
         appDataCache.prefetch('assets:list:{"personal":true,"limit":50}', () =>
           assetService.getAll({ personal: true, limit: 50 })
+        );
+        appDataCache.prefetch('my-requests:list:{"personal":true,"page":1,"limit":10}', () =>
+          requestService.getMyRequests({ page: 1, limit: 10 })
         );
         appDataCache.prefetch('maintenance:list:{"personal":true,"page":1,"limit":50}', () =>
           maintenanceService.getAll({ personal: true, page: 1, limit: 50 })
@@ -186,6 +199,32 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
             departmentService.getAll({ status: 'all', page: 1, limit: 8 })
           );
         }
+      } else if (href === '/requests') {
+        if (role === ROLES.ADMIN || role === ROLES.DEPARTMENT_MANAGER) {
+          appDataCache.prefetch('requests:list:{"page":1,"limit":10}', () =>
+            requestService.getAll({ page: 1, limit: 10 })
+          );
+        }
+      } else if (href === '/store/requests') {
+        if (role === ROLES.STORE_KEEPER || role === ROLES.ADMIN) {
+          appDataCache.prefetch('requests:list:{"status":"APPROVED","page":1,"limit":20}', () =>
+            requestService.getAll({ status: 'APPROVED', page: 1, limit: 20 })
+          );
+        }
+      } else if (href === '/store') {
+        if (role === ROLES.STORE_KEEPER || role === ROLES.ADMIN) {
+          appDataCache.prefetch('store-dashboard:overview', () => storeService.getDashboard());
+        }
+      } else if (href === '/store/returns') {
+        if (role === ROLES.STORE_KEEPER || role === ROLES.ADMIN) {
+          appDataCache.prefetch('returns:list:{"status":"PENDING","page":1,"limit":20}', () =>
+            returnService.getAll({ status: 'PENDING', page: 1, limit: 20 })
+          );
+        }
+      } else if (href === '/my-requests') {
+        appDataCache.prefetch('my-requests:list:{"personal":true,"page":1,"limit":10}', () =>
+          requestService.getMyRequests({ page: 1, limit: 10 })
+        );
       } else if (href === '/my-assets') {
         appDataCache.prefetch('assets:list:{"personal":true,"limit":50}', () =>
           assetService.getAll({ personal: true, limit: 50 })

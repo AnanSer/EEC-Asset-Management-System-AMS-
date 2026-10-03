@@ -35,6 +35,18 @@ exports.PERMISSIONS = {
     // settings: view, update
     SETTINGS_VIEW: 'settings:view',
     SETTINGS_UPDATE: 'settings:update',
+    // asset requests: view, create, approve, reject, fulfill, cancel
+    ASSET_REQUESTS_VIEW: 'asset_requests:view',
+    ASSET_REQUESTS_CREATE: 'asset_requests:create',
+    ASSET_REQUESTS_APPROVE: 'asset_requests:approve',
+    ASSET_REQUESTS_REJECT: 'asset_requests:reject',
+    ASSET_REQUESTS_FULFILL: 'asset_requests:fulfill',
+    ASSET_REQUESTS_CANCEL: 'asset_requests:cancel',
+    // asset returns: view, create, receive, cancel (Phase 11D)
+    ASSET_RETURNS_VIEW: 'asset_returns:view',
+    ASSET_RETURNS_CREATE: 'asset_returns:create',
+    ASSET_RETURNS_RECEIVE: 'asset_returns:receive',
+    ASSET_RETURNS_CANCEL: 'asset_returns:cancel',
 };
 /**
  * Role-to-Permissions Mapping for Backend RBAC
@@ -55,6 +67,10 @@ exports.ROLE_PERMISSIONS = {
         exports.PERMISSIONS.TESTING_EXECUTE,
         exports.PERMISSIONS.REPORTS_VIEW,
         exports.PERMISSIONS.SETTINGS_VIEW,
+        exports.PERMISSIONS.ASSET_REQUESTS_VIEW,
+        exports.PERMISSIONS.ASSET_RETURNS_VIEW,
+        exports.PERMISSIONS.ASSET_RETURNS_CREATE,
+        exports.PERMISSIONS.ASSET_RETURNS_CANCEL,
     ],
     [roles_1.ROLES.DEPARTMENT_MANAGER]: [
         exports.PERMISSIONS.DEPARTMENTS_VIEW,
@@ -64,12 +80,24 @@ exports.ROLE_PERMISSIONS = {
         exports.PERMISSIONS.MAINTENANCE_CREATE,
         exports.PERMISSIONS.REPORTS_VIEW,
         exports.PERMISSIONS.SETTINGS_VIEW,
+        exports.PERMISSIONS.ASSET_REQUESTS_VIEW,
+        exports.PERMISSIONS.ASSET_REQUESTS_CREATE,
+        exports.PERMISSIONS.ASSET_REQUESTS_CANCEL,
+        exports.PERMISSIONS.ASSET_RETURNS_VIEW,
+        exports.PERMISSIONS.ASSET_RETURNS_CREATE,
+        exports.PERMISSIONS.ASSET_RETURNS_CANCEL,
     ],
     [roles_1.ROLES.EMPLOYEE]: [
         exports.PERMISSIONS.ASSETS_VIEW,
         exports.PERMISSIONS.MAINTENANCE_VIEW,
         exports.PERMISSIONS.MAINTENANCE_CREATE,
         exports.PERMISSIONS.SETTINGS_VIEW,
+        exports.PERMISSIONS.ASSET_REQUESTS_VIEW,
+        exports.PERMISSIONS.ASSET_REQUESTS_CREATE,
+        exports.PERMISSIONS.ASSET_REQUESTS_CANCEL,
+        exports.PERMISSIONS.ASSET_RETURNS_VIEW,
+        exports.PERMISSIONS.ASSET_RETURNS_CREATE,
+        exports.PERMISSIONS.ASSET_RETURNS_CANCEL,
     ],
     [roles_1.ROLES.STORE_KEEPER]: [
         exports.PERMISSIONS.DEPARTMENTS_VIEW,
@@ -77,6 +105,10 @@ exports.ROLE_PERMISSIONS = {
         exports.PERMISSIONS.MAINTENANCE_VIEW,
         exports.PERMISSIONS.MAINTENANCE_CREATE,
         exports.PERMISSIONS.SETTINGS_VIEW,
+        exports.PERMISSIONS.ASSET_REQUESTS_VIEW,
+        exports.PERMISSIONS.ASSET_REQUESTS_FULFILL,
+        exports.PERMISSIONS.ASSET_RETURNS_VIEW,
+        exports.PERMISSIONS.ASSET_RETURNS_RECEIVE,
     ],
 };
 //# sourceMappingURL=permissions.js.map

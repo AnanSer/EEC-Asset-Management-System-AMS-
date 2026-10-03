@@ -26,6 +26,9 @@ import searchRoutes from './modules/search/search.routes';
 import reportRoutes from './modules/reports/report.routes';
 import settingsRoutes from './modules/settings/settings.routes';
 import notificationRoutes from './modules/notifications/notification.routes';
+import requestRoutes from './modules/asset-requests/request.routes';
+import returnRoutes from './modules/asset-returns/return.routes';
+import storeRoutes from './modules/store/store.routes';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -115,6 +118,9 @@ app.use('/api/search', searchRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/requests', requestRoutes);
+app.use('/api/returns', returnRoutes);
+app.use('/api/store', storeRoutes);
 
 // ─── Start Server ────────────────────────────────────────────────────────────
 app.listen(PORT, async () => {

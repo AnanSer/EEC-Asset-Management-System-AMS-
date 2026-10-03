@@ -83,6 +83,20 @@ enum InspectionStatus {
   NEEDS_REPAIR
 }
 
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  FULFILLED
+  CANCELLED
+}
+
+enum ReturnRequestStatus {
+  PENDING
+  RECEIVED
+  CANCELLED
+}
+
 enum NotificationType {
   INFO
   SUCCESS
@@ -114,6 +128,8 @@ model Department {
 
   employees        EmployeeProfile[]
   assets           Asset[]
+  assetRequests    AssetRequest[]
+  returnRequests   AssetReturnRequest[]
 
   @@index([code])
   @@index([isActive])
@@ -135,6 +151,10 @@ model User {
   passwordResetTokens     PasswordResetToken[]
   auditLogs               AuditLog[]
   notifications           Notification[]
+  approvedRequests        AssetRequest[]           @relation("ApprovedRequests")
+  rejectedRequests        AssetRequest[]           @relation("RejectedRequests")
+  fulfilledRequests       AssetRequest[]          @relation("FulfilledRequests")
+  receivedReturns         AssetReturnRequest[]     @relation("ReceivedReturns")
 
   @@index([email])
   @@index([role])
@@ -158,6 +178,8 @@ model EmployeeProfile {
   updatedAt        DateTime          @updatedAt
 
   assetAssignments AssetAssignment[]
+  assetRequests    AssetRequest[]
+  returnRequests   AssetReturnRequest[]
 
   @@index([employeeId])
   @@index([departmentId])
@@ -186,6 +208,8 @@ model Asset {
 
   assignments        AssetAssignment[]
   maintenanceTickets MaintenanceTicket[]
+  assetRequests      AssetRequest[]
+  returnRequests     AssetReturnRequest[]
 
   @@index([assetCode])
   @@index([serialNumber])
@@ -340,6 +364,77 @@ model Notification {
   @@index([userId])
   @@index([userId, isRead])
   @@index([createdAt])
+}
+
+model AssetRequest {
+  id               String          @id @default(uuid())
+  requestNumber    String          @unique
+  requesterId      String
+  requester        EmployeeProfile @relation(fields: [requesterId], references: [id], onDelete: Cascade)
+  departmentId     String
+  department       Department      @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  category         AssetCategory
+  description      String
+  notes            String?
+  status           RequestStatus   @default(PENDING)
+
+  approvedById     String?
+  approvedBy       User?           @relation("ApprovedRequests", fields: [approvedById], references: [id])
+  approvedAt       DateTime?
+  approvalRemarks  String?
+
+  rejectedById     String?
+  rejectedBy       User?           @relation("RejectedRequests", fields: [rejectedById], references: [id])
+  rejectedAt       DateTime?
+  rejectionReason  String?
+
+  fulfilledById    String?
+  fulfilledBy      User?           @relation("FulfilledRequests", fields: [fulfilledById], references: [id])
+  fulfilledAt      DateTime?
+  assetId          String?
+  asset            Asset?          @relation(fields: [assetId], references: [id])
+  handoverNotes    String?
+
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@map("asset_requests")
+  @@index([requestNumber])
+  @@index([requesterId])
+  @@index([departmentId])
+  @@index([status])
+  @@index([assetId])
+}
+
+model AssetReturnRequest {
+  id                String              @id @default(uuid())
+  requestNumber     String              @unique
+  requesterId       String
+  requester         EmployeeProfile     @relation(fields: [requesterId], references: [id], onDelete: Cascade)
+  assetId           String
+  asset             Asset               @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  departmentId      String
+  department        Department          @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  status            ReturnRequestStatus @default(PENDING)
+  reason            String
+  requestedAt       DateTime            @default(now())
+
+  receivedById      String?
+  receivedBy        User?               @relation("ReceivedReturns", fields: [receivedById], references: [id])
+  receivedAt        DateTime?
+  conditionOnReturn String?
+  returnLocation    String?
+  notes             String?
+
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@map("asset_return_requests")
+  @@index([requestNumber])
+  @@index([requesterId])
+  @@index([assetId])
+  @@index([departmentId])
+  @@index([status])
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

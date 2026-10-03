@@ -17,6 +17,11 @@ import {
   UserCheck,
   Laptop,
   Warehouse,
+  ClipboardCheck,
+  PackageCheck,
+  SendHorizontal,
+  RotateCcw,
+  Store,
   type LucideIcon,
 } from 'lucide-react';
 import { ROLES, type Role } from './roles';
@@ -61,10 +66,34 @@ export const navItems: NavItem[] = [
     allowedRoles: [ROLES.ADMIN, ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER, ROLES.STORE_KEEPER],
   },
   {
+    label: 'Store Operations',
+    href: '/store',
+    icon: Store,
+    allowedRoles: [ROLES.STORE_KEEPER, ROLES.ADMIN],
+  },
+  {
     label: 'Inventory',
     href: '/store/inventory',
     icon: Warehouse,
     allowedRoles: [ROLES.ADMIN, ROLES.IT_TECHNICIAN, ROLES.DEPARTMENT_MANAGER, ROLES.STORE_KEEPER],
+  },
+  {
+    label: 'Store Requests',
+    href: '/store/requests',
+    icon: PackageCheck,
+    allowedRoles: [ROLES.STORE_KEEPER, ROLES.ADMIN],
+  },
+  {
+    label: 'Returns',
+    href: '/store/returns',
+    icon: RotateCcw,
+    allowedRoles: [ROLES.STORE_KEEPER, ROLES.ADMIN],
+  },
+  {
+    label: 'Asset Requests',
+    href: '/requests',
+    icon: ClipboardCheck,
+    allowedRoles: [ROLES.ADMIN, ROLES.DEPARTMENT_MANAGER],
   },
   {
     label: 'Assignments',
@@ -83,6 +112,12 @@ export const navItems: NavItem[] = [
     href: '/testing',
     icon: FlaskConical,
     allowedRoles: [ROLES.ADMIN, ROLES.IT_TECHNICIAN],
+  },
+  {
+    label: 'My Requests',
+    href: '/my-requests',
+    icon: SendHorizontal,
+    allowedRoles: [ROLES.EMPLOYEE, ROLES.DEPARTMENT_MANAGER, ROLES.IT_TECHNICIAN, ROLES.STORE_KEEPER],
   },
   {
     label: 'My Assets',

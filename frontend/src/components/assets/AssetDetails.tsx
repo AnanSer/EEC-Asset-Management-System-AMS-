@@ -32,6 +32,7 @@ import {
 import TransferModal from '@/components/assignments/TransferModal';
 import ReturnModal from '@/components/assignments/ReturnModal';
 import AssignmentTimeline from '@/components/assignments/AssignmentTimeline';
+import AssetMovementHistory from './AssetMovementHistory';
 import UpdateLocationModal from './UpdateLocationModal';
 import AssetThumbnail from './AssetThumbnail';
 import maintenanceService from '@/services/maintenance.service';
@@ -388,8 +389,8 @@ export default function AssetDetails({ asset, onRefresh }: AssetDetailsProps) {
         )}
       </div>
 
-      {/* Assignment Timeline Card */}
-      <AssignmentTimeline
+      {/* Asset Movement History Card */}
+      <AssetMovementHistory
         assetId={asset.id}
         refreshTrigger={refreshTimelineTrigger}
       />
