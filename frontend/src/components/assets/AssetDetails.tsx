@@ -21,6 +21,8 @@ import {
   History,
   Plus,
   UserCheck,
+  CheckCircle2,
+  ArrowLeft,
 } from 'lucide-react';
 import StatusBadge from '@/components/ui/StatusBadge';
 import {
@@ -38,11 +40,13 @@ import AssetThumbnail from './AssetThumbnail';
 import maintenanceService from '@/services/maintenance.service';
 import { MaintenanceTicket } from '@/constants/maintenance';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useAuthSession } from '@/context/AuthSessionContext';
 import { PERMISSIONS, ROLES } from '@/lib/authorization';
 
 interface AssetDetailsProps {
   asset: Asset;
   onRefresh?: () => void;
+  isReturnedView?: boolean;
 }
 
 function InfoCard({
@@ -123,8 +127,13 @@ function warrantyLabel(warrantyExpiry?: string | null): { label: string; status:
   return { label: `Valid until ${formatDate(warrantyExpiry)}`, status: 'available' };
 }
 
-export default function AssetDetails({ asset, onRefresh }: AssetDetailsProps) {
-  const { can, isAdmin, isTechnician, isStoreKeeper } = usePermissions();
+export default function AssetDetails({
+  asset,
+  onRefresh,
+  isReturnedView: propReturnedView,
+}: AssetDetailsProps) {
+  const { can, isAdmin, isTechnician, isStoreKeeper, isEmployee } = usePermissions();
+  const { user: authUser } = useAuthSession();
   const assignmentsCount = asset._count?.assignments ?? 0;
   const maintenanceCount = asset._count?.maintenanceTickets ?? 0;
   const warranty = warrantyLabel(asset.warrantyExpiry);
@@ -157,6 +166,19 @@ export default function AssetDetails({ asset, onRefresh }: AssetDetailsProps) {
 
   const currentAssignment = asset.currentAssignment;
   const isAssigned = asset.status === 'ASSIGNED' && Boolean(currentAssignment);
+
+  // Check if current user is the current active custodian
+  const isCurrentHolder = Boolean(
+    authUser?.employeeProfile?.id &&
+    currentAssignment?.employeeId === authUser.employeeProfile.id
+  );
+
+  // Is this view for a returned asset / custody released view?
+  const isReturnedCustody = Boolean(
+    propReturnedView ||
+    asset.custodyStatus === 'RETURNED' ||
+    (isEmployee && !isCurrentHolder)
+  );
 
   return (
     <div className="space-y-6">
@@ -191,43 +213,74 @@ export default function AssetDetails({ asset, onRefresh }: AssetDetailsProps) {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+          {isReturnedCustody && (
+            <Link
+              href="/my-assets"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 transition shadow-2xs"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 text-slate-500" />
+              Back to My Assets
+            </Link>
+          )}
+
           <Link
             href={`/assignments/history/${asset.id}`}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 transition shadow-2xs"
           >
             <History className="w-4 h-4 text-slate-500" />
             History ({assignmentsCount})
           </Link>
 
-          {asset.status === 'AVAILABLE' && can(PERMISSIONS.ASSETS_ASSIGN) && (
-            <Link
-              href={`/assignments/new?assetId=${asset.id}`}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition shadow-xs"
-            >
-              <Plus className="w-4 h-4" />
-              Assign Asset
-            </Link>
-          )}
+          {!isReturnedCustody && (
+            <>
+              {asset.status === 'AVAILABLE' && can(PERMISSIONS.ASSETS_ASSIGN) && (
+                <Link
+                  href={`/assignments/new?assetId=${asset.id}`}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition shadow-xs"
+                >
+                  <Plus className="w-4 h-4" />
+                  Assign Asset
+                </Link>
+              )}
 
-          <Link
-            href={`/maintenance/new?assetId=${asset.id}`}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-orange-600 text-white text-xs font-semibold hover:bg-orange-700 transition shadow-xs"
-          >
-            <Wrench className="w-3.5 h-3.5" />
-            Request Maintenance
-          </Link>
+              {(isAdmin || isTechnician || isCurrentHolder) && (
+                <Link
+                  href={`/maintenance/new?assetId=${asset.id}`}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-orange-600 text-white text-xs font-semibold hover:bg-orange-700 transition shadow-xs"
+                >
+                  <Wrench className="w-3.5 h-3.5" />
+                  Request Maintenance
+                </Link>
+              )}
 
-          {can(PERMISSIONS.ASSETS_UPDATE) && (
-            <Link
-              href={`/assets/${asset.id}/edit`}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-eec-primary text-white text-xs font-semibold hover:bg-eec-primary/90 transition shadow-xs"
-            >
-              <Edit2 className="w-3.5 h-3.5" />
-              Edit Asset
-            </Link>
+              {can(PERMISSIONS.ASSETS_UPDATE) && (
+                <Link
+                  href={`/assets/${asset.id}/edit`}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-eec-primary text-white text-xs font-semibold hover:bg-eec-primary/90 transition shadow-xs"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                  Edit Asset
+                </Link>
+              )}
+            </>
           )}
         </div>
       </div>
+
+      {/* Custody Banner for Returned Assets */}
+      {isReturnedCustody && (
+        <div className="bg-slate-50 border border-slate-200/90 rounded-xl px-4 py-3 flex items-center justify-between gap-3 text-xs text-slate-600">
+          <div className="flex items-center gap-2.5">
+            <CheckCircle2 className="w-4 h-4 text-slate-500 shrink-0" />
+            <span>
+              This equipment has been safely returned to the company store. This page provides historical and technical specification information only.
+            </span>
+          </div>
+          <span className="font-semibold text-slate-600 bg-slate-200/70 border border-slate-300/80 px-2.5 py-0.5 rounded text-[11px] uppercase tracking-wider shrink-0">
+            Returned Custody
+          </span>
+        </div>
+      )}
 
       {/* Quick Counts */}
       <div className="grid grid-cols-2 gap-4">
@@ -322,8 +375,8 @@ export default function AssetDetails({ asset, onRefresh }: AssetDetailsProps) {
             Assignment Information
           </h3>
 
-          {/* Action Buttons: Transfer & Return (only visible when asset is ASSIGNED and user has assign permission) */}
-          {asset.status === 'ASSIGNED' && can(PERMISSIONS.ASSETS_ASSIGN) && (
+          {/* Action Buttons: Transfer & Return (only visible when asset is ASSIGNED, not in returned custody view, and user has assign permission) */}
+          {!isReturnedCustody && asset.status === 'ASSIGNED' && can(PERMISSIONS.ASSETS_ASSIGN) && (
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -377,14 +430,18 @@ export default function AssetDetails({ asset, onRefresh }: AssetDetailsProps) {
         ) : (
           <div className="p-4 rounded-lg bg-slate-50 border border-slate-100 text-xs text-slate-500 flex items-center justify-between">
             <p>
-              This equipment is currently stored in <strong>Available</strong> inventory and has no active custodian.
+              {isReturnedCustody
+                ? 'This equipment was returned to the company store and is currently in Available inventory without an active custodian.'
+                : 'This equipment is currently stored in Available inventory and has no active custodian.'}
             </p>
-            <Link
-              href={`/assignments/new?assetId=${asset.id}`}
-              className="font-semibold text-eec-primary hover:underline inline-flex items-center gap-1"
-            >
-              <Plus className="w-3.5 h-3.5" /> Assign Now
-            </Link>
+            {!isReturnedCustody && can(PERMISSIONS.ASSETS_ASSIGN) && (
+              <Link
+                href={`/assignments/new?assetId=${asset.id}`}
+                className="font-semibold text-eec-primary hover:underline inline-flex items-center gap-1"
+              >
+                <Plus className="w-3.5 h-3.5" /> Assign Now
+              </Link>
+            )}
           </div>
         )}
       </div>
@@ -404,12 +461,14 @@ export default function AssetDetails({ asset, onRefresh }: AssetDetailsProps) {
               Maintenance &amp; Repair History ({maintenanceTickets.length})
             </h3>
           </div>
-          <Link
-            href={`/maintenance/new?assetId=${asset.id}`}
-            className="text-xs font-semibold text-orange-600 hover:text-orange-700 hover:underline flex items-center gap-1"
-          >
-            <Plus className="w-3.5 h-3.5" /> Request Maintenance
-          </Link>
+          {!isReturnedCustody && (isAdmin || isTechnician || isCurrentHolder) && (
+            <Link
+              href={`/maintenance/new?assetId=${asset.id}`}
+              className="text-xs font-semibold text-orange-600 hover:text-orange-700 hover:underline flex items-center gap-1"
+            >
+              <Plus className="w-3.5 h-3.5" /> Request Maintenance
+            </Link>
+          )}
         </div>
 
         {loadingMaintenance ? (
@@ -480,7 +539,7 @@ export default function AssetDetails({ asset, onRefresh }: AssetDetailsProps) {
         <InfoCard
           title="Location &amp; Facility"
           action={
-            (isAdmin || isTechnician || isStoreKeeper) ? (
+            (!isReturnedCustody && (isAdmin || isTechnician || isStoreKeeper)) ? (
               <button
                 type="button"
                 onClick={() => setShowLocationModal(true)}

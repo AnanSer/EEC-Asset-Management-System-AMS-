@@ -82,6 +82,15 @@ export interface Asset {
     assignedDate: string;
     remarks?: string | null;
   } | null;
+  custodyStatus?: 'ASSIGNED' | 'RETURNED';
+  returnedAssignment?: {
+    id: string;
+    employeeId?: string;
+    assignedDate: string;
+    returnedDate?: string | null;
+    conditionOnReturn?: string | null;
+    notes?: string | null;
+  } | null;
 }
 
 export interface CreateAssetInput {

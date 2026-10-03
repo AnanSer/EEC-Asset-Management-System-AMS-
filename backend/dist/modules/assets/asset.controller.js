@@ -25,20 +25,24 @@ class AssetController {
                     if (user) {
                         const role = user.role;
                         const isPersonal = parsedQuery.personal === 'true' || parsedQuery.personal === true || role === constants_1.ROLES.EMPLOYEE;
-                        // Personal view: View only assets currently assigned to logged-in user (Employee or Manager)
+                        // Personal view: View assets assigned or previously assigned (returned) to logged-in user
                         if (isPersonal) {
                             if (user.employeeProfile) {
-                                const activeAssignments = await prisma_1.default.assetAssignment.findMany({
+                                const allEmployeeAssignments = await prisma_1.default.assetAssignment.findMany({
                                     where: {
                                         employeeId: user.employeeProfile.id,
-                                        isCurrent: true,
+                                    },
+                                    orderBy: {
+                                        assignedDate: 'desc',
                                     },
                                     include: {
                                         asset: {
                                             include: {
                                                 department: { select: { id: true, code: true, name: true } },
                                                 assignments: {
-                                                    where: { isCurrent: true },
+                                                    where: { employeeId: user.employeeProfile.id },
+                                                    orderBy: { assignedDate: 'desc' },
+                                                    take: 5,
                                                     include: {
                                                         employee: {
                                                             select: { id: true, employeeId: true, firstName: true, lastName: true },
@@ -49,11 +53,63 @@ class AssetController {
                                         },
                                     },
                                 });
-                                const userAssets = activeAssignments.map((a) => a.asset);
-                                return res.status(200).json((0, api_1.paginatedResponse)(userAssets, (0, api_1.buildPagination)(1, 10, userAssets.length)));
+                                // Deduplicate by assetId: preserve current active assignment over past returned assignment
+                                const assetMap = new Map();
+                                for (const asgn of allEmployeeAssignments) {
+                                    if (!assetMap.has(asgn.assetId)) {
+                                        assetMap.set(asgn.assetId, asgn);
+                                    }
+                                    else if (asgn.isCurrent) {
+                                        assetMap.set(asgn.assetId, asgn);
+                                    }
+                                }
+                                let userAssets = Array.from(assetMap.values()).map((asgn) => {
+                                    const baseAsset = asgn.asset;
+                                    const isCurrent = asgn.isCurrent;
+                                    const custodyStatus = isCurrent ? 'ASSIGNED' : 'RETURNED';
+                                    return {
+                                        ...baseAsset,
+                                        custodyStatus,
+                                        currentAssignment: isCurrent
+                                            ? {
+                                                id: asgn.id,
+                                                employeeId: asgn.employeeId,
+                                                employeeName: `${user.employeeProfile?.firstName} ${user.employeeProfile?.lastName}`,
+                                                departmentName: baseAsset.department?.name,
+                                                assignedDate: asgn.assignedDate,
+                                                remarks: asgn.notes,
+                                                isCurrent: true,
+                                            }
+                                            : null,
+                                        returnedAssignment: !isCurrent
+                                            ? {
+                                                id: asgn.id,
+                                                employeeId: asgn.employeeId,
+                                                assignedDate: asgn.assignedDate,
+                                                returnedDate: asgn.returnedDate,
+                                                conditionOnReturn: asgn.conditionOnReturn,
+                                                notes: asgn.notes,
+                                                isCurrent: false,
+                                            }
+                                            : null,
+                                    };
+                                });
+                                // Filter by status if provided (supports 'ASSIGNED', 'RETURNED', or regular asset status)
+                                if (parsedQuery.status && parsedQuery.status !== 'all') {
+                                    if (parsedQuery.status === 'ASSIGNED') {
+                                        userAssets = userAssets.filter((a) => a.custodyStatus === 'ASSIGNED');
+                                    }
+                                    else if (parsedQuery.status === 'RETURNED') {
+                                        userAssets = userAssets.filter((a) => a.custodyStatus === 'RETURNED');
+                                    }
+                                    else {
+                                        userAssets = userAssets.filter((a) => a.status === parsedQuery.status);
+                                    }
+                                }
+                                return res.status(200).json((0, api_1.paginatedResponse)(userAssets, (0, api_1.buildPagination)(1, 50, userAssets.length)));
                             }
                             else {
-                                return res.status(200).json((0, api_1.paginatedResponse)([], (0, api_1.buildPagination)(1, 10, 0)));
+                                return res.status(200).json((0, api_1.paginatedResponse)([], (0, api_1.buildPagination)(1, 50, 0)));
                             }
                         }
                         // DEPARTMENT_MANAGER: View only assets inside own department
@@ -94,7 +150,19 @@ class AssetController {
                                 ? `${user.employeeProfile.firstName} ${user.employeeProfile.lastName}`.trim()
                                 : null,
                         };
-                        const allowed = (0, authorization_1.canAccessAsset)(authContext, asset);
+                        let allowed = (0, authorization_1.canAccessAsset)(authContext, asset);
+                        // Allow employee to view asset if they are currently assigned or were previously assigned this asset (returned custody)
+                        if (!allowed && user.role === constants_1.ROLES.EMPLOYEE && user.employeeProfile?.id) {
+                            const hasAssignment = await prisma_1.default.assetAssignment.findFirst({
+                                where: {
+                                    assetId: id,
+                                    employeeId: user.employeeProfile.id,
+                                },
+                            });
+                            if (hasAssignment) {
+                                allowed = true;
+                            }
+                        }
                         if (!allowed) {
                             return res.status(403).json((0, api_1.errorResponse)('Forbidden: You do not have permission to view this asset'));
                         }

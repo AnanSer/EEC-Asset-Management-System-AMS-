@@ -113,11 +113,24 @@ export class AssignmentController {
             employeeId: user.employeeProfile?.employeeId,
           };
 
-          const allowed = canAccessAsset(authContext, {
+          let allowed = canAccessAsset(authContext, {
             id: asset.id,
             departmentId: asset.departmentId,
             assignments: asset.assignments,
           });
+
+          // Allow employee to view history if they ever had an assignment on this asset
+          if (!allowed && user.role === ROLES.EMPLOYEE && user.employeeProfile?.id) {
+            const hasAssignment = await prisma.assetAssignment.findFirst({
+              where: {
+                assetId,
+                employeeId: user.employeeProfile.id,
+              },
+            });
+            if (hasAssignment) {
+              allowed = true;
+            }
+          }
 
           if (!allowed) {
             return res.status(403).json(

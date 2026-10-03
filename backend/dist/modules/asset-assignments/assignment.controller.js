@@ -84,11 +84,23 @@ class AssignmentController {
                             employeeProfileId: user.employeeProfile?.id,
                             employeeId: user.employeeProfile?.employeeId,
                         };
-                        const allowed = (0, authorization_1.canAccessAsset)(authContext, {
+                        let allowed = (0, authorization_1.canAccessAsset)(authContext, {
                             id: asset.id,
                             departmentId: asset.departmentId,
                             assignments: asset.assignments,
                         });
+                        // Allow employee to view history if they ever had an assignment on this asset
+                        if (!allowed && user.role === constants_1.ROLES.EMPLOYEE && user.employeeProfile?.id) {
+                            const hasAssignment = await prisma_1.default.assetAssignment.findFirst({
+                                where: {
+                                    assetId,
+                                    employeeId: user.employeeProfile.id,
+                                },
+                            });
+                            if (hasAssignment) {
+                                allowed = true;
+                            }
+                        }
                         if (!allowed) {
                             return res.status(403).json((0, api_1.errorResponse)('Forbidden: You do not have permission to view assignment history for this asset'));
                         }

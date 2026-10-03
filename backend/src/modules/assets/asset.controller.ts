@@ -36,20 +36,24 @@ export class AssetController {
           const role = user.role as Role;
           const isPersonal = parsedQuery.personal === 'true' || parsedQuery.personal === true || role === ROLES.EMPLOYEE;
 
-          // Personal view: View only assets currently assigned to logged-in user (Employee or Manager)
+          // Personal view: View assets assigned or previously assigned (returned) to logged-in user
           if (isPersonal) {
             if (user.employeeProfile) {
-              const activeAssignments = await prisma.assetAssignment.findMany({
+              const allEmployeeAssignments = await prisma.assetAssignment.findMany({
                 where: {
                   employeeId: user.employeeProfile.id,
-                  isCurrent: true,
+                },
+                orderBy: {
+                  assignedDate: 'desc',
                 },
                 include: {
                   asset: {
                     include: {
                       department: { select: { id: true, code: true, name: true } },
                       assignments: {
-                        where: { isCurrent: true },
+                        where: { employeeId: user.employeeProfile.id },
+                        orderBy: { assignedDate: 'desc' },
+                        take: 5,
                         include: {
                           employee: {
                             select: { id: true, employeeId: true, firstName: true, lastName: true },
@@ -61,13 +65,66 @@ export class AssetController {
                 },
               });
 
-              const userAssets = activeAssignments.map((a) => a.asset);
+              // Deduplicate by assetId: preserve current active assignment over past returned assignment
+              const assetMap = new Map<string, any>();
+              for (const asgn of allEmployeeAssignments) {
+                if (!assetMap.has(asgn.assetId)) {
+                  assetMap.set(asgn.assetId, asgn);
+                } else if (asgn.isCurrent) {
+                  assetMap.set(asgn.assetId, asgn);
+                }
+              }
+
+              let userAssets = Array.from(assetMap.values()).map((asgn) => {
+                const baseAsset = asgn.asset;
+                const isCurrent = asgn.isCurrent;
+                const custodyStatus = isCurrent ? 'ASSIGNED' : 'RETURNED';
+
+                return {
+                  ...baseAsset,
+                  custodyStatus,
+                  currentAssignment: isCurrent
+                    ? {
+                        id: asgn.id,
+                        employeeId: asgn.employeeId,
+                        employeeName: `${user.employeeProfile?.firstName} ${user.employeeProfile?.lastName}`,
+                        departmentName: baseAsset.department?.name,
+                        assignedDate: asgn.assignedDate,
+                        remarks: asgn.notes,
+                        isCurrent: true,
+                      }
+                    : null,
+                  returnedAssignment: !isCurrent
+                    ? {
+                        id: asgn.id,
+                        employeeId: asgn.employeeId,
+                        assignedDate: asgn.assignedDate,
+                        returnedDate: asgn.returnedDate,
+                        conditionOnReturn: asgn.conditionOnReturn,
+                        notes: asgn.notes,
+                        isCurrent: false,
+                      }
+                    : null,
+                };
+              });
+
+              // Filter by status if provided (supports 'ASSIGNED', 'RETURNED', or regular asset status)
+              if (parsedQuery.status && parsedQuery.status !== 'all') {
+                if (parsedQuery.status === 'ASSIGNED') {
+                  userAssets = userAssets.filter((a) => a.custodyStatus === 'ASSIGNED');
+                } else if (parsedQuery.status === 'RETURNED') {
+                  userAssets = userAssets.filter((a) => a.custodyStatus === 'RETURNED');
+                } else {
+                  userAssets = userAssets.filter((a) => a.status === parsedQuery.status);
+                }
+              }
+
               return res.status(200).json(
-                paginatedResponse(userAssets, buildPagination(1, 10, userAssets.length))
+                paginatedResponse(userAssets, buildPagination(1, 50, userAssets.length))
               );
             } else {
               return res.status(200).json(
-                paginatedResponse([], buildPagination(1, 10, 0))
+                paginatedResponse([], buildPagination(1, 50, 0))
               );
             }
           }
@@ -120,7 +177,20 @@ export class AssetController {
               : null,
           };
 
-          const allowed = canAccessAsset(authContext, asset);
+          let allowed = canAccessAsset(authContext, asset);
+
+          // Allow employee to view asset if they are currently assigned or were previously assigned this asset (returned custody)
+          if (!allowed && user.role === ROLES.EMPLOYEE && user.employeeProfile?.id) {
+            const hasAssignment = await prisma.assetAssignment.findFirst({
+              where: {
+                assetId: id,
+                employeeId: user.employeeProfile.id,
+              },
+            });
+            if (hasAssignment) {
+              allowed = true;
+            }
+          }
 
           if (!allowed) {
             return res.status(403).json(
