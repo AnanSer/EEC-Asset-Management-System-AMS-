@@ -4,16 +4,32 @@
 import { Request, Response } from 'express';
 import { storeService } from './store.service';
 import { ROLES, Role } from '../../constants';
+import prisma from '../../lib/prisma';
 
 export class StoreController {
-  private getAuthContext(req: Request) {
+  private async getAuthContext(req: Request) {
     const user = req.auth?.user;
     if (!user) {
       return null;
     }
-    const role = (user as any).role as Role;
+    let role = (user as any).role as Role;
+    let userId = user.id;
+
+    if (!role || !userId) {
+      const businessUser = await prisma.user.findFirst({
+        where: {
+          OR: [{ id: user.id }, { email: user.email }],
+        },
+        select: { id: true, email: true, role: true },
+      });
+      if (businessUser) {
+        role = businessUser.role as Role;
+        userId = businessUser.id;
+      }
+    }
+
     return {
-      id: user.id,
+      id: userId,
       email: user.email,
       role,
     };
@@ -21,7 +37,7 @@ export class StoreController {
 
   getDashboard = async (req: Request, res: Response): Promise<any> => {
     try {
-      const user = this.getAuthContext(req);
+      const user = await this.getAuthContext(req);
       if (!user) {
         return res.status(401).json({ success: false, message: 'Authentication required' });
       }
@@ -50,7 +66,7 @@ export class StoreController {
 
   getAssetMovementHistory = async (req: Request, res: Response): Promise<any> => {
     try {
-      const user = this.getAuthContext(req);
+      const user = await this.getAuthContext(req);
       if (!user) {
         return res.status(401).json({ success: false, message: 'Authentication required' });
       }

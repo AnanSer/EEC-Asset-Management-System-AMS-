@@ -207,6 +207,8 @@ export declare class AssetService {
         testing: number;
         retired: number;
         byCategory: Record<string, {
+            category: string;
+            categoryLabel: string;
             total: number;
             available: number;
             assigned: number;

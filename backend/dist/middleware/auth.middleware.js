@@ -6,6 +6,7 @@ exports.requireAuth = requireAuth;
 exports.optionalAuth = optionalAuth;
 const node_1 = require("better-auth/node");
 const auth_1 = require("../lib/auth");
+const prisma_1 = require("../lib/prisma");
 require("../types/auth");
 /**
  * Validates Better Auth session from request headers.
@@ -23,8 +24,35 @@ async function handleRequireAuth(req, res, next) {
                 message: 'Unauthorized: Authentication required',
             });
         }
+        let userPayload = sessionData.user;
+        if (sessionData.user.email) {
+            const businessUser = await prisma_1.prisma.user.findFirst({
+                where: {
+                    OR: [
+                        { id: sessionData.user.id },
+                        { email: sessionData.user.email },
+                    ],
+                },
+                select: {
+                    id: true,
+                    email: true,
+                    role: true,
+                    status: true,
+                },
+            });
+            if (businessUser) {
+                userPayload = {
+                    ...sessionData.user,
+                    id: businessUser.id,
+                    authUserId: sessionData.user.id,
+                    role: businessUser.role,
+                    status: businessUser.status,
+                    businessUser,
+                };
+            }
+        }
         req.auth = {
-            user: sessionData.user,
+            user: userPayload,
             session: sessionData.session,
         };
         return next();
@@ -47,8 +75,35 @@ async function handleOptionalAuth(req, _res, next) {
             headers: (0, node_1.fromNodeHeaders)(req.headers),
         });
         if (sessionData && sessionData.user && sessionData.session) {
+            let userPayload = sessionData.user;
+            if (sessionData.user.email) {
+                const businessUser = await prisma_1.prisma.user.findFirst({
+                    where: {
+                        OR: [
+                            { id: sessionData.user.id },
+                            { email: sessionData.user.email },
+                        ],
+                    },
+                    select: {
+                        id: true,
+                        email: true,
+                        role: true,
+                        status: true,
+                    },
+                });
+                if (businessUser) {
+                    userPayload = {
+                        ...sessionData.user,
+                        id: businessUser.id,
+                        authUserId: sessionData.user.id,
+                        role: businessUser.role,
+                        status: businessUser.status,
+                        businessUser,
+                    };
+                }
+            }
             req.auth = {
-                user: sessionData.user,
+                user: userPayload,
                 session: sessionData.session,
             };
         }

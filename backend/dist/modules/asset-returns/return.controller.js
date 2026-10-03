@@ -1,17 +1,34 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.returnController = exports.ReturnController = void 0;
 const return_service_1 = require("./return.service");
 const return_validator_1 = require("./return.validator");
+const prisma_1 = __importDefault(require("../../lib/prisma"));
 class ReturnController {
-    getAuthContext(req) {
+    async getAuthContext(req) {
         const user = req.auth?.user;
         if (!user) {
             throw new return_service_1.AppError('Unauthorized', 401);
         }
-        const role = user.role;
+        let role = user.role;
+        let userId = user.id;
+        if (!role || !userId) {
+            const businessUser = await prisma_1.default.user.findFirst({
+                where: {
+                    OR: [{ id: user.id }, { email: user.email }],
+                },
+                select: { id: true, email: true, role: true },
+            });
+            if (businessUser) {
+                role = businessUser.role;
+                userId = businessUser.id;
+            }
+        }
         return {
-            id: user.id,
+            id: userId,
             email: user.email,
             role,
         };
@@ -21,7 +38,7 @@ class ReturnController {
      */
     async create(req, res) {
         try {
-            const authUser = this.getAuthContext(req);
+            const authUser = await this.getAuthContext(req);
             const parsed = return_validator_1.createReturnRequestSchema.safeParse(req.body);
             if (!parsed.success) {
                 return res.status(400).json({
@@ -50,7 +67,7 @@ class ReturnController {
      */
     async receive(req, res) {
         try {
-            const authUser = this.getAuthContext(req);
+            const authUser = await this.getAuthContext(req);
             const id = req.params.id;
             const parsed = return_validator_1.receiveReturnSchema.safeParse(req.body);
             if (!parsed.success) {
@@ -80,7 +97,7 @@ class ReturnController {
      */
     async receiveWalkIn(req, res) {
         try {
-            const authUser = this.getAuthContext(req);
+            const authUser = await this.getAuthContext(req);
             const parsed = return_validator_1.walkInReturnSchema.safeParse(req.body);
             if (!parsed.success) {
                 return res.status(400).json({
@@ -109,7 +126,7 @@ class ReturnController {
      */
     async cancel(req, res) {
         try {
-            const authUser = this.getAuthContext(req);
+            const authUser = await this.getAuthContext(req);
             const id = req.params.id;
             const updated = await return_service_1.returnService.cancelReturnRequest(authUser, id);
             return res.status(200).json({
@@ -131,7 +148,7 @@ class ReturnController {
      */
     async getAll(req, res) {
         try {
-            const authUser = this.getAuthContext(req);
+            const authUser = await this.getAuthContext(req);
             const parsed = return_validator_1.returnQuerySchema.safeParse(req.query);
             if (!parsed.success) {
                 return res.status(400).json({
@@ -160,7 +177,7 @@ class ReturnController {
      */
     async getById(req, res) {
         try {
-            const authUser = this.getAuthContext(req);
+            const authUser = await this.getAuthContext(req);
             const id = req.params.id;
             const request = await return_service_1.returnService.getReturnRequestById(authUser, id);
             return res.status(200).json({

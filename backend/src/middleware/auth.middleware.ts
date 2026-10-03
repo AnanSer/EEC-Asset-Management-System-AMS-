@@ -4,6 +4,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { fromNodeHeaders } from 'better-auth/node';
 import { auth } from '../lib/auth';
+import { prisma } from '../lib/prisma';
 import '../types/auth';
 
 /**
@@ -24,8 +25,37 @@ async function handleRequireAuth(req: Request, res: Response, next: NextFunction
       });
     }
 
+    let userPayload: any = sessionData.user;
+    if (sessionData.user.email) {
+      const businessUser = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { id: sessionData.user.id },
+            { email: sessionData.user.email },
+          ],
+        },
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          status: true,
+        },
+      });
+
+      if (businessUser) {
+        userPayload = {
+          ...sessionData.user,
+          id: businessUser.id,
+          authUserId: sessionData.user.id,
+          role: businessUser.role,
+          status: businessUser.status,
+          businessUser,
+        };
+      }
+    }
+
     req.auth = {
-      user: sessionData.user,
+      user: userPayload,
       session: sessionData.session,
     };
 
@@ -50,8 +80,37 @@ async function handleOptionalAuth(req: Request, _res: Response, next: NextFuncti
     });
 
     if (sessionData && sessionData.user && sessionData.session) {
+      let userPayload: any = sessionData.user;
+      if (sessionData.user.email) {
+        const businessUser = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { id: sessionData.user.id },
+              { email: sessionData.user.email },
+            ],
+          },
+          select: {
+            id: true,
+            email: true,
+            role: true,
+            status: true,
+          },
+        });
+
+        if (businessUser) {
+          userPayload = {
+            ...sessionData.user,
+            id: businessUser.id,
+            authUserId: sessionData.user.id,
+            role: businessUser.role,
+            status: businessUser.status,
+            businessUser,
+          };
+        }
+      }
+
       req.auth = {
-        user: sessionData.user,
+        user: userPayload,
         session: sessionData.session,
       };
     } else {

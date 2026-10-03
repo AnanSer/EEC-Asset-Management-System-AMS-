@@ -215,9 +215,25 @@ export class AssetRepository {
     ]);
 
     const categories = Object.values(AssetCategory);
+    const categoryLabels: Record<string, string> = {
+      LAPTOP: 'Laptop',
+      DESKTOP: 'Desktop',
+      PRINTER: 'Printer',
+      SCANNER: 'Scanner',
+      ROUTER: 'Router',
+      SWITCH: 'Switch',
+      PROJECTOR: 'Projector',
+      MONITOR: 'Monitor',
+      SERVER: 'Server',
+      UPS: 'UPS',
+      OTHER: 'Other',
+    };
+
     const byCategory: Record<
       string,
       {
+        category: string;
+        categoryLabel: string;
         total: number;
         available: number;
         assigned: number;
@@ -229,6 +245,8 @@ export class AssetRepository {
 
     for (const cat of categories) {
       byCategory[cat] = {
+        category: cat,
+        categoryLabel: categoryLabels[cat] || cat.charAt(0) + cat.slice(1).toLowerCase().replace(/_/g, ' '),
         total: 0,
         available: 0,
         assigned: 0,
@@ -242,6 +260,8 @@ export class AssetRepository {
       const cat = row.category;
       if (!byCategory[cat]) {
         byCategory[cat] = {
+          category: cat,
+          categoryLabel: categoryLabels[cat] || cat.charAt(0) + cat.slice(1).toLowerCase().replace(/_/g, ' '),
           total: 0,
           available: 0,
           assigned: 0,

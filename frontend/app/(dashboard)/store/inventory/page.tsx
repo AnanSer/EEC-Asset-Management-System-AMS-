@@ -29,6 +29,8 @@ import {
   AssetInventoryResponse,
   AssetCategoryInventory,
   AssetLocationInventory,
+  AssetCategory,
+  ASSET_CATEGORY_LABELS,
 } from '@/constants/assets';
 
 export default function StoreInventoryPage() {
@@ -69,13 +71,26 @@ export default function StoreInventoryPage() {
   // Filtered categories
   const categoriesList: AssetCategoryInventory[] = useMemo(() => {
     if (!inventory?.byCategory) return [];
-    const list = Object.values(inventory.byCategory);
+    const list: AssetCategoryInventory[] = Object.entries(inventory.byCategory).map(
+      ([key, val]: [string, any]) => {
+        const catKey = (val.category || key) as AssetCategory;
+        const label =
+          val.categoryLabel ||
+          ASSET_CATEGORY_LABELS[catKey] ||
+          catKey.charAt(0) + catKey.slice(1).toLowerCase();
+        return {
+          ...val,
+          category: catKey,
+          categoryLabel: label,
+        };
+      }
+    );
     if (!categorySearch.trim()) return list;
     const term = categorySearch.toLowerCase();
     return list.filter(
       (c) =>
-        c.categoryLabel.toLowerCase().includes(term) ||
-        c.category.toLowerCase().includes(term)
+        (c.categoryLabel?.toLowerCase() || '').includes(term) ||
+        (c.category?.toLowerCase() || '').includes(term)
     );
   }, [inventory, categorySearch]);
 

@@ -7,16 +7,32 @@ import {
   returnQuerySchema,
 } from './return.validator';
 import { Role } from '../../constants';
+import prisma from '../../lib/prisma';
 
 export class ReturnController {
-  private getAuthContext(req: Request) {
+  private async getAuthContext(req: Request) {
     const user = req.auth?.user;
     if (!user) {
       throw new AppError('Unauthorized', 401);
     }
-    const role = (user as any).role as Role;
+    let role = (user as any).role as Role;
+    let userId = user.id;
+
+    if (!role || !userId) {
+      const businessUser = await prisma.user.findFirst({
+        where: {
+          OR: [{ id: user.id }, { email: user.email }],
+        },
+        select: { id: true, email: true, role: true },
+      });
+      if (businessUser) {
+        role = businessUser.role as Role;
+        userId = businessUser.id;
+      }
+    }
+
     return {
-      id: user.id,
+      id: userId,
       email: user.email,
       role,
     };
@@ -27,7 +43,7 @@ export class ReturnController {
    */
   async create(req: Request, res: Response): Promise<any> {
     try {
-      const authUser = this.getAuthContext(req);
+      const authUser = await this.getAuthContext(req);
       const parsed = createReturnRequestSchema.safeParse(req.body);
 
       if (!parsed.success) {
@@ -59,7 +75,7 @@ export class ReturnController {
    */
   async receive(req: Request, res: Response): Promise<any> {
     try {
-      const authUser = this.getAuthContext(req);
+      const authUser = await this.getAuthContext(req);
       const id = req.params.id as string;
       const parsed = receiveReturnSchema.safeParse(req.body);
 
@@ -92,7 +108,7 @@ export class ReturnController {
    */
   async receiveWalkIn(req: Request, res: Response): Promise<any> {
     try {
-      const authUser = this.getAuthContext(req);
+      const authUser = await this.getAuthContext(req);
       const parsed = walkInReturnSchema.safeParse(req.body);
 
       if (!parsed.success) {
@@ -124,7 +140,7 @@ export class ReturnController {
    */
   async cancel(req: Request, res: Response): Promise<any> {
     try {
-      const authUser = this.getAuthContext(req);
+      const authUser = await this.getAuthContext(req);
       const id = req.params.id as string;
 
       const updated = await returnService.cancelReturnRequest(authUser, id);
@@ -148,7 +164,7 @@ export class ReturnController {
    */
   async getAll(req: Request, res: Response): Promise<any> {
     try {
-      const authUser = this.getAuthContext(req);
+      const authUser = await this.getAuthContext(req);
       const parsed = returnQuerySchema.safeParse(req.query);
 
       if (!parsed.success) {
@@ -180,7 +196,7 @@ export class ReturnController {
    */
   async getById(req: Request, res: Response): Promise<any> {
     try {
-      const authUser = this.getAuthContext(req);
+      const authUser = await this.getAuthContext(req);
       const id = req.params.id as string;
 
       const request = await returnService.getReturnRequestById(authUser, id);

@@ -1,13 +1,17 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.storeController = exports.StoreController = void 0;
 const store_service_1 = require("./store.service");
 const constants_1 = require("../../constants");
+const prisma_1 = __importDefault(require("../../lib/prisma"));
 class StoreController {
     constructor() {
         this.getDashboard = async (req, res) => {
             try {
-                const user = this.getAuthContext(req);
+                const user = await this.getAuthContext(req);
                 if (!user) {
                     return res.status(401).json({ success: false, message: 'Authentication required' });
                 }
@@ -34,7 +38,7 @@ class StoreController {
         };
         this.getAssetMovementHistory = async (req, res) => {
             try {
-                const user = this.getAuthContext(req);
+                const user = await this.getAuthContext(req);
                 if (!user) {
                     return res.status(401).json({ success: false, message: 'Authentication required' });
                 }
@@ -61,14 +65,27 @@ class StoreController {
             }
         };
     }
-    getAuthContext(req) {
+    async getAuthContext(req) {
         const user = req.auth?.user;
         if (!user) {
             return null;
         }
-        const role = user.role;
+        let role = user.role;
+        let userId = user.id;
+        if (!role || !userId) {
+            const businessUser = await prisma_1.default.user.findFirst({
+                where: {
+                    OR: [{ id: user.id }, { email: user.email }],
+                },
+                select: { id: true, email: true, role: true },
+            });
+            if (businessUser) {
+                role = businessUser.role;
+                userId = businessUser.id;
+            }
+        }
         return {
-            id: user.id,
+            id: userId,
             email: user.email,
             role,
         };

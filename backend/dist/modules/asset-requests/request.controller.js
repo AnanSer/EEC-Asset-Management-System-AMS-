@@ -1,20 +1,37 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.requestController = exports.RequestController = void 0;
 const request_service_1 = require("./request.service");
 const request_validator_1 = require("./request.validator");
+const prisma_1 = __importDefault(require("../../lib/prisma"));
 class RequestController {
     /**
      * Helper to extract business role and user id from auth session
      */
-    getAuthContext(req) {
+    async getAuthContext(req) {
         const user = req.auth?.user;
         if (!user) {
             throw new request_service_1.AppError('Unauthorized', 401);
         }
-        const role = user.role;
+        let role = user.role;
+        let userId = user.id;
+        if (!role || !userId) {
+            const businessUser = await prisma_1.default.user.findFirst({
+                where: {
+                    OR: [{ id: user.id }, { email: user.email }],
+                },
+                select: { id: true, email: true, role: true },
+            });
+            if (businessUser) {
+                role = businessUser.role;
+                userId = businessUser.id;
+            }
+        }
         return {
-            id: user.id,
+            id: userId,
             email: user.email,
             role,
         };
@@ -24,7 +41,7 @@ class RequestController {
      */
     async create(req, res) {
         try {
-            const authUser = this.getAuthContext(req);
+            const authUser = await this.getAuthContext(req);
             const parsed = request_validator_1.createRequestSchema.safeParse(req.body);
             if (!parsed.success) {
                 return res.status(400).json({
@@ -53,7 +70,7 @@ class RequestController {
      */
     async getAll(req, res) {
         try {
-            const authUser = this.getAuthContext(req);
+            const authUser = await this.getAuthContext(req);
             const parsed = request_validator_1.requestQuerySchema.safeParse(req.query);
             if (!parsed.success) {
                 return res.status(400).json({
@@ -82,7 +99,7 @@ class RequestController {
      */
     async getById(req, res) {
         try {
-            const authUser = this.getAuthContext(req);
+            const authUser = await this.getAuthContext(req);
             const id = req.params.id;
             const request = await request_service_1.requestService.getRequestById(authUser, id);
             return res.status(200).json({
@@ -103,7 +120,7 @@ class RequestController {
      */
     async approve(req, res) {
         try {
-            const authUser = this.getAuthContext(req);
+            const authUser = await this.getAuthContext(req);
             const id = req.params.id;
             const parsed = request_validator_1.approveRequestSchema.safeParse(req.body);
             if (!parsed.success) {
@@ -133,7 +150,7 @@ class RequestController {
      */
     async reject(req, res) {
         try {
-            const authUser = this.getAuthContext(req);
+            const authUser = await this.getAuthContext(req);
             const id = req.params.id;
             const parsed = request_validator_1.rejectRequestSchema.safeParse(req.body);
             if (!parsed.success) {
@@ -163,7 +180,7 @@ class RequestController {
      */
     async fulfill(req, res) {
         try {
-            const authUser = this.getAuthContext(req);
+            const authUser = await this.getAuthContext(req);
             const id = req.params.id;
             const parsed = request_validator_1.fulfillRequestSchema.safeParse(req.body);
             if (!parsed.success) {
@@ -193,7 +210,7 @@ class RequestController {
      */
     async cancel(req, res) {
         try {
-            const authUser = this.getAuthContext(req);
+            const authUser = await this.getAuthContext(req);
             const id = req.params.id;
             const updated = await request_service_1.requestService.cancelRequest(authUser, id);
             return res.status(200).json({
