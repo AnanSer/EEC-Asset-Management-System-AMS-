@@ -14,6 +14,25 @@ export declare class ReturnRepository {
             asset: {
                 assignments: ({
                     employee: {
+                        department: {
+                            id: string;
+                            name: string;
+                            code: string;
+                            description: string | null;
+                            location: string | null;
+                            officeLocation: string | null;
+                            building: string | null;
+                            floor: string | null;
+                            headOfDepartment: string | null;
+                            isActive: boolean;
+                            createdAt: Date;
+                            updatedAt: Date;
+                        };
+                        user: {
+                            email: string;
+                            id: string;
+                        };
+                    } & {
                         id: string;
                         userId: string;
                         employeeId: string;
@@ -138,6 +157,25 @@ export declare class ReturnRepository {
         asset: {
             assignments: ({
                 employee: {
+                    department: {
+                        id: string;
+                        name: string;
+                        code: string;
+                        description: string | null;
+                        location: string | null;
+                        officeLocation: string | null;
+                        building: string | null;
+                        floor: string | null;
+                        headOfDepartment: string | null;
+                        isActive: boolean;
+                        createdAt: Date;
+                        updatedAt: Date;
+                    };
+                    user: {
+                        email: string;
+                        id: string;
+                    };
+                } & {
                     id: string;
                     userId: string;
                     employeeId: string;

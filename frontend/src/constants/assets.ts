@@ -91,6 +91,7 @@ export interface Asset {
     conditionOnReturn?: string | null;
     notes?: string | null;
   } | null;
+  assignments?: any[];
 }
 
 export interface CreateAssetInput {

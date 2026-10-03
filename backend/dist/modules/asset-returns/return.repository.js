@@ -43,9 +43,17 @@ class ReturnRepository {
                     asset: {
                         include: {
                             assignments: {
-                                where: { isCurrent: true },
+                                orderBy: { assignedDate: 'desc' },
+                                take: 5,
                                 include: {
-                                    employee: true,
+                                    employee: {
+                                        include: {
+                                            department: true,
+                                            user: {
+                                                select: { id: true, email: true },
+                                            },
+                                        },
+                                    },
                                 },
                             },
                         },
@@ -82,9 +90,17 @@ class ReturnRepository {
                 asset: {
                     include: {
                         assignments: {
-                            where: { isCurrent: true },
+                            orderBy: { assignedDate: 'desc' },
+                            take: 5,
                             include: {
-                                employee: true,
+                                employee: {
+                                    include: {
+                                        department: true,
+                                        user: {
+                                            select: { id: true, email: true },
+                                        },
+                                    },
+                                },
                             },
                         },
                     },

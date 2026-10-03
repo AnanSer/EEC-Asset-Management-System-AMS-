@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import {
   RotateCcw,
   Search,
@@ -14,6 +15,7 @@ import {
   Hash,
   MapPin,
   CheckCircle2,
+  Eye,
 } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
@@ -29,6 +31,7 @@ import { ASSET_CATEGORY_LABELS, ASSET_CONDITION_LABELS } from '@/constants/asset
 import ReturnStatusBadge from '@/components/returns/ReturnStatusBadge';
 import ReceiveReturnModal from '@/components/returns/ReceiveReturnModal';
 import WalkInReturnModal from '@/components/returns/WalkInReturnModal';
+import ReturnRequestDetailsModal from '@/components/returns/ReturnRequestDetailsModal';
 
 export default function StoreReturnsPage() {
   const toast = useToast();
@@ -42,6 +45,7 @@ export default function StoreReturnsPage() {
   const [totalCount, setTotalCount] = useState(0);
 
   // Modals state
+  const [selectedRequestForDetails, setSelectedRequestForDetails] = useState<AssetReturnRequest | null>(null);
   const [selectedRequestForReceipt, setSelectedRequestForReceipt] = useState<AssetReturnRequest | null>(null);
   const [isWalkInModalOpen, setIsWalkInModalOpen] = useState(false);
 
@@ -225,20 +229,35 @@ export default function StoreReturnsPage() {
                       <tr key={req.id} className="hover:bg-slate-50/70 transition-colors">
                         {/* Request Number */}
                         <td className="py-3 px-4 font-mono font-bold text-slate-800">
-                          {req.requestNumber}
+                          <button
+                            type="button"
+                            onClick={() => setSelectedRequestForDetails(req)}
+                            className="font-mono font-bold text-slate-800 hover:text-eec-primary hover:underline text-left inline-flex items-center gap-1 focus:outline-none"
+                            title="View Return Request Ticket Details"
+                          >
+                            <span>{req.requestNumber}</span>
+                          </button>
                         </td>
 
                         {/* Asset Details */}
                         <td className="py-3 px-4">
                           <div className="flex flex-col">
                             <div className="flex items-center gap-1.5">
-                              <span className="font-mono font-bold text-eec-primary">
+                              <Link
+                                href={`/assets/${req.assetId}`}
+                                className="font-mono font-bold text-eec-primary hover:text-eec-primary/80 hover:underline transition-colors"
+                                title="View Asset Details"
+                              >
                                 {req.asset.assetCode}
-                              </span>
+                              </Link>
                               <span className="text-slate-400">•</span>
-                              <span className="font-semibold text-slate-800 truncate max-w-[200px]">
+                              <Link
+                                href={`/assets/${req.assetId}`}
+                                className="font-semibold text-slate-800 hover:text-eec-primary hover:underline transition-colors truncate max-w-[200px]"
+                                title="View Asset Details"
+                              >
                                 {req.asset.name}
-                              </span>
+                              </Link>
                             </div>
                             <span className="text-slate-500 text-2xs mt-0.5">
                               {ASSET_CATEGORY_LABELS[req.asset.category] || req.asset.category} • SN: {req.asset.serialNumber}
@@ -288,27 +307,38 @@ export default function StoreReturnsPage() {
 
                         {/* Actions */}
                         <td className="py-3 px-4 text-right whitespace-nowrap">
-                          {req.status === 'PENDING' && canReceive ? (
+                          <div className="flex items-center justify-end gap-2">
                             <button
                               type="button"
-                              onClick={() => setSelectedRequestForReceipt(req)}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors shadow-2xs"
+                              onClick={() => setSelectedRequestForDetails(req)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition-colors"
+                              title="View complete return request details"
                             >
-                              <PackageCheck className="w-3.5 h-3.5" />
-                              Receive Asset
+                              <Eye className="w-3.5 h-3.5 text-slate-500" />
+                              <span>Details</span>
                             </button>
-                          ) : req.status === 'RECEIVED' ? (
-                            <div className="text-right">
-                              <span className="text-2xs text-emerald-700 font-semibold block">
-                                Received {req.receivedAt ? new Date(req.receivedAt).toLocaleDateString() : ''}
-                              </span>
-                              <span className="text-2xs text-slate-400 block truncate max-w-[140px]">
-                                by {receiverName} ({req.returnLocation || 'Store'})
-                              </span>
-                            </div>
-                          ) : (
-                            <span className="text-slate-400 text-2xs italic">No actions</span>
-                          )}
+                            {req.status === 'PENDING' && canReceive ? (
+                              <button
+                                type="button"
+                                onClick={() => setSelectedRequestForReceipt(req)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors shadow-2xs"
+                              >
+                                <PackageCheck className="w-3.5 h-3.5" />
+                                Receive Asset
+                              </button>
+                            ) : req.status === 'RECEIVED' ? (
+                              <div className="text-right">
+                                <span className="text-2xs text-emerald-700 font-semibold block">
+                                  Received {req.receivedAt ? new Date(req.receivedAt).toLocaleDateString() : ''}
+                                </span>
+                                <span className="text-2xs text-slate-400 block truncate max-w-[140px]">
+                                  by {receiverName} ({req.returnLocation || 'Store'})
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-slate-400 text-2xs italic">No actions</span>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -345,6 +375,18 @@ export default function StoreReturnsPage() {
             )}
           </div>
         )}
+
+        {/* Modal: Return Request Details */}
+        <ReturnRequestDetailsModal
+          request={selectedRequestForDetails}
+          isOpen={Boolean(selectedRequestForDetails)}
+          onClose={() => setSelectedRequestForDetails(null)}
+          canReceive={canReceive}
+          onReceiveAndInspect={(req) => {
+            setSelectedRequestForDetails(null);
+            setSelectedRequestForReceipt(req);
+          }}
+        />
 
         {/* Modal: Store Keeper Receive & Inspect */}
         <ReceiveReturnModal
